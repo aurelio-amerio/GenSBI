@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,13 +757,13 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.core.score_matching</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""</span>
 <span class="sd">Score matching generative method strategy.</span>
 
 <span class="sd">Implements :class:`~gensbi.core.generative_method.GenerativeMethod` using</span>
 <span class="sd">standard score matching diffusion with reverse SDE or probability flow ODE</span>
 <span class="sd">solvers and support for VP and VE SDE formulations.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -779,12 +781,12 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ScoreMatchingMethod">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ScoreMatchingMethod</span><span class="p">(</span><span class="n">GenerativeMethod</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score matching strategy.</span>
+<span class="w">    </span><span class="sd">"""Score matching strategy.</span>
 
 <span class="sd">    Supports two SDE formulations via the ``sde_type`` parameter:</span>
 
-<span class="sd">    - ``&quot;VP&quot;`` — variance-preserving (default)</span>
-<span class="sd">    - ``&quot;VE&quot;`` — variance-exploding</span>
+<span class="sd">    - ``"VP"`` — variance-preserving (default)</span>
+<span class="sd">    - ``"VE"`` — variance-exploding</span>
 
 <span class="sd">    Sampling can use either the reverse SDE (``SMSDESolver``, default) or</span>
 <span class="sd">    the probability flow ODE (``SMODESolver`` via ``ScoreToODEDrift``).</span>
@@ -792,18 +794,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    sde_type : str, optional</span>
-<span class="sd">        SDE type. One of ``&quot;VP&quot;`` or ``&quot;VE&quot;``. Default is ``&quot;VP&quot;``.</span>
+<span class="sd">        SDE type. One of ``"VP"`` or ``"VE"``. Default is ``"VP"``.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    &gt;&gt;&gt; method = ScoreMatchingMethod(sde_type=&quot;VP&quot;)</span>
-<span class="sd">    &gt;&gt;&gt; path = method.build_path(config={&quot;beta_min&quot;: 0.001, &quot;beta_max&quot;: 3.0})</span>
+<span class="sd">    &gt;&gt;&gt; method = ScoreMatchingMethod(sde_type="VP")</span>
+<span class="sd">    &gt;&gt;&gt; path = method.build_path(config={"beta_min": 0.001, "beta_max": 3.0})</span>
 <span class="sd">    &gt;&gt;&gt; loss = method.build_loss(path)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sde_type</span><span class="o">=</span><span class="s2">&quot;VP&quot;</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">sde_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;VP&quot;</span><span class="p">,</span> <span class="s2">&quot;VE&quot;</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sde_type must be one of &#39;VP&#39;, &#39;VE&#39;, got &#39;</span><span class="si">{</span><span class="n">sde_type</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sde_type</span><span class="o">=</span><span class="s2">"VP"</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">sde_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"VP"</span><span class="p">,</span> <span class="s2">"VE"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"sde_type must be one of 'VP', 'VE', got '</span><span class="si">{</span><span class="n">sde_type</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
 <div class="viewcode-block" id="ScoreMatchingMethod.sde_type">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.sde_type">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">=</span> <span class="n">sde_type</span></div>
@@ -816,7 +818,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ScoreMatchingMethod.build_path">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.build_path">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">event_shape</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a score matching path.</span>
+<span class="w">        </span><span class="sd">"""Build a score matching path.</span>
 
 <span class="sd">        Also constructs ``self.prior`` as a numpyro distribution.</span>
 
@@ -833,10 +835,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        SMPath</span>
 <span class="sd">            The configured score matching path.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">build_sm_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">"VP"</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="n">make_gaussian_prior</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">event_shape</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># VE</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prior</span> <span class="o">=</span> <span class="n">make_gaussian_prior</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">event_shape</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">sigma_max</span><span class="p">)</span>
@@ -847,7 +849,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ScoreMatchingMethod.build_loss">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.build_loss">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the score matching loss.</span>
+<span class="w">        </span><span class="sd">"""Build the score matching loss.</span>
 
 <span class="sd">        Wraps ``path.get_loss_fn()`` into a callable object.</span>
 
@@ -863,14 +865,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        SMLoss</span>
 <span class="sd">            A loss callable with signature</span>
 <span class="sd">            ``(key, model, batch, condition_mask=None, model_extras=None) -&gt; loss``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">SMLoss</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ScoreMatchingMethod.prepare_batch">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.prepare_batch">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample noise and diffusion time for a score matching training batch.</span>
+<span class="w">        </span><span class="sd">"""Sample noise and diffusion time for a score matching training batch.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -886,7 +888,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        tuple</span>
 <span class="sd">            ``(x_0, x_1, t)`` where ``x_0`` is standard normal noise</span>
 <span class="sd">            and ``t`` has shape ``(batch_size, 1, 1)``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">rng_x0</span><span class="p">,</span> <span class="n">rng_t</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="n">x_0</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rng_x0</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="n">t</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">sample_t</span><span class="p">(</span><span class="n">rng_t</span><span class="p">,</span> <span class="p">(</span><span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
@@ -896,20 +898,20 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ScoreMatchingMethod.get_default_solver">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.get_default_solver">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_default_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the default reverse SDE solver.</span>
+<span class="w">        </span><span class="sd">"""Return the default reverse SDE solver.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        tuple</span>
 <span class="sd">            ``(SMSDESolver, {})``</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">SMSDESolver</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="ScoreMatchingMethod.build_solver">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.build_solver">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_wrapped</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate a score matching solver.</span>
+<span class="w">        </span><span class="sd">"""Instantiate a score matching solver.</span>
 
 <span class="sd">        For the reverse SDE (``SMSDESolver``), wraps the model and extracts</span>
 <span class="sd">        prior parameters. For the probability flow ODE (``SMODESolver``),</span>
@@ -928,7 +930,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        solver_instance</span>
 <span class="sd">            An instantiated solver.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">solver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_solver</span><span class="p">()</span>
         <span class="n">solver_cls</span><span class="p">,</span> <span class="n">solver_kwargs</span> <span class="o">=</span> <span class="n">solver</span>
@@ -954,7 +956,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ScoreMatchingMethod.sample_init">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.sample_init">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sample_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample from the score matching prior.</span>
+<span class="w">        </span><span class="sd">"""Sample from the score matching prior.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -967,7 +969,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        Array</span>
 <span class="sd">            Sample from the prior.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,))</span></div>
 
 
@@ -979,12 +981,12 @@ window.runMermaid = runMermaid;</script>
         <span class="n">path</span><span class="p">,</span>
         <span class="n">model_extras</span><span class="p">,</span>
         <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Euler&quot;</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">"Euler"</span><span class="p">,</span>
         <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">solver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a sampler closure for score matching.</span>
+<span class="w">        </span><span class="sd">"""Build a sampler closure for score matching.</span>
 
 <span class="sd">        Supports ``SMSDESolver`` (reverse SDE) and ``SMODESolver``</span>
 <span class="sd">        (probability flow ODE via ``ScoreToODEDrift``).</span>
@@ -1000,7 +1002,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        nsteps : int, optional</span>
 <span class="sd">            Number of integration steps. Default is 1000.</span>
 <span class="sd">        method : str or diffrax solver, optional</span>
-<span class="sd">            Integration method. Default is ``&quot;Euler&quot;``.</span>
+<span class="sd">            Integration method. Default is ``"Euler"``.</span>
 <span class="sd">        return_intermediates : bool, optional</span>
 <span class="sd">            Whether to return intermediate steps. Default is False.</span>
 <span class="sd">        solver : tuple of (type, dict), optional</span>
@@ -1010,7 +1012,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        sampler_fn : Callable</span>
 <span class="sd">            A function ``(key, x_init) -&gt; samples``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">sde</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">scheduler</span>
         <span class="n">T</span> <span class="o">=</span> <span class="n">sde</span><span class="o">.</span><span class="n">T</span>
         <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-3</span>
@@ -1055,7 +1057,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{}</span>
                 <span class="k">return</span> <span class="n">sampler_</span><span class="p">(</span><span class="n">x_init</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">model_extras</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported solver type: </span><span class="si">{</span><span class="n">solver_cls</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported solver type: </span><span class="si">{</span><span class="n">solver_cls</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sampler_fn</span></div>
 
@@ -1068,7 +1070,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">path</span><span class="p">,</span>
         <span class="n">model_extras</span><span class="p">,</span>
         <span class="n">step_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
-        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;Dopri5&quot;</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">"Dopri5"</span><span class="p">,</span>
         <span class="n">atol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
         <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
@@ -1077,7 +1079,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">log_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a log-probability closure for the score matching probability flow ODE.</span>
+<span class="w">        </span><span class="sd">"""Build a log-probability closure for the score matching probability flow ODE.</span>
 
 <span class="sd">        Uses the continuous change-of-variables formula via ``SMODESolver``</span>
 <span class="sd">        (which inherits ``get_log_prob`` from ``ODESolver``).  Only works</span>
@@ -1105,7 +1107,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        step_size : float, optional</span>
 <span class="sd">            Step size for fixed-step solvers. Default is 0.01.</span>
 <span class="sd">        method : str or diffrax solver, optional</span>
-<span class="sd">            Integration method. Default is ``&quot;Dopri5&quot;``.</span>
+<span class="sd">            Integration method. Default is ``"Dopri5"``.</span>
 <span class="sd">        atol : float, optional</span>
 <span class="sd">            Absolute tolerance for adaptive solvers.</span>
 <span class="sd">        rtol : float, optional</span>
@@ -1121,7 +1123,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Jacobian. If ``False``, use the Hutchinson estimator (requires</span>
 <span class="sd">            a PRNG ``key`` at call time).</span>
 <span class="sd">        log_prior : callable, optional</span>
-<span class="sd">            Override for the prior&#39;s ``log_prob``. If ``None``, uses</span>
+<span class="sd">            Override for the prior's ``log_prob``. If ``None``, uses</span>
 <span class="sd">            ``self.prior.log_prob``. Used by the joint pipeline.</span>
 
 <span class="sd">        Returns</span>
@@ -1133,7 +1135,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ------</span>
 <span class="sd">        NotImplementedError</span>
 <span class="sd">            If a non-ODE solver (e.g. ``SMSDESolver``) is specified.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">solver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">solver</span> <span class="o">=</span> <span class="p">(</span><span class="n">SMODESolver</span><span class="p">,</span> <span class="p">{})</span>
 
@@ -1141,8 +1143,8 @@ window.runMermaid = runMermaid;</script>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">,</span> <span class="n">SMODESolver</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Log-probability computation requires SMODESolver, &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Log-probability computation requires SMODESolver, "</span>
+                <span class="sa">f</span><span class="s2">"got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">solver_instance</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 
         <span class="c1"># SM log-prob time grid: eps (data) → T (noise/source)</span>
@@ -1180,17 +1182,17 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ScoreMatchingMethod.get_extra_training_config">
 <a class="viewcode-back" href="../../../api/gensbi/core/score_matching/index.html#gensbi.core.score_matching.ScoreMatchingMethod.get_extra_training_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_extra_training_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return SM-specific training config defaults.</span>
+<span class="w">        </span><span class="sd">"""Return SM-specific training config defaults.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        dict</span>
 <span class="sd">            Scheduler defaults for the selected SDE type.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VP&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;beta_min&quot;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">&quot;beta_max&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">}</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">&quot;VE&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;sigma_min&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="s2">&quot;sigma_max&quot;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">}</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">"VP"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"beta_min"</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span> <span class="s2">"beta_max"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sde_type</span> <span class="o">==</span> <span class="s2">"VE"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"sigma_min"</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="s2">"sigma_max"</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">}</span>
         <span class="k">return</span> <span class="p">{}</span></div>
 </div>
 
@@ -1223,8 +1225,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1262,7 +1264,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,12 +757,12 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.experimental.models.pixeldit.embedders</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Token embedders for the PixelDiT port.</span>
+<span></span><span class="sd">"""Token embedders for the PixelDiT port.</span>
 
 <span class="sd">Faithful port of ``reference/PixelDiT/pixdit_core/pixeldit_c2i.py`` embedders</span>
 <span class="sd">plus the cond-token embedder from ``pixeldit_t2i.py``.  Operates channel-last</span>
 <span class="sd">``(B, H, W, C)`` throughout.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -779,7 +781,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="patchify">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.patchify">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">patchify</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fold a channel-last image into patch tokens, row-major.</span>
+<span class="w">    </span><span class="sd">"""Fold a channel-last image into patch tokens, row-major.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -793,7 +795,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    jax.Array</span>
 <span class="sd">        ``(B, L, p²·C)`` where ``L = Hs*Ws``, patches in row-major order</span>
 <span class="sd">        ``(Hs, Ws)`` and pixels within each patch in row-major order ``(p, p)``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
     <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span> <span class="o">=</span> <span class="n">H</span> <span class="o">//</span> <span class="n">p</span><span class="p">,</span> <span class="n">W</span> <span class="o">//</span> <span class="n">p</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">Hs</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">Ws</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
@@ -806,7 +808,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="unpatchify">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.unpatchify">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">unpatchify</span><span class="p">(</span><span class="n">tokens</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">,</span> <span class="n">grid</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">p</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">C</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exact inverse of :func:`patchify`.</span>
+<span class="w">    </span><span class="sd">"""Exact inverse of :func:`patchify`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -823,7 +825,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    -------</span>
 <span class="sd">    jax.Array</span>
 <span class="sd">        ``(B, H, W, C)`` channel-last image.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span> <span class="o">=</span> <span class="n">grid</span>
     <span class="n">B</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
@@ -841,11 +843,11 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="PatchTokenEmbedder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.PatchTokenEmbedder">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PatchTokenEmbedder</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Linear patch-token embedder (ref ``PatchTokenEmbedder``, pixeldit_c2i.py:21-38).</span>
+<span class="w">    </span><span class="sd">"""Linear patch-token embedder (ref ``PatchTokenEmbedder``, pixeldit_c2i.py:21-38).</span>
 
 <span class="sd">    ``Linear(in_features → hidden_size, bias=True)``; kernel xavier_uniform,</span>
 <span class="sd">    bias zeros.  No norm layer (``norm_layer=None`` case).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -886,7 +888,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="PixelTokenEmbedder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.PixelTokenEmbedder">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PixelTokenEmbedder</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-pixel projection + optional sincos abs-pos + patch grouping.</span>
+<span class="w">    </span><span class="sd">"""Per-pixel projection + optional sincos abs-pos + patch grouping.</span>
 
 <span class="sd">    Faithful port of ``PixelTokenEmbedder.forward`` (pixeldit_c2i.py:93-111).</span>
 <span class="sd">    Operates channel-last: input ``(B, H, W, C)``, output ``(B·L, p², D_pix)``.</span>
@@ -904,7 +906,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Patch size ``p``.</span>
 <span class="sd">    use_abs_pos:</span>
 <span class="sd">        If ``True`` (default), add the sincos 2D positional embedding.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -958,7 +960,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="PixelTokenEmbedder.__call__">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.PixelTokenEmbedder.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        x:</span>
@@ -968,13 +970,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        jax.Array</span>
 <span class="sd">            ``(B·L, p², D_pix)`` grouped pixel tokens.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">B</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
         <span class="n">exp_H</span><span class="p">,</span> <span class="n">exp_W</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_shape</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="n">exp_H</span><span class="p">,</span> <span class="n">exp_W</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;PixelTokenEmbedder was built for field_shape=(</span><span class="si">{</span><span class="n">exp_H</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">exp_W</span><span class="si">}</span><span class="s2">) &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;but received input with (H, W)=(</span><span class="si">{</span><span class="n">H</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">W</span><span class="si">}</span><span class="s2">).&quot;</span>
+                <span class="sa">f</span><span class="s2">"PixelTokenEmbedder was built for field_shape=(</span><span class="si">{</span><span class="n">exp_H</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">exp_W</span><span class="si">}</span><span class="s2">) "</span>
+                <span class="sa">f</span><span class="s2">"but received input with (H, W)=(</span><span class="si">{</span><span class="n">H</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">W</span><span class="si">}</span><span class="s2">)."</span>
             <span class="p">)</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">patch_size</span>
         <span class="n">Hs</span><span class="p">,</span> <span class="n">Ws</span> <span class="o">=</span> <span class="n">H</span> <span class="o">//</span> <span class="n">p</span><span class="p">,</span> <span class="n">W</span> <span class="o">//</span> <span class="n">p</span>
@@ -1003,7 +1005,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="CondTokenEmbedder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.CondTokenEmbedder">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CondTokenEmbedder</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Condition token embedder: linear → RMSNorm → add id embedding.</span>
+<span class="w">    </span><span class="sd">"""Condition token embedder: linear → RMSNorm → add id embedding.</span>
 
 <span class="sd">    Faithful port of the t2i cond pipeline</span>
 <span class="sd">    (``y_embedder`` + ``y_pos_embedding``, pixeldit_t2i.py:179-180, 267-268).</span>
@@ -1017,9 +1019,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    n_tokens:</span>
 <span class="sd">        Number of condition tokens ``K`` (used to build the id embedding table).</span>
 <span class="sd">    id_embedding:</span>
-<span class="sd">        How to embed token positions: ``&quot;absolute&quot;`` (learned), ``&quot;pos1d&quot;``</span>
-<span class="sd">        (sinusoidal 1D), or ``&quot;none&quot;`` (no positional information added).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        How to embed token positions: ``"absolute"`` (learned), ``"pos1d"``</span>
+<span class="sd">        (sinusoidal 1D), or ``"none"`` (no positional information added).</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1027,7 +1029,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">n_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">id_embedding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
+        <span class="n">id_embedding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"absolute"</span><span class="p">,</span>
         <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
         <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
         <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
@@ -1048,10 +1050,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-        <span class="c1"># fp32 island: the norm&#39;s own output is fp32 regardless of the</span>
+        <span class="c1"># fp32 island: the norm's own output is fp32 regardless of the</span>
         <span class="c1"># compute-dtype knob. Unlike a norm that feeds straight into another</span>
         <span class="c1"># compute-dtype Linear (whose promote_dtype would downcast it for</span>
-        <span class="c1"># free), this norm&#39;s output is returned/added directly further down</span>
+        <span class="c1"># free), this norm's output is returned/added directly further down</span>
         <span class="c1"># -- so __call__ below downcasts it back explicitly to avoid leaking</span>
         <span class="c1"># fp32 into the cond-token stream (same failure mode as the</span>
         <span class="c1"># flux1joint condition_embedding bug).</span>
@@ -1070,15 +1072,15 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.CondTokenEmbedder.id_embedding_kind">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span> <span class="o">=</span> <span class="n">id_embedding</span></div>
 
-        <span class="k">if</span> <span class="n">id_embedding</span> <span class="o">!=</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">id_embedding</span> <span class="o">!=</span> <span class="s2">"none"</span><span class="p">:</span>
             <span class="c1"># Reference (pixeldit_t2i.py:180) inits the learned id embedding as</span>
             <span class="c1"># ``torch.randn`` (std 1.0), co-equal with the RMS-normed value.</span>
-            <span class="c1"># nnx.Embed&#39;s default init is variance_scaling -&gt; std ~1/sqrt(hidden),</span>
+            <span class="c1"># nnx.Embed's default init is variance_scaling -&gt; std ~1/sqrt(hidden),</span>
             <span class="c1"># ~sqrt(hidden)x too small, which would leave token-identity ~20x</span>
             <span class="c1"># under-weighted at init.  Match the reference for the learned path.</span>
             <span class="n">extra</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">if</span> <span class="n">id_embedding</span> <span class="o">==</span> <span class="s2">&quot;absolute&quot;</span><span class="p">:</span>
-                <span class="n">extra</span><span class="p">[</span><span class="s2">&quot;embedding_init&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">stddev</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">id_embedding</span> <span class="o">==</span> <span class="s2">"absolute"</span><span class="p">:</span>
+                <span class="n">extra</span><span class="p">[</span><span class="s2">"embedding_init"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">stddev</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">id_embedder</span> <span class="o">=</span> <span class="n">FeatureEmbedder</span><span class="p">(</span>
                 <span class="n">num_embeddings</span><span class="o">=</span><span class="n">n_tokens</span><span class="p">,</span>
                 <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
@@ -1093,7 +1095,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="CondTokenEmbedder.__call__">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/embedders/index.html#gensbi.experimental.models.pixeldit.embedders.CondTokenEmbedder.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jax</span><span class="o">.</span><span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        cond:</span>
@@ -1104,26 +1106,26 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        jax.Array</span>
 <span class="sd">            ``(B, K, D)`` embedded condition tokens.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">cond</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_in_channels</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;2D cond (B, k) is only valid when cond_in_channels == 1; &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;this embedder has cond_in_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="si">}</span><span class="s2"> — &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;pass cond as (B, k, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="si">}</span><span class="s2">)&quot;</span>
+                    <span class="sa">f</span><span class="s2">"2D cond (B, k) is only valid when cond_in_channels == 1; "</span>
+                    <span class="sa">f</span><span class="s2">"this embedder has cond_in_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="si">}</span><span class="s2"> — "</span>
+                    <span class="sa">f</span><span class="s2">"pass cond as (B, k, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cond_in_channels</span><span class="si">}</span><span class="s2">)"</span>
                 <span class="p">)</span>
             <span class="n">cond</span> <span class="o">=</span> <span class="n">cond</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
 
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>   <span class="c1"># (B, K, D), compute dtype</span>
         <span class="c1"># norm is an fp32 island; downcast its raw output back to the</span>
-        <span class="c1"># compute dtype so it doesn&#39;t leak fp32 into the cond-token stream</span>
+        <span class="c1"># compute dtype so it doesn't leak fp32 into the cond-token stream</span>
         <span class="c1"># (see the fp32-island note on ``self.norm`` in __init__).</span>
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span> <span class="o">!=</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span> <span class="o">!=</span> <span class="s2">"none"</span><span class="p">:</span>
             <span class="c1"># absolute: nnx.Embed requires (..., 1) index; pos1d: requires (...,) index.</span>
             <span class="n">ids</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_tokens</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>             <span class="c1"># (1, K)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span> <span class="o">==</span> <span class="s2">&quot;absolute&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_kind</span> <span class="o">==</span> <span class="s2">"absolute"</span><span class="p">:</span>
                 <span class="n">ids</span> <span class="o">=</span> <span class="n">ids</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>                              <span class="c1"># (1, K, 1)</span>
             <span class="n">id_emb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_embedder</span><span class="p">(</span><span class="n">ids</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>                    <span class="c1"># (K, D)</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">id_emb</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
@@ -1160,8 +1162,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1199,7 +1201,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

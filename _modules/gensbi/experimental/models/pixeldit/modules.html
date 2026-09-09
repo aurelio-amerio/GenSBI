@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,11 +757,11 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.experimental.models.pixeldit.modules</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Low-level building blocks for the PixelDiT port.</span>
+<span></span><span class="sd">"""Low-level building blocks for the PixelDiT port.</span>
 
 <span class="sd">Faithful port of ``reference/PixelDiT/pixdit_core/modules.py`` into flax.nnx.</span>
 <span class="sd">Deliberate deviations from the reference are called out inline.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 
@@ -778,7 +780,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Buffer">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.Buffer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Buffer</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Variable</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Non-trainable array buffer (rope tables, sincos tables, etc.).</span>
+<span class="w">    </span><span class="sd">"""Non-trainable array buffer (rope tables, sincos tables, etc.).</span>
 
 <span class="sd">    A dedicated Variable type so buffers are:</span>
 <span class="sd">    - filterable with ``nnx.state(model, Buffer)``,</span>
@@ -787,7 +789,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    - importable by Tasks 3 and 6 which need the same distinction.</span>
 
 <span class="sd">    Mirrors ``RopeIds`` in ``fielddit/model.py:28-34``.</span>
-<span class="sd">    &quot;&quot;&quot;</span></div>
+<span class="sd">    """</span></div>
 
 
 
@@ -799,11 +801,11 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="SwiGLU">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.SwiGLU">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SwiGLU</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;SwiGLU feed-forward (ref ``FeedForward``, modules.py:119-129).</span>
+<span class="w">    </span><span class="sd">"""SwiGLU feed-forward (ref ``FeedForward``, modules.py:119-129).</span>
 
 <span class="sd">    ``hidden = int(2 * (dim * mlp_ratio) / 3)``; all three projections are</span>
 <span class="sd">    bias-free.  Forward: ``w2(silu(w1(x)) * w3(x))``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -814,7 +816,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
         <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="c1"># int(2 * (dim * mlp_ratio) / 3) is identical to ref&#39;s int(2 * int(dim*mlp_ratio) / 3)</span>
+        <span class="c1"># int(2 * (dim * mlp_ratio) / 3) is identical to ref's int(2 * int(dim*mlp_ratio) / 3)</span>
         <span class="c1"># for integer dim*mlp_ratio; single-int form avoids the redundant inner int().</span>
         <span class="n">hidden</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">dim</span> <span class="o">*</span> <span class="n">mlp_ratio</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
 <div class="viewcode-block" id="SwiGLU.w1">
@@ -846,11 +848,11 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="PixelMLP">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.PixelMLP">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PixelMLP</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Standard GELU MLP used in pixel-level DiT blocks (ref ``MLP``, modules.py:223-238).</span>
+<span class="w">    </span><span class="sd">"""Standard GELU MLP used in pixel-level DiT blocks (ref ``MLP``, modules.py:223-238).</span>
 
 <span class="sd">    ``Linear(dim → 4·dim)`` → GELU → ``Linear(→ dim)``.  Both linears have</span>
 <span class="sd">    biases; no dropout (we never train with dropout).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -890,7 +892,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="_timestep_embedding">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules._timestep_embedding">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">_timestep_embedding</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_period</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sinusoidal timestep embedding in float32 (ref ``TimestepConditioner.timestep_embedding``).</span>
+<span class="w">    </span><span class="sd">"""Sinusoidal timestep embedding in float32 (ref ``TimestepConditioner.timestep_embedding``).</span>
 
 <span class="sd">    Deliberate deviations from ``flux1.timestep_embedding``:</span>
 <span class="sd">    - ``max_period = 10`` (not 10000).</span>
@@ -898,7 +900,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    - Order is ``cat([cos, sin])`` (reference line 80).</span>
 <span class="sd">    - Always computed in float32 (FieldDiT lesson: bf16 ``t`` quantizes fine</span>
 <span class="sd">      differences; cast to param_dtype only before the MLP).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">half</span> <span class="o">=</span> <span class="n">dim</span> <span class="o">//</span> <span class="mi">2</span>
     <span class="n">freqs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
         <span class="o">-</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">max_period</span><span class="p">)</span>
@@ -919,14 +921,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="TimestepConditioner">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.TimestepConditioner">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TimestepConditioner</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Embed a scalar timestep into ``hidden_size`` (ref modules.py:63-91).</span>
+<span class="w">    </span><span class="sd">"""Embed a scalar timestep into ``hidden_size`` (ref modules.py:63-91).</span>
 
 <span class="sd">    The sinusoid is always computed in float32; ``mlp_in`` (a compute-dtype</span>
 <span class="sd">    Linear) downcasts it to the compute dtype via its own ``promote_dtype``,</span>
 <span class="sd">    so no manual cast is needed at the call site.</span>
 <span class="sd">    MLP weights are initialised with ``normal(std=0.02)`` (ref</span>
 <span class="sd">    ``initialize_weights``).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -970,7 +972,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="TimestepConditioner.__call__">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.TimestepConditioner.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-        <span class="c1"># Sinusoid always computed in float32 (fp32 island); mlp_in&#39;s own</span>
+        <span class="c1"># Sinusoid always computed in float32 (fp32 island); mlp_in's own</span>
         <span class="c1"># promote_dtype downcasts it to the compute dtype for the matmul.</span>
         <span class="n">t_freq</span> <span class="o">=</span> <span class="n">_timestep_embedding</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq_dim</span><span class="p">)</span>  <span class="c1"># float32</span>
         <span class="n">t_emb</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">silu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mlp_in</span><span class="p">(</span><span class="n">t_freq</span><span class="p">))</span>
@@ -988,16 +990,16 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="FinalLayer">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.FinalLayer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FinalLayer</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;RMSNorm + zero-init linear output projection (ref modules.py:241-250).</span>
+<span class="w">    </span><span class="sd">"""RMSNorm + zero-init linear output projection (ref modules.py:241-250).</span>
 
-<span class="sd">    The linear&#39;s kernel and bias are both zero-initialized, so the layer is</span>
+<span class="sd">    The linear's kernel and bias are both zero-initialized, so the layer is</span>
 <span class="sd">    exactly the zero map at initialisation (safe residual scaling).</span>
 
 <span class="sd">    models-emit-fp32 contract: both the norm and the linear are constructed</span>
 <span class="sd">    with ``dtype=jnp.float32`` (never a post-hoc ``.astype``), regardless of</span>
 <span class="sd">    the compute-dtype knob used elsewhere in the model -- this is the</span>
 <span class="sd">    designated emit-fp32 endpoint, so it has no separate ``dtype`` parameter.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1049,18 +1051,18 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="get_2d_sincos_pos_embed">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules.get_2d_sincos_pos_embed">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_2d_sincos_pos_embed</span><span class="p">(</span><span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pure-numpy 2D sincos positional embedding table.</span>
+<span class="w">    </span><span class="sd">"""Pure-numpy 2D sincos positional embedding table.</span>
 
 <span class="sd">    Returns ``(h*w, embed_dim)`` float32.  Supports ``h != w``.</span>
 
 <span class="sd">    The axis convention is copied exactly from the reference (modules.py:16-22):</span>
 <span class="sd">    ``grid = meshgrid(grid_w, grid_h)`` — w goes first — so ``grid[0]`` is the</span>
 <span class="sd">    w-axis and ``grid[1]`` is the h-axis.  ``emb_h`` is built from ``grid[0]``</span>
-<span class="sd">    (the w-grid) following the reference naming; do not &quot;fix&quot; this.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    (the w-grid) following the reference naming; do not "fix" this.</span>
+<span class="sd">    """</span>
     <span class="n">grid_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">grid_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="c1"># Reference line 18: &quot;here w goes first&quot;</span>
+    <span class="c1"># Reference line 18: "here w goes first"</span>
     <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">grid_w</span><span class="p">,</span> <span class="n">grid_h</span><span class="p">)</span>
     <span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
 
@@ -1074,18 +1076,18 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="_get_1d_sincos_pos_embed_from_grid">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/modules/index.html#gensbi.experimental.models.pixeldit.modules._get_1d_sincos_pos_embed_from_grid">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_1d_sincos_pos_embed_from_grid</span><span class="p">(</span><span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;1D sincos embedding for a grid of positions (ref modules.py:38-56).</span>
+<span class="w">    </span><span class="sd">"""1D sincos embedding for a grid of positions (ref modules.py:38-56).</span>
 
 <span class="sd">    Returns ``(M, embed_dim)`` where the order is ``[sin, cos]`` (reference</span>
 <span class="sd">    line 55: ``cat([emb_sin, emb_cos])``).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">assert</span> <span class="n">embed_dim</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
     <span class="n">omega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">embed_dim</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
     <span class="n">omega</span> <span class="o">/=</span> <span class="n">embed_dim</span> <span class="o">/</span> <span class="mf">2.0</span>
     <span class="n">omega</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="mi">10000</span> <span class="o">**</span> <span class="n">omega</span>  <span class="c1"># (D/2,)</span>
 
     <span class="n">pos</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (M,)</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;m,d-&gt;md&quot;</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">omega</span><span class="p">)</span>  <span class="c1"># (M, D/2)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"m,d-&gt;md"</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">omega</span><span class="p">)</span>  <span class="c1"># (M, D/2)</span>
 
     <span class="n">emb_sin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
     <span class="n">emb_cos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
@@ -1121,8 +1123,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1160,7 +1162,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

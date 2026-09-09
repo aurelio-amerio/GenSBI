@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,9 +757,9 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.recipes.joint_pipeline</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""</span>
 <span class="sd">Pipeline for training and using a Joint model for simulation-based inference.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -814,7 +816,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">rnd1_prob</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
     <span class="n">rnd2_prob</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Sample structured conditional masks for the Joint model.</span>
 
 <span class="sd">    Parameters</span>
@@ -847,7 +849,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    condition_mask : jnp.ndarray</span>
 <span class="sd">        Array of shape (num_samples, theta_dim + x_dim) with boolean masks.</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Joint, posterior, likelihood, random1_mask, random2_mask</span>
     <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">key3</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
     <span class="n">joint_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">theta_dim</span> <span class="o">+</span> <span class="n">x_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>
@@ -884,31 +886,31 @@ window.runMermaid = runMermaid;</script>
     <span class="n">num_samples</span><span class="p">,</span>
     <span class="n">theta_dim</span><span class="p">,</span>
     <span class="n">x_dim</span><span class="p">,</span>
-    <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;structured&quot;</span><span class="p">,</span>
+    <span class="n">kind</span><span class="o">=</span><span class="s2">"structured"</span><span class="p">,</span>
 <span class="p">):</span>
 
-    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;structured&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"structured"</span><span class="p">:</span>
         <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">sample_structured_conditional_mask</span><span class="p">(</span>
             <span class="n">key</span><span class="p">,</span>
             <span class="n">num_samples</span><span class="p">,</span>
             <span class="n">theta_dim</span><span class="p">,</span>
             <span class="n">x_dim</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;posterior&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"posterior"</span><span class="p">:</span>
         <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
             <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="n">theta_dim</span> <span class="o">+</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="n">x_dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span>
         <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
             <span class="n">condition_mask</span><span class="p">,</span> <span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">theta_dim</span> <span class="o">+</span> <span class="n">x_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;likelihood&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"likelihood"</span><span class="p">:</span>
         <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
             <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="n">theta_dim</span> <span class="o">+</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="n">x_dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span>
         <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
             <span class="n">condition_mask</span><span class="p">,</span> <span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">theta_dim</span> <span class="o">+</span> <span class="n">x_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;joint&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"joint"</span><span class="p">:</span>
         <span class="n">condition_mask</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
             <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">theta_dim</span> <span class="o">+</span> <span class="n">x_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bool_</span>
         <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -916,7 +918,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">condition_mask</span><span class="p">,</span> <span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">theta_dim</span> <span class="o">+</span> <span class="n">x_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown kind </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2"> for condition mask.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown kind </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2"> for condition mask."</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">condition_mask</span></div>
 
@@ -931,7 +933,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="JointPipeline">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">JointPipeline</span><span class="p">(</span><span class="n">AbstractPipeline</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.</span>
+<span class="w">    </span><span class="sd">"""Model-agnostic joint pipeline parameterized by a ``GenerativeMethod``.</span>
 
 <span class="sd">    Unlike the old method-specific pipeline classes, this class works with</span>
 <span class="sd">    **any** generative method and **any** user-provided model that conforms</span>
@@ -956,8 +958,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ch_obs : int, optional</span>
 <span class="sd">        Number of channels per token. Default is 1.</span>
 <span class="sd">    condition_mask_kind : str, optional</span>
-<span class="sd">        Kind of condition mask. One of ``&quot;structured&quot;`` or ``&quot;posterior&quot;``.</span>
-<span class="sd">        Default is ``&quot;structured&quot;``.</span>
+<span class="sd">        Kind of condition mask. One of ``"structured"`` or ``"posterior"``.</span>
+<span class="sd">        Default is ``"structured"``.</span>
 <span class="sd">    params : optional</span>
 <span class="sd">        Model parameters (stored but not used directly).</span>
 <span class="sd">    training_config : dict, optional</span>
@@ -973,7 +975,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ...     dim_obs=2, dim_cond=7,</span>
 <span class="sd">    ...     method=FlowMatchingMethod(),</span>
 <span class="sd">    ... )</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -984,7 +986,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">dim_cond</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">method</span><span class="p">:</span> <span class="n">GenerativeMethod</span><span class="p">,</span>
         <span class="n">ch_obs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">condition_mask_kind</span><span class="o">=</span><span class="s2">&quot;structured&quot;</span><span class="p">,</span>
+        <span class="n">condition_mask_kind</span><span class="o">=</span><span class="s2">"structured"</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
@@ -1039,14 +1041,14 @@ window.runMermaid = runMermaid;</script>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_cond</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;JointPipeline initialized with dim_cond=0. &quot;</span>
-                <span class="s2">&quot;Use UnconditionalPipeline instead.&quot;</span>
+                <span class="s2">"JointPipeline initialized with dim_cond=0. "</span>
+                <span class="s2">"Use UnconditionalPipeline instead."</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">condition_mask_kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;structured&quot;</span><span class="p">,</span> <span class="s2">&quot;posterior&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">condition_mask_kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"structured"</span><span class="p">,</span> <span class="s2">"posterior"</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;condition_mask_kind must be one of [&#39;structured&#39;, &#39;posterior&#39;], &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="n">condition_mask_kind</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">"condition_mask_kind must be one of ['structured', 'posterior'], "</span>
+                <span class="sa">f</span><span class="s2">"got </span><span class="si">{</span><span class="n">condition_mask_kind</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 <div class="viewcode-block" id="JointPipeline.condition_mask_kind">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.condition_mask_kind">[docs]</a>
@@ -1060,8 +1062,8 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.init_pipeline_from_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">init_pipeline_from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;JointPipeline is model-agnostic. &quot;</span>
-            <span class="s2">&quot;Use model-specific pipelines for config init.&quot;</span>
+            <span class="s2">"JointPipeline is model-agnostic. "</span>
+            <span class="s2">"Use model-specific pipelines for config init."</span>
         <span class="p">)</span></div>
 
 
@@ -1069,7 +1071,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline._make_model">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_make_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;JointPipeline is model-agnostic — the user provides the model.&quot;</span>
+            <span class="s2">"JointPipeline is model-agnostic — the user provides the model."</span>
         <span class="p">)</span></div>
 
 
@@ -1078,7 +1080,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.get_default_params">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_default_params</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;JointPipeline is model-agnostic — the user provides model params.&quot;</span>
+            <span class="s2">"JointPipeline is model-agnostic — the user provides model params."</span>
         <span class="p">)</span></div>
 
 
@@ -1102,8 +1104,8 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
 
             <span class="n">model_extras</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;node_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_ids</span><span class="p">,</span>
-                <span class="s2">&quot;condition_mask&quot;</span><span class="p">:</span> <span class="n">condition_mask</span><span class="p">,</span>
+                <span class="s2">"node_ids"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_ids</span><span class="p">,</span>
+                <span class="s2">"condition_mask"</span><span class="p">:</span> <span class="n">condition_mask</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_obj</span><span class="p">(</span>
                 <span class="n">model</span><span class="p">,</span>
@@ -1125,7 +1127,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="JointPipeline.get_sampler">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.get_sampler">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_sampler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a sampler function.</span>
+<span class="w">        </span><span class="sd">"""Get a sampler function.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1135,7 +1137,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Whether to use the EMA model. Default is True.</span>
 <span class="sd">        model_extras : dict, optional</span>
 <span class="sd">            Additional keyword arguments passed to the model during sampling</span>
-<span class="sd">            (e.g. ``{&quot;edge_mask&quot;: mask}``). Cannot override the protected keys</span>
+<span class="sd">            (e.g. ``{"edge_mask": mask}``). Cannot override the protected keys</span>
 <span class="sd">            ``cond``, ``obs_ids``, ``cond_ids``.</span>
 <span class="sd">        **sampler_kwargs</span>
 <span class="sd">            Forwarded to ``method.build_sampler_fn``.</span>
@@ -1144,22 +1146,22 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        Callable</span>
 <span class="sd">            ``sampler(key, nsamples) -&gt; samples``</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">model_wrapped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="k">if</span> <span class="n">use_ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span>
 
         <span class="n">cond</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
 
-        <span class="n">_PROTECTED</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cond&quot;</span><span class="p">,</span> <span class="s2">&quot;obs_ids&quot;</span><span class="p">,</span> <span class="s2">&quot;cond_ids&quot;</span><span class="p">}</span>
+        <span class="n">_PROTECTED</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cond"</span><span class="p">,</span> <span class="s2">"obs_ids"</span><span class="p">,</span> <span class="s2">"cond_ids"</span><span class="p">}</span>
         <span class="n">extras</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;cond&quot;</span><span class="p">:</span> <span class="n">cond</span><span class="p">,</span>
-            <span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span>
-            <span class="s2">&quot;cond_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span>
+            <span class="s2">"cond"</span><span class="p">:</span> <span class="n">cond</span><span class="p">,</span>
+            <span class="s2">"obs_ids"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span>
+            <span class="s2">"cond_ids"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">model_extras</span><span class="p">:</span>
             <span class="n">conflict</span> <span class="o">=</span> <span class="n">_PROTECTED</span> <span class="o">&amp;</span> <span class="n">model_extras</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">conflict</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;model_extras cannot override protected keys: </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">"model_extras cannot override protected keys: </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
             <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span>
 
@@ -1189,7 +1191,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.sample">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                <span class="n">chunk_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_progress_bars</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw samples from the model.</span>
+<span class="w">        </span><span class="sd">"""Draw samples from the model.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1215,14 +1217,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        Array</span>
 <span class="sd">            Samples of shape ``(nsamples, dim_obs, ch_obs)``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
-        <span class="n">x_o_shape</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
+        <span class="n">x_o_shape</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="s2">"shape"</span><span class="p">)</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">x_o_shape</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;x_o has batch dimension </span><span class="si">{</span><span class="n">x_o_shape</span><span class="si">}</span><span class="s2"> &gt; 1. &quot;</span>
-                <span class="s2">&quot;sample() draws all samples for a single condition. &quot;</span>
-                <span class="s2">&quot;To sample for multiple conditions, use sample_batched() instead.&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"x_o has batch dimension </span><span class="si">{</span><span class="n">x_o_shape</span><span class="si">}</span><span class="s2"> &gt; 1. "</span>
+                <span class="s2">"sample() draws all samples for a single condition. "</span>
+                <span class="s2">"To sample for multiple conditions, use sample_batched() instead."</span><span class="p">,</span>
                 <span class="ne">UserWarning</span><span class="p">,</span>
                 <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1237,7 +1239,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="JointPipeline.get_log_prob_fn">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.get_log_prob_fn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_log_prob_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a log-probability function.</span>
+<span class="w">        </span><span class="sd">"""Get a log-probability function.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1246,7 +1248,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        use_ema : bool, optional</span>
 <span class="sd">            Whether to use the EMA model. Default is True.</span>
 <span class="sd">        prior : numpyro.distributions.Distribution, optional</span>
-<span class="sd">            Obs-space prior for log-probability evaluation. The method&#39;s</span>
+<span class="sd">            Obs-space prior for log-probability evaluation. The method's</span>
 <span class="sd">            prior lives on the full joint space ``(dim_joint, ch)`` and</span>
 <span class="sd">            cannot be automatically marginalized for arbitrary priors.</span>
 
@@ -1266,7 +1268,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ------</span>
 <span class="sd">        ValueError</span>
 <span class="sd">            If the joint prior is non-Gaussian and no ``prior`` is provided.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="k">if</span> <span class="n">prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">log_p0</span> <span class="o">=</span> <span class="n">prior</span><span class="o">.</span><span class="n">log_prob</span>
@@ -1277,27 +1279,27 @@ window.runMermaid = runMermaid;</script>
             <span class="n">log_p0</span> <span class="o">=</span> <span class="n">obs_prior</span><span class="o">.</span><span class="n">log_prob</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Joint pipeline with a custom prior requires an explicit &quot;</span>
-                <span class="s2">&quot;`prior` for log_prob — the obs-space marginal of the joint &quot;</span>
-                <span class="s2">&quot;prior. Pass a numpyro distribution whose event_shape &quot;</span>
-                <span class="s2">&quot;matches (dim_obs, ch_obs).&quot;</span>
+                <span class="s2">"Joint pipeline with a custom prior requires an explicit "</span>
+                <span class="s2">"`prior` for log_prob — the obs-space marginal of the joint "</span>
+                <span class="s2">"prior. Pass a numpyro distribution whose event_shape "</span>
+                <span class="s2">"matches (dim_obs, ch_obs)."</span>
             <span class="p">)</span>
 
         <span class="n">model_wrapped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model_wrapped</span> <span class="k">if</span> <span class="n">use_ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span>
 
         <span class="n">cond</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
 
-        <span class="n">_PROTECTED</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cond&quot;</span><span class="p">,</span> <span class="s2">&quot;obs_ids&quot;</span><span class="p">,</span> <span class="s2">&quot;cond_ids&quot;</span><span class="p">}</span>
+        <span class="n">_PROTECTED</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cond"</span><span class="p">,</span> <span class="s2">"obs_ids"</span><span class="p">,</span> <span class="s2">"cond_ids"</span><span class="p">}</span>
         <span class="n">extras</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;cond&quot;</span><span class="p">:</span> <span class="n">cond</span><span class="p">,</span>
-            <span class="s2">&quot;obs_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span>
-            <span class="s2">&quot;cond_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span>
+            <span class="s2">"cond"</span><span class="p">:</span> <span class="n">cond</span><span class="p">,</span>
+            <span class="s2">"obs_ids"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span>
+            <span class="s2">"cond_ids"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">model_extras</span><span class="p">:</span>
             <span class="n">conflict</span> <span class="o">=</span> <span class="n">_PROTECTED</span> <span class="o">&amp;</span> <span class="n">model_extras</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">conflict</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;model_extras cannot override protected keys: </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">"model_extras cannot override protected keys: </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
             <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span>
 
@@ -1319,7 +1321,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="JointPipeline.log_prob">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.log_prob">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_1</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute log-probability of x_1 given x_o.</span>
+<span class="w">        </span><span class="sd">"""Compute log-probability of x_1 given x_o.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1341,7 +1343,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        -------</span>
 <span class="sd">        Array</span>
 <span class="sd">            Log-probabilities.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_log_prob_fn</span><span class="p">(</span>
             <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">)</span>
@@ -1377,8 +1379,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1416,7 +1418,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

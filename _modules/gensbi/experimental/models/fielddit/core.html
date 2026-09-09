@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,13 +757,13 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.experimental.models.fielddit.core</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;The MMDiT bottleneck for FieldDiT — Flux1 joint-attention over obs+cond.</span>
+<span></span><span class="sd">"""The MMDiT bottleneck for FieldDiT — Flux1 joint-attention over obs+cond.</span>
 
 <span class="sd">obs tokens carry rope2d positional ids; the few cond tokens are absolute</span>
 <span class="sd">(order-free), embedded with a learned id embedding and given dummy zero rope</span>
 <span class="sd">ids so the rotary encoding is identity on them. Block order matches Flux1:</span>
 <span class="sd">cond is concatenated before obs.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
@@ -774,12 +776,12 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MMDiTCore">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/core/index.html#gensbi.experimental.models.fielddit.core.MMDiTCore">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MMDiTCore</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Flux1 double-stream + single-stream transformer over obs+cond tokens.</span>
+<span class="w">    </span><span class="sd">"""Flux1 double-stream + single-stream transformer over obs+cond tokens.</span>
 
 <span class="sd">    Parameters mirror the relevant subset of ``Flux1Params``. ``vec`` (the</span>
 <span class="sd">    time (+cond summary, +guidance) modulation vector) is supplied externally</span>
-<span class="sd">    so the same vector can drive the conv codec&#39;s AdaGN-zero modulation.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    so the same vector can drive the conv codec's AdaGN-zero modulation.</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -806,7 +808,7 @@ window.runMermaid = runMermaid;</script>
 
         <span class="n">head_dim</span> <span class="o">=</span> <span class="n">hidden_size</span> <span class="o">//</span> <span class="n">num_heads</span>
         <span class="k">assert</span> <span class="nb">sum</span><span class="p">(</span><span class="n">axes_dim</span><span class="p">)</span> <span class="o">==</span> <span class="n">head_dim</span><span class="p">,</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;sum(axes_dim)=</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">axes_dim</span><span class="p">)</span><span class="si">}</span><span class="s2"> must equal head_dim=</span><span class="si">{</span><span class="n">head_dim</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"sum(axes_dim)=</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">axes_dim</span><span class="p">)</span><span class="si">}</span><span class="s2"> must equal head_dim=</span><span class="si">{</span><span class="n">head_dim</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 <div class="viewcode-block" id="MMDiTCore.pe_embedder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/core/index.html#gensbi.experimental.models.fielddit.core.MMDiTCore.pe_embedder">[docs]</a>
@@ -822,7 +824,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids_embedder</span> <span class="o">=</span> <span class="n">FeatureEmbedder</span><span class="p">(</span>
             <span class="n">num_embeddings</span><span class="o">=</span><span class="n">n_cond_tokens</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
-            <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"absolute"</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
@@ -911,8 +913,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -950,7 +952,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

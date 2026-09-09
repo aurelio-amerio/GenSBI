@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
@@ -39,10 +39,10 @@
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
@@ -700,12 +700,12 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
 <p>The very first lines of your script must control the <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS</span></code> environment variable. This ensures that only the main process attempts to use the GPU (CUDA), while worker subprocesses (spawned by the data loader) are forced to use the CPU.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">!=</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">!=</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="c1"># Worker processes must not touch the GPU</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"JAX_PLATFORMS"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"cpu"</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="c1"># Main process uses the GPU (change to &#39;cpu&#39; if you don&#39;t have one)</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span>
+    <span class="c1"># Main process uses the GPU (change to 'cpu' if you don't have one)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"JAX_PLATFORMS"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"cuda"</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">grain.python</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">grain</span> <span class="c1"># Import after setting env vars</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -760,7 +760,7 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
 
     <span class="c1"># Helper to split the joint data back into (obs, cond) for the pipeline</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">split_obs_cond</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-        <span class="c1"># Assuming first &#39;dim_obs&#39; columns are observations (theta)</span>
+        <span class="c1"># Assuming first 'dim_obs' columns are observations (theta)</span>
         <span class="c1"># and remaining columns are conditions (x)</span>
         <span class="k">return</span> <span class="n">data</span><span class="p">[:,</span> <span class="p">:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">dim_obs</span><span class="p">:]</span>
 
@@ -791,7 +791,7 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
     <span class="p">)</span>
 
     <span class="c1"># --- 4. Create Validation Pipeline ---</span>
-    <span class="c1"># Validation usually doesn&#39;t need complex prefetching</span>
+    <span class="c1"># Validation usually doesn't need complex prefetching</span>
     <span class="n">val_dataset_grain</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">grain</span><span class="o">.</span><span class="n">MapDataset</span><span class="o">.</span><span class="n">source</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">val_data</span><span class="p">))</span>
         <span class="o">.</span><span class="n">to_iter_dataset</span><span class="p">()</span>
@@ -800,11 +800,11 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
     <span class="p">)</span>
     
     <span class="c1"># ... Initialize and run your GenSBI pipeline here ...</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data loaders ready. Starting training...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Data loaders ready. Starting training..."</span><span class="p">)</span>
     <span class="c1"># ....</span>
 
 <span class="c1"># Run main only if this is the entry point</span>
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -874,8 +874,8 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
 <span class="n">training_config</span> <span class="o">=</span> <span class="n">Flux1FlowPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
 
 <span class="c1"># 2. Modify specific settings</span>
-<span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;/path/to/custom/checkpoints&quot;</span>
-<span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50_000</span> <span class="c1"># Train for longer</span>
+<span class="n">training_config</span><span class="p">[</span><span class="s2">"checkpoint_dir"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"/path/to/custom/checkpoints"</span>
+<span class="n">training_config</span><span class="p">[</span><span class="s2">"nsteps"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50_000</span> <span class="c1"># Train for longer</span>
 
 <span class="c1"># 3. Instantiate the pipeline with the custom config</span>
 <span class="n">pipeline</span> <span class="o">=</span> <span class="n">Flux1FlowPipeline</span><span class="p">(</span>
@@ -964,12 +964,12 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CustomFluxPipeline</span><span class="p">(</span><span class="n">Flux1FlowPipeline</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_optimizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Overrides the default optimizer to use a linear schedule with AdamW.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Retrieve config values</span>
-        <span class="n">lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;max_lr&quot;</span><span class="p">]</span>
-        <span class="n">steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span>
+        <span class="n">lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"max_lr"</span><span class="p">]</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"nsteps"</span><span class="p">]</span>
         
         <span class="c1"># Example: Linear decay schedule</span>
         <span class="n">schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">linear_schedule</span><span class="p">(</span>
@@ -992,9 +992,9 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">save_model</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Run the training loop for the model.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Initialize optimizers</span>
     <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_optimizer</span><span class="p">()</span>
     <span class="n">ema_optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_ema_optimizer</span><span class="p">()</span>
@@ -1023,11 +1023,11 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
     <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">nsteps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">nsteps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span>
-    <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;early_stopping&quot;</span><span class="p">]</span>
-    <span class="n">val_every</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span>
+        <span class="n">nsteps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"nsteps"</span><span class="p">]</span>
+    <span class="n">early_stopping</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"early_stopping"</span><span class="p">]</span>
+    <span class="n">val_every</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"val_every"</span><span class="p">]</span>
 
-    <span class="n">experiment_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"experiment_id"</span><span class="p">]</span>
 
     <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nsteps</span><span class="p">))</span>
     <span class="n">l_train</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1035,7 +1035,7 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
         <span class="c1"># Check early stopping conditions</span>
         <span class="k">if</span> <span class="n">counter</span> <span class="o">&gt;</span> <span class="n">cmax</span> <span class="ow">and</span> <span class="n">early_stopping</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Early stopping&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Early stopping"</span><span class="p">)</span>
             <span class="c1"># Restore best state</span>
             <span class="n">graphdef</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">graphdef</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">graphdef</span><span class="p">,</span> <span class="n">best_state</span><span class="p">)</span>
@@ -1050,7 +1050,7 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
         <span class="p">)</span>
         
         <span class="c1"># EMA Update</span>
-        <span class="k">if</span> <span class="n">j</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">&quot;multistep&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">j</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"multistep"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">ema_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">ema_optimizer</span><span class="p">)</span>
 
         <span class="c1"># Smoothing loss for display</span>
@@ -1072,10 +1072,10 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
                 <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
 
             <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span>
-                <span class="n">loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">l_train</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">ratio</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ratio</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">l_train</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">ratio</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ratio</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">counter</span><span class="o">=</span><span class="n">counter</span><span class="p">,</span>
-                <span class="n">val_loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">l_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">val_loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">l_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">loss_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l_train</span><span class="p">)</span>
             <span class="n">val_loss_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l_val</span><span class="p">)</span>
@@ -1196,8 +1196,8 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1235,7 +1235,7 @@ See <a class="reference internal" href="#/basics/troubleshooting#shape-mismatch-
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

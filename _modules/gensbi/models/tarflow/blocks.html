@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,12 +757,12 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.models.tarflow.blocks</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Transformer blocks for the transformer flow.</span>
+<span></span><span class="sd">"""Transformer blocks for the transformer flow.</span>
 
 <span class="sd">Adapted from apple/ml-tarflow (TarFlow); see models/tarflow/LICENSE.apple.</span>
 <span class="sd">Prefix-concatenation conditioning and SOS shift adapted from apple/ml-starflow</span>
 <span class="sd">(STARFlow); see models/tarflow/LICENSE.starflow.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -780,7 +782,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="AttentionBlock">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AttentionBlock</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pre-norm residual block combining causal self-attention and an MLP.</span>
+<span class="w">    </span><span class="sd">"""Pre-norm residual block combining causal self-attention and an MLP.</span>
 
 <span class="sd">    LayerNorm is applied over the channel axis only (not across tokens),</span>
 <span class="sd">    so no future-token information leaks into earlier positions.</span>
@@ -806,14 +808,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        always run at ``float32`` regardless of this knob; their output</span>
 <span class="sd">        self-heals when it feeds the following compute-dtype ``Linear``</span>
 <span class="sd">        (``promote_dtype`` downcasts it there).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">expansion</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
                  <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">channels</span> <span class="o">%</span> <span class="n">num_heads</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;channels (</span><span class="si">{</span><span class="n">channels</span><span class="si">}</span><span class="s2">) must be a multiple of num_heads (</span><span class="si">{</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">"channels (</span><span class="si">{</span><span class="n">channels</span><span class="si">}</span><span class="s2">) must be a multiple of num_heads (</span><span class="si">{</span><span class="n">num_heads</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 <div class="viewcode-block" id="AttentionBlock.num_heads">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.num_heads">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span> <span class="o">=</span> <span class="n">num_heads</span></div>
@@ -858,7 +860,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="AttentionBlock._qkv">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock._qkv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_qkv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Project to unrotated (q, k, v), each of shape ``(B, S, nh, hd)``.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Project to unrotated (q, k, v), each of shape ``(B, S, nh, hd)``."""</span>
         <span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
         <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">qkv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qkv</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span>
@@ -868,7 +870,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="AttentionBlock._finish">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock._finish">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">attn</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Residual attention output + residual MLP (shared tail).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Residual attention output + residual MLP (shared tail)."""</span>
         <span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">proj</span><span class="p">(</span><span class="n">attn</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">C</span><span class="p">))</span>
         <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlp_out</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">gelu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mlp_in</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm2</span><span class="p">(</span><span class="n">x</span><span class="p">))))</span>
@@ -879,7 +881,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">mask</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">freqs_cis</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">return_kv</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply pre-norm residual self-attention followed by a residual MLP.</span>
+<span class="w">        </span><span class="sd">"""Apply pre-norm residual self-attention followed by a residual MLP.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -900,7 +902,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Array or tuple</span>
 <span class="sd">            ``out`` of shape ``(B, T, C)``, or ``(out, k, v)`` when</span>
 <span class="sd">            ``return_kv=True``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qkv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">k_raw</span><span class="p">,</span> <span class="n">v_raw</span> <span class="o">=</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span>
         <span class="k">if</span> <span class="n">freqs_cis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -920,7 +922,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.AttentionBlock.decode">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_new</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">k_cache</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">v_cache</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
                <span class="n">index</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Single-token decode step against a preallocated KV cache.</span>
+<span class="w">        </span><span class="sd">"""Single-token decode step against a preallocated KV cache.</span>
 
 <span class="sd">        The cache stores **unrotated** k (reference behavior: rope is applied</span>
 <span class="sd">        after the cache read, re-rotating the whole prefix each step). Slots</span>
@@ -936,13 +938,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Slot to write; attention sees slots ``&lt;= index``.</span>
 <span class="sd">        freqs_cis : Array or None, optional</span>
 <span class="sd">            Rotary angles ``(S, head_dim)`` for **all** slots; the new</span>
-<span class="sd">            token&#39;s q uses row ``index``.</span>
+<span class="sd">            token's q uses row ``index``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        tuple</span>
 <span class="sd">            ``(out, k_cache, v_cache)`` with ``out`` of shape ``(B, 1, C)``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qkv</span><span class="p">(</span><span class="n">x_new</span><span class="p">)</span>                     <span class="c1"># (B, 1, nh, hd)</span>
         <span class="n">k_cache</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_update_slice_in_dim</span><span class="p">(</span><span class="n">k_cache</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">v_cache</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">dynamic_update_slice_in_dim</span><span class="p">(</span><span class="n">v_cache</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -962,7 +964,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MetaBlock</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;One exact autoregressive bijection over a token sequence.</span>
+<span class="w">    </span><span class="sd">"""One exact autoregressive bijection over a token sequence.</span>
 
 <span class="sd">    Implements the :class:`~gensbi.normalizing_flows.bijections.base.Bijection`</span>
 <span class="sd">    direction contract: :meth:`inverse` maps data to noise (density-evaluation</span>
@@ -1025,7 +1027,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        default arguments this is a bit-identical no-op cast. The</span>
 <span class="sd">        softplus/soft_clip affine-scale computation in :meth:`_affine` stays</span>
 <span class="sd">        unconditionally fp32 regardless of this knob.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">perm</span><span class="p">,</span> <span class="n">conditioner</span><span class="p">,</span>
                  <span class="n">num_layers</span><span class="p">,</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">expansion</span><span class="p">,</span> <span class="n">rngs</span><span class="p">,</span> <span class="n">zero_init</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1077,15 +1079,15 @@ window.runMermaid = runMermaid;</script>
 
         <span class="k">if</span> <span class="n">rope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;rope requires grid=(h, w)&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"rope requires grid=(h, w)"</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">T</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;grid=</span><span class="si">{</span><span class="n">grid</span><span class="si">}</span><span class="s2"> does not match T=</span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;(grid[0] * grid[1] must equal the token count T)&quot;</span><span class="p">)</span>
+                    <span class="sa">f</span><span class="s2">"grid=</span><span class="si">{</span><span class="n">grid</span><span class="si">}</span><span class="s2"> does not match T=</span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="sa">f</span><span class="s2">"(grid[0] * grid[1] must equal the token count T)"</span><span class="p">)</span>
             <span class="c1"># Positions in raster sequence-slot order, NOT permuted with the</span>
             <span class="c1"># token flip (faithful to the reference); prefix slots at the</span>
             <span class="c1"># identity rotation (zeros), image slots on the normalized 2D grid.</span>
-            <span class="n">M</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">conditioner</span><span class="p">,</span> <span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">conditioner</span><span class="p">,</span> <span class="s2">"M"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
             <span class="n">pos_img</span> <span class="o">=</span> <span class="n">get_positions</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">rope</span><span class="o">.</span><span class="n">pt_seq_len</span><span class="p">)</span>
             <span class="n">pos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
                 <span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">M</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pos_img</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">pos_img</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -1114,9 +1116,9 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock._prefix_mask">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._prefix_mask">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prefix_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">M</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prefix-LM mask over [prefix(M); modeled(T)]: modeled is causal and</span>
+<span class="w">        </span><span class="sd">"""Prefix-LM mask over [prefix(M); modeled(T)]: modeled is causal and</span>
 <span class="sd">        sees all prefix; prefix is bidirectional among itself and never sees</span>
-<span class="sd">        modeled (cond→x blocked).&quot;&quot;&quot;</span>
+<span class="sd">        modeled (cond→x blocked)."""</span>
         <span class="n">S</span> <span class="o">=</span> <span class="n">M</span> <span class="o">+</span> <span class="n">T</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
         <span class="n">is_modeled_q</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">M</span>
@@ -1128,13 +1130,13 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock._affine">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._affine">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_affine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map raw log-scale ``a`` -&gt; ``(scale, inv_scale, log_scale)`` in float32.</span>
+<span class="w">        </span><span class="sd">"""Map raw log-scale ``a`` -&gt; ``(scale, inv_scale, log_scale)`` in float32.</span>
 
-<span class="sd">        ``scale`` plays the role of ``exp(a)`` (&quot;1/sigma&quot;): inverse multiplies by</span>
+<span class="sd">        ``scale`` plays the role of ``exp(a)`` ("1/sigma"): inverse multiplies by</span>
 <span class="sd">        ``inv_scale``, forward multiplies by ``scale``, logdet sums ``log_scale``.</span>
 <span class="sd">        softplus mode bounds the positive-scale tail and its gradient; the</span>
 <span class="sd">        ``INV_SOFTPLUS_1`` offset makes it the identity at ``a == 0``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_softplus</span><span class="p">:</span>
             <span class="n">s</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">INV_SOFTPLUS_1</span><span class="p">)</span>
@@ -1145,13 +1147,13 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock._embed_cond">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._embed_cond">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_embed_cond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Condition-only signals ``(bias, prefix, mask)`` for :meth:`_params_core`.</span>
+<span class="w">        </span><span class="sd">"""Condition-only signals ``(bias, prefix, mask)`` for :meth:`_params_core`.</span>
 
 <span class="sd">        These depend on ``cond`` but not on the modeled tokens, so the sampling</span>
 <span class="sd">        scan computes them once instead of re-running the (potentially expensive,</span>
 <span class="sd">        e.g. image-patchify) conditioner and rebuilding the prefix mask at every</span>
 <span class="sd">        token step.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">bias</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditioner</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefix_mask</span><span class="p">(</span><span class="n">prefix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="k">if</span> <span class="n">prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">bias</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">mask</span></div>
@@ -1160,11 +1162,11 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock._params_core">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._params_core">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_perm</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;(a, b) for the permuted tokens given precomputed conditioning.</span>
+<span class="w">        </span><span class="sd">"""(a, b) for the permuted tokens given precomputed conditioning.</span>
 
-<span class="sd">        SOS input-shift makes token i&#39;s params depend only on tokens &lt; i (and the</span>
+<span class="sd">        SOS input-shift makes token i's params depend only on tokens &lt; i (and the</span>
 <span class="sd">        condition). ``bias``/``prefix``/``mask`` come from :meth:`_embed_cond`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">B</span> <span class="o">=</span> <span class="n">x_perm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">sos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">sos_embed</span><span class="p">[</span><span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">x_perm</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">))</span>
@@ -1194,7 +1196,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock._params">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._params">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_perm</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;(a, b) for the permuted tokens (single-shot; embeds the condition).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""(a, b) for the permuted tokens (single-shot; embeds the condition)."""</span>
         <span class="n">bias</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_cond</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_core</span><span class="p">(</span><span class="n">x_perm</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span></div>
 
@@ -1202,10 +1204,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock.inverse">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.inverse">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map data to noise (the density-evaluation direction).</span>
+<span class="w">        </span><span class="sd">"""Map data to noise (the density-evaluation direction).</span>
 
 <span class="sd">        Applies a per-token parallel affine transform</span>
-<span class="sd">        ``z = (x − b) · inv_scale`` after permuting tokens. Token ``i``&#39;s</span>
+<span class="sd">        ``z = (x − b) · inv_scale`` after permuting tokens. Token ``i``'s</span>
 <span class="sd">        parameters ``(a, b)`` depend only on tokens at positions ``&lt; i``</span>
 <span class="sd">        (causal attention on a shift-by-one input), giving a triangular</span>
 <span class="sd">        Jacobian computable in a single forward pass.</span>
@@ -1226,7 +1228,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Log absolute determinant of the Jacobian of the inverse map,</span>
 <span class="sd">            shape ``(B,)``. Equal to ``-Σ log_scale`` over token and feature</span>
 <span class="sd">            dimensions.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
         <span class="n">xp</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">perm</span><span class="p">[</span><span class="o">...</span><span class="p">]]</span>
         <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="p">(</span><span class="n">xp</span><span class="p">,</span> <span class="n">cond</span><span class="p">)</span>
@@ -1240,7 +1242,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock._forward_reference">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock._forward_reference">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_forward_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map noise to data via full recompute (reference path for the KV cache).</span>
+<span class="w">        </span><span class="sd">"""Map noise to data via full recompute (reference path for the KV cache).</span>
 
 <span class="sd">        ``forward`` is the production path (KV-cached); this method is its</span>
 <span class="sd">        correctness oracle, retained for the equivalence test suite — do not</span>
@@ -1248,7 +1250,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        Sequentially scans over token positions via ``jax.lax.scan``,</span>
 <span class="sd">        re-running the causal attention pass at each step so that token</span>
-<span class="sd">        ``i``&#39;s parameters are conditioned on already-generated tokens</span>
+<span class="sd">        ``i``'s parameters are conditioned on already-generated tokens</span>
 <span class="sd">        ``0, …, i-1`` (mirrors ``MaskedAutoregressive.forward``).</span>
 
 <span class="sd">        Parameters</span>
@@ -1267,7 +1269,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Log absolute determinant of the Jacobian of the forward map,</span>
 <span class="sd">            shape ``(B,)``. Equal to ``+Σ log_scale`` over token and feature</span>
 <span class="sd">            dimensions.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
         <span class="n">zp</span> <span class="o">=</span> <span class="n">z</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">perm</span><span class="p">[</span><span class="o">...</span><span class="p">]]</span>
         <span class="n">bias</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_cond</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>            <span class="c1"># constant over the scan</span>
@@ -1291,7 +1293,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MetaBlock.forward">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/blocks/index.html#gensbi.models.tarflow.blocks.MetaBlock.forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">cond</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map noise to data (the sampling direction), KV-cached.</span>
+<span class="w">        </span><span class="sd">"""Map noise to data (the sampling direction), KV-cached.</span>
 
 <span class="sd">        Prefills the per-layer caches with the condition prefix (one parallel</span>
 <span class="sd">        pass under the bidirectional prefix mask, matching the training-path</span>
@@ -1315,7 +1317,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Log absolute determinant of the Jacobian of the forward map,</span>
 <span class="sd">            shape ``(B,)``. Equal to ``+Σ log_scale`` over token and feature</span>
 <span class="sd">            dimensions.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">F</span><span class="p">)</span>
         <span class="n">zp</span> <span class="o">=</span> <span class="n">z</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">perm</span><span class="p">[</span><span class="o">...</span><span class="p">]]</span>
         <span class="n">B</span> <span class="o">=</span> <span class="n">zp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1414,8 +1416,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1453,7 +1455,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

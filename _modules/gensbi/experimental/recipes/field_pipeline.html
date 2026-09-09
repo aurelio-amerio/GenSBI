@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,13 +757,13 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.experimental.recipes.field_pipeline</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Field-shaped conditional pipeline (experimental).</span>
+<span></span><span class="sd">"""Field-shaped conditional pipeline (experimental).</span>
 
 <span class="sd">``ConditionalPipeline`` assumes token-shaped observations ``(B, dim, ch)``:</span>
 <span class="sd">it flattens ``dim_obs``, resolves embedding ids, and builds a rank-2 prior.</span>
 <span class="sd">Pixel-space field models (FieldDiT) need ``(B, H, W, C)`` observations, a</span>
 <span class="sd">rank-3 ``event_shape``, no external ids, and rank-aware input expansion.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
@@ -774,7 +776,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="FieldConditionalWrapper">
 <a class="viewcode-back" href="../../../../api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.field_pipeline.FieldConditionalWrapper">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FieldConditionalWrapper</span><span class="p">(</span><span class="n">ModelWrapper</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrapper for field-shaped conditional models.</span>
+<span class="w">    </span><span class="sd">"""Wrapper for field-shaped conditional models.</span>
 
 <span class="sd">    Expansion is event-rank-aware (a field event is rank 3, ``(H, W, C)``):</span>
 
@@ -784,7 +786,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    - batch-1 ``cond`` is broadcast to the obs batch (sampling N draws for a</span>
 <span class="sd">      single ``x_o``; the model itself deliberately does not broadcast).</span>
 <span class="sd">    - ids are passed through untouched (FieldDiT builds rope ids internally).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
@@ -827,7 +829,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="FieldConditionalPipeline">
 <a class="viewcode-back" href="../../../../api/gensbi/experimental/recipes/index.html#gensbi.experimental.recipes.field_pipeline.FieldConditionalPipeline">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FieldConditionalPipeline</span><span class="p">(</span><span class="n">ConditionalPipeline</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Conditional pipeline for pixel-space fields ``(B, H, W, C)``.</span>
+<span class="w">    </span><span class="sd">"""Conditional pipeline for pixel-space fields ``(B, H, W, C)``.</span>
 
 <span class="sd">    Differences from :class:`ConditionalPipeline`:</span>
 
@@ -839,7 +841,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Datasets must yield ``(obs, cond)`` batches with ``obs`` of shape</span>
 <span class="sd">    ``(B, H, W, C)`` and ``cond`` of shape ``(B, k)`` or ``(B, k, c)``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -942,8 +944,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -981,7 +983,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

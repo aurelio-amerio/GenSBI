@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -39,10 +39,10 @@
     <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -437,14 +437,14 @@
 <li><p>[ ] <strong>Step 1: Write the failing tests</strong> (append to <code class="docutils literal notranslate"><span class="pre">tests/recipes/test_healpix_ids.py</span></code>)</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_init_ids_healpix_rejects_empty_base_pixels</span><span class="p">():</span>
-    <span class="c1"># Previously leaked a raw numpy &quot;need at least one array to concatenate&quot;.</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;non-empty&quot;</span><span class="p">):</span>
+    <span class="c1"># Previously leaked a raw numpy "need at least one array to concatenate".</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"non-empty"</span><span class="p">):</span>
         <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="p">[])</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">test_init_ids_healpix_rejects_non_integer_base_pixels</span><span class="p">():</span>
     <span class="c1"># Previously slipped validation and reached hp.pix2vec.</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;integer&quot;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"integer"</span><span class="p">):</span>
         <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="p">[</span><span class="mf">1.5</span><span class="p">])</span>
 </pre></div>
 </div>
@@ -457,19 +457,19 @@ Expected: 2 FAILED — empty raises <code class="docutils literal notranslate"><
 <li><p>[ ] <strong>Step 3: Implement.</strong> In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py</span></code>, add above <code class="docutils literal notranslate"><span class="pre">init_ids_healpix</span></code>:</p></li>
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">_validate_base_pixels</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a base-pixel subset spec; return it as a list of ints.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Validate a base-pixel subset spec; return it as a list of ints."""</span>
     <span class="n">base_pixels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">base_pixels</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;base_pixels must be non-empty; omit it (or pass None) for full sky&quot;</span>
+            <span class="s2">"base_pixels must be non-empty; omit it (or pass None) for full sky"</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">))</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">base_pixels</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;base_pixels entries must be integers, got </span><span class="si">{</span><span class="n">base_pixels</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"base_pixels entries must be integers, got </span><span class="si">{</span><span class="n">base_pixels</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">b</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">b</span> <span class="o">&gt;</span> <span class="mi">11</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">base_pixels</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">base_pixels</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span>
         <span class="n">base_pixels</span>
     <span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;base_pixels must be unique integers in [0, 11], got </span><span class="si">{</span><span class="n">base_pixels</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"base_pixels must be unique integers in [0, 11], got </span><span class="si">{</span><span class="n">base_pixels</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">base_pixels</span>
 </pre></div>
@@ -489,7 +489,7 @@ Expected: all pass (the 9 existing tests still green — the old unique/range me
 <li><p>[ ] <strong>Step 5: Commit</strong></p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/utils.py<span class="w"> </span>tests/recipes/test_healpix_ids.py
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;fix: proper errors for empty/non-integer base_pixels in init_ids_healpix&quot;</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"fix: proper errors for empty/non-integer base_pixels in init_ids_healpix"</span>
 </pre></div>
 </div>
 </section>
@@ -509,7 +509,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"JAX_PLATFORMS"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"cpu"</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
@@ -534,7 +534,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 
 <span class="k">def</span><span class="w"> </span><span class="nf">test_healpix_rope_dim_mismatch_names_both_numbers</span><span class="p">():</span>
     <span class="c1"># The error must name the given dim AND the expected token count.</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;(?s)47.*48|48.*47&quot;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">"(?s)47.*48|48.*47"</span><span class="p">):</span>
         <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="mi">47</span><span class="p">)</span>
 
 
@@ -548,18 +548,18 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">test_healpix_rope_validates_at_construction</span><span class="p">():</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;power of 2&quot;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"power of 2"</span><span class="p">):</span>
         <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;non-empty&quot;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"non-empty"</span><span class="p">):</span>
         <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="p">())</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;integer&quot;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"integer"</span><span class="p">):</span>
         <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="p">(</span><span class="mf">1.5</span><span class="p">,))</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">test_healpix_rope_satisfies_id_strategy_protocol</span><span class="p">():</span>
     <span class="n">strat</span> <span class="o">=</span> <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strat</span><span class="p">,</span> <span class="n">IdStrategy</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">strat</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;healpix-rope&quot;</span>
+    <span class="k">assert</span> <span class="n">strat</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"healpix-rope"</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -570,21 +570,21 @@ Expected: collection error — <code class="docutils literal notranslate"><span 
 <ul class="simple">
 <li><p>[ ] <strong>Step 3: Implement.</strong> Create <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/id_strategies.py</span></code>:</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Structured id-builder strategies for the recipe pipelines.</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">"""Structured id-builder strategies for the recipe pipelines.</span>
 
-<span class="sd">Two DIFFERENT vocabularies share the word &quot;rope&quot; — they collided once</span>
+<span class="sd">Two DIFFERENT vocabularies share the word "rope" — they collided once</span>
 <span class="sd">(2026-07-19 handoff) and are deliberately kept distinct:</span>
 
 <span class="sd">- **Model-side** strategy strings (e.g. ``Flux1Params.id_embedding_strategy``):</span>
-<span class="sd">  ``&quot;rope&quot;`` means *apply RoPE to whatever ids arrive at the forward pass*.</span>
-<span class="sd">- **Pipeline-side** builder strategies (``ConditionalPipeline``&#39;s</span>
-<span class="sd">  ``id_embedding_strategy``): strings like ``&quot;rope1d&quot;``/``&quot;rope2d&quot;`` — and the</span>
+<span class="sd">  ``"rope"`` means *apply RoPE to whatever ids arrive at the forward pass*.</span>
+<span class="sd">- **Pipeline-side** builder strategies (``ConditionalPipeline``'s</span>
+<span class="sd">  ``id_embedding_strategy``): strings like ``"rope1d"``/``"rope2d"`` — and the</span>
 <span class="sd">  objects in this module — *build* the id arrays themselves.</span>
 
 <span class="sd">A :class:`HealpixRope` pipeline strategy pairs with model-side</span>
-<span class="sd">``(&quot;absolute&quot;, &quot;rope&quot;)`` plus a 3-entry even ``axes_dim`` summing to the</span>
+<span class="sd">``("absolute", "rope")`` plus a 3-entry even ``axes_dim`` summing to the</span>
 <span class="sd">per-head dim (e.g. ``(22, 22, 20)`` for 64).</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">runtime_checkable</span>
@@ -598,25 +598,25 @@ Expected: collection error — <code class="docutils literal notranslate"><span 
 
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">IdStrategy</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Structural interface for pipeline id-builder strategy objects.</span>
+<span class="w">    </span><span class="sd">"""Structural interface for pipeline id-builder strategy objects.</span>
 
 <span class="sd">    Any object with a ``name`` and a ``build(dim) -&gt; (ids, resolved_dim)``</span>
 <span class="sd">    method can be passed in an ``id_embedding_strategy`` tuple slot; the</span>
 <span class="sd">    pipeline calls ``build`` with the corresponding ``dim_obs``/``dim_cond``.</span>
 <span class="sd">    Strategies own their full geometry — unlike the string strategies they</span>
 <span class="sd">    receive no ``semantic_id``/``size``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``(ids, resolved_dim)`` for a stream of ``dim`` tokens.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return ``(ids, resolved_dim)`` for a stream of ``dim`` tokens."""</span>
         <span class="o">...</span>
 
 
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">HealpixRope</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spherical RoPE ids for tokens on a HEALPix grid (name: &quot;healpix-rope&quot;).</span>
+<span class="w">    </span><span class="sd">"""Spherical RoPE ids for tokens on a HEALPix grid (name: "healpix-rope").</span>
 
 <span class="sd">    Wraps :func:`gensbi.recipes.utils.init_ids_healpix` (see there for the</span>
 <span class="sd">    method and its rationale) with the geometry needed to build the ids —</span>
@@ -629,43 +629,43 @@ Expected: collection error — <code class="docutils literal notranslate"><span 
 <span class="sd">        HEALPix resolution of the *token* grid (power of 2).</span>
 <span class="sd">    base_pixels : sequence of int, optional</span>
 <span class="sd">        Base pixels (0..11) covered by the grid; ``None`` = full sky.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">nside</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">base_pixels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="n">name</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;healpix-rope&quot;</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"healpix-rope"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;nside must be a power of 2, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"nside must be a power of 2, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
-                <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;base_pixels&quot;</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_validate_base_pixels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">))</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="s2">"base_pixels"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_validate_base_pixels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">))</span>
             <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">num_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Token count of the grid: ``n_faces * nside**2``.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Token count of the grid: ``n_faces * nside**2``."""</span>
         <span class="n">n_faces</span> <span class="o">=</span> <span class="mi">12</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">n_faces</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="o">**</span><span class="mi">2</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">theta</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Suggested model-side RoPE theta: :func:`healpix_rope_theta`.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Suggested model-side RoPE theta: :func:`healpix_rope_theta`."""</span>
         <span class="k">return</span> <span class="n">healpix_rope_theta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``(ids, num_tokens)``; ``dim`` must match the grid.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return ``(ids, num_tokens)``; ``dim`` must match the grid."""</span>
         <span class="k">if</span> <span class="n">dim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_tokens</span><span class="p">:</span>
             <span class="n">sky</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="s2">&quot;full sky&quot;</span>
+                <span class="s2">"full sky"</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span> <span class="ow">is</span> <span class="kc">None</span>
-                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">)</span><span class="si">}</span><span class="s2"> base pixels&quot;</span>
+                <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">)</span><span class="si">}</span><span class="s2"> base pixels"</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: the pipeline stream has dim=</span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2"> tokens, but &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;nside=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">sky</span><span class="si">}</span><span class="s2">) implies </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tokens</span><span class="si">}</span><span class="s2"> tokens&quot;</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: the pipeline stream has dim=</span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2"> tokens, but "</span>
+                <span class="sa">f</span><span class="s2">"nside=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">sky</span><span class="si">}</span><span class="s2">) implies </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tokens</span><span class="si">}</span><span class="s2"> tokens"</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">)</span>
 </pre></div>
@@ -684,7 +684,7 @@ Expected: 8 passed.</p>
 <li><p>[ ] <strong>Step 5: Commit</strong></p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/id_strategies.py<span class="w"> </span>src/gensbi/recipes/__init__.py<span class="w"> </span>tests/recipes/test_id_strategies.py
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: HealpixRope IdStrategy object carrying HEALPix geometry&quot;</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"feat: HealpixRope IdStrategy object carrying HEALPix geometry"</span>
 </pre></div>
 </div>
 </section>
@@ -744,7 +744,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
         <span class="n">dim_obs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="n">dim_cond</span><span class="o">=</span><span class="mi">48</span><span class="p">,</span>
         <span class="n">method</span><span class="o">=</span><span class="n">FlowMatchingMethod</span><span class="p">(),</span>
-        <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
+        <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">"absolute"</span><span class="p">,</span> <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
     <span class="p">)</span>
     <span class="n">ref_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
     <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ref_ids</span><span class="p">))</span>
@@ -756,7 +756,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 
 <span class="k">def</span><span class="w"> </span><span class="nf">test_conditional_pipeline_healpix_rope_dim_mismatch_raises</span><span class="p">():</span>
     <span class="n">train_ds</span><span class="p">,</span> <span class="n">val_ds</span> <span class="o">=</span> <span class="n">_tiny_datasets</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">47</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;healpix-rope&quot;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"healpix-rope"</span><span class="p">):</span>
         <span class="n">ConditionalPipeline</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">MockConditionalModel</span><span class="p">(),</span>
             <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_ds</span><span class="p">,</span>
@@ -764,7 +764,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
             <span class="n">dim_obs</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
             <span class="n">dim_cond</span><span class="o">=</span><span class="mi">47</span><span class="p">,</span>
             <span class="n">method</span><span class="o">=</span><span class="n">FlowMatchingMethod</span><span class="p">(),</span>
-            <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
+            <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">"absolute"</span><span class="p">,</span> <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
         <span class="p">)</span>
 
 
@@ -777,10 +777,10 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 
 <span class="k">def</span><span class="w"> </span><span class="nf">test_resolve_embedding_ids_unknown_string_mentions_objects</span><span class="p">():</span>
     <span class="c1"># Prefix preserved for backward compat; message now teaches the object API.</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;Unknown id embedding strategy&quot;</span><span class="p">):</span>
-        <span class="n">_resolve_embedding_ids</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;rope3d&quot;</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;IdStrategy&quot;</span><span class="p">):</span>
-        <span class="n">_resolve_embedding_ids</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;rope3d&quot;</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"Unknown id embedding strategy"</span><span class="p">):</span>
+        <span class="n">_resolve_embedding_ids</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s2">"rope3d"</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"IdStrategy"</span><span class="p">):</span>
+        <span class="n">_resolve_embedding_ids</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s2">"rope3d"</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -791,7 +791,7 @@ Expected: the two pipeline tests and the dispatch test FAIL with <code class="do
 <ul class="simple">
 <li><p>[ ] <strong>Step 3: Implement.</strong> In <code class="docutils literal notranslate"><span class="pre">src/gensbi/recipes/utils.py</span></code>, <code class="docutils literal notranslate"><span class="pre">_resolve_embedding_ids</span></code>: insert the object arm first and extend the error. Replace the function body’s dispatch with:</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="s2">&quot;build&quot;</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="s2">"build"</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">strategy</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">strategy</span> <span class="ow">in</span> <span class="n">_EMBEDDINGS_1D</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="n">semantic_id</span><span class="p">)</span>
@@ -799,20 +799,20 @@ Expected: the two pipeline tests and the dispatch test FAIL with <code class="do
         <span class="k">return</span> <span class="n">init_ids_2d</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">semantic_id</span><span class="o">=</span><span class="n">semantic_id</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Unknown id embedding strategy: </span><span class="si">{</span><span class="n">strategy</span><span class="si">!r}</span><span class="s2">. Expected one of &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_EMBEDDINGS_1D</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">_EMBEDDINGS_2D</span><span class="p">)</span><span class="si">}</span><span class="s2"> or an IdStrategy object &quot;</span>
-            <span class="s2">&quot;with a build(dim) method (e.g. gensbi.recipes.HealpixRope).&quot;</span>
+            <span class="sa">f</span><span class="s2">"Unknown id embedding strategy: </span><span class="si">{</span><span class="n">strategy</span><span class="si">!r}</span><span class="s2">. Expected one of "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_EMBEDDINGS_1D</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">_EMBEDDINGS_2D</span><span class="p">)</span><span class="si">}</span><span class="s2"> or an IdStrategy object "</span>
+            <span class="s2">"with a build(dim) method (e.g. gensbi.recipes.HealpixRope)."</span>
         <span class="p">)</span>
 </pre></div>
 </div>
 <p>Also update the function docstring <code class="docutils literal notranslate"><span class="pre">strategy</span></code> parameter description to:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    strategy : str or IdStrategy
-        Embedding strategy name (e.g., &quot;absolute&quot;, &quot;pos1d&quot;, &quot;rope1d&quot;,
-        &quot;pos2d&quot;, &quot;rope2d&quot;) or a strategy object with ``build(dim)`` (e.g.
+        Embedding strategy name (e.g., "absolute", "pos1d", "rope1d",
+        "pos2d", "rope2d") or a strategy object with ``build(dim)`` (e.g.
         :class:`gensbi.recipes.HealpixRope`). NOTE these pipeline-side
         builder names are a different vocabulary from the model-side
-        ``id_embedding_strategy`` strings (where &quot;rope&quot; means &quot;apply RoPE
-        to the ids the pipeline provides&quot;) — see
+        ``id_embedding_strategy`` strings (where "rope" means "apply RoPE
+        to the ids the pipeline provides") — see
         :mod:`gensbi.recipes.id_strategies`.
 </pre></div>
 </div>
@@ -821,11 +821,11 @@ Expected: the two pipeline tests and the dispatch test FAIL with <code class="do
         Per-stream (obs, cond) id-builder strategy. Strings pick a built-in
         1D/2D grid builder; an :class:`~gensbi.recipes.IdStrategy` object
         (e.g. :class:`~gensbi.recipes.HealpixRope`) builds ids from its own
-        geometry. Default is ``(&quot;absolute&quot;, &quot;absolute&quot;)``. NOTE this
+        geometry. Default is ``("absolute", "absolute")``. NOTE this
         pipeline-side vocabulary is distinct from the model-side
-        ``id_embedding_strategy`` (e.g. ``Flux1Params``), where &quot;rope&quot;
-        means &quot;apply RoPE to the provided ids&quot;; a ``HealpixRope`` pipeline
-        strategy pairs with model-side ``(&quot;absolute&quot;, &quot;rope&quot;)`` and a
+        ``id_embedding_strategy`` (e.g. ``Flux1Params``), where "rope"
+        means "apply RoPE to the provided ids"; a ``HealpixRope`` pipeline
+        strategy pairs with model-side ``("absolute", "rope")`` and a
         3-entry ``axes_dim``.
 </pre></div>
 </div>
@@ -838,7 +838,7 @@ Expected: all pass.</p>
 <li><p>[ ] <strong>Step 5: Commit</strong></p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/gensbi/recipes/utils.py<span class="w"> </span>src/gensbi/recipes/conditional_pipeline.py<span class="w"> </span>tests/recipes/test_id_strategies.py
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: ConditionalPipeline accepts IdStrategy objects (healpix-rope)&quot;</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"feat: ConditionalPipeline accepts IdStrategy objects (healpix-rope)"</span>
 </pre></div>
 </div>
 </section>
@@ -905,13 +905,13 @@ gensbi Flux1 flow matching) lives in
 <li><p>[ ] <strong>Step 4: Commit</strong></p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>pyproject.toml<span class="w"> </span>README.md
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;refactor!: move spherical GRF SBI example to GenSBI-examples, drop gensbi coupling</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"refactor!: move spherical GRF SBI example to GenSBI-examples, drop gensbi coupling</span>
 
 <span class="s2">Removes the gensbi optional extra and all local [tool.uv.sources] path</span>
 <span class="s2">overrides so the package has no absolute-path or unpublished deps and can</span>
 <span class="s2">ship to PyPI.</span>
 
-<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;"</span>
 </pre></div>
 </div>
 </section>
@@ -961,9 +961,9 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 
 <span class="nt">on</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">push</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;main&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"main"</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;main&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"main"</span><span class="p p-Indicator">]</span>
 
 <span class="nt">permissions</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
@@ -987,20 +987,20 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 <li><p>[ ] <strong>Step 3: Add <code class="docutils literal notranslate"><span class="pre">[project.urls]</span></code> to <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code></strong> (after the <code class="docutils literal notranslate"><span class="pre">[project]</span></code> table’s <code class="docutils literal notranslate"><span class="pre">dependencies</span></code>):</p></li>
 </ul>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[project.urls]</span>
-<span class="n">Homepage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://github.com/aurelio-amerio/HEAL-SWIN-nnx&quot;</span>
-<span class="n">Issues</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://github.com/aurelio-amerio/HEAL-SWIN-nnx/issues&quot;</span>
+<span class="n">Homepage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://github.com/aurelio-amerio/HEAL-SWIN-nnx"</span>
+<span class="n">Issues</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://github.com/aurelio-amerio/HEAL-SWIN-nnx/issues"</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li><p>[ ] <strong>Step 4: Commit</strong></p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>.github/<span class="w"> </span>pyproject.toml
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;ci: adapt copied workflows to heal-swin-nnx, add project urls</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"ci: adapt copied workflows to heal-swin-nnx, add project urls</span>
 
 <span class="s2">python-publish.yml pointed at pypi.org/p/gensbi; python-app.yml referenced</span>
 <span class="s2">dependency groups, markers, and badge tooling this repo does not have.</span>
 
-<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;"</span>
 </pre></div>
 </div>
 </section>
@@ -1022,7 +1022,7 @@ Expected: all pass (the deleted example is not under <code class="docutils liter
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>build
 python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>/tmp/aamerio/healswin-wheel-test
 /tmp/aamerio/healswin-wheel-test/bin/pip<span class="w"> </span>install<span class="w"> </span>dist/heal_swin_nnx-0.1.0-py3-none-any.whl<span class="w"> </span>pytest<span class="w"> </span>pytest-env<span class="w"> </span>pytest-xdist
-<span class="nv">JAX_PLATFORMS</span><span class="o">=</span>cpu<span class="w"> </span>/tmp/aamerio/healswin-wheel-test/bin/python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import heal_swin_nnx; print(sorted(heal_swin_nnx.__all__))&quot;</span>
+<span class="nv">JAX_PLATFORMS</span><span class="o">=</span>cpu<span class="w"> </span>/tmp/aamerio/healswin-wheel-test/bin/python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import heal_swin_nnx; print(sorted(heal_swin_nnx.__all__))"</span>
 <span class="nv">JAX_PLATFORMS</span><span class="o">=</span>cpu<span class="w"> </span>/tmp/aamerio/healswin-wheel-test/bin/python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-q
 </pre></div>
 </div>
@@ -1063,7 +1063,7 @@ Expected: <code class="docutils literal notranslate"><span class="pre">0.1.0</sp
 </pre></div>
 </div>
 <p>In <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> <code class="docutils literal notranslate"><span class="pre">[project]</span> <span class="pre">dependencies</span></code>, after <code class="docutils literal notranslate"><span class="pre">&quot;healpy&gt;=1.19.0&quot;,</span></code> add:</p>
-<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="w">    </span><span class="s2">&quot;heal-swin-nnx&gt;=0.1.0&quot;</span><span class="err">,</span>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="w">    </span><span class="s2">"heal-swin-nnx&gt;=0.1.0"</span><span class="err">,</span>
 </pre></div>
 </div>
 <p>Then install into the mamba env: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;heal-swin-nnx&gt;=0.1.0&quot;</span></code>
@@ -1073,7 +1073,7 @@ Expected: installs from PyPI without pulling new transitive deps (jax/flax/einop
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JAX_PLATFORMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cpu&quot;</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"JAX_PLATFORMS"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"cpu"</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
@@ -1092,7 +1092,7 @@ Expected: installs from PyPI without pulling new transitive deps (jax/flax/einop
 <span class="k">def</span><span class="w"> </span><span class="nf">test_healswin_encoder_tiny_forward_via_gensbi</span><span class="p">():</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealSwinEncoder</span><span class="p">,</span> <span class="n">HealSwinParams</span>
 
-    <span class="c1"># Known-good tiny config from HEAL-SWIN-nnx&#39;s own test suite</span>
+    <span class="c1"># Known-good tiny config from HEAL-SWIN-nnx's own test suite</span>
     <span class="c1"># (tests/test_model.py::tiny_params): 8 faces at nside 16, 2 stages.</span>
     <span class="n">p</span> <span class="o">=</span> <span class="n">HealSwinParams</span><span class="p">(</span>
         <span class="n">nside</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">base_pixels</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">)),</span>
@@ -1113,7 +1113,7 @@ Expected: FAIL — <code class="docutils literal notranslate"><span class="pre">
 <ul class="simple">
 <li><p>[ ] <strong>Step 5: Implement.</strong> Create <code class="docutils literal notranslate"><span class="pre">src/gensbi/models/healswin.py</span></code>:</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Mirror of the standalone ``heal_swin_nnx`` package.</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">"""Mirror of the standalone ``heal_swin_nnx`` package.</span>
 
 <span class="sd">GenSBI depends on `heal-swin-nnx &lt;https://pypi.org/p/heal-swin-nnx&gt;`_ (the</span>
 <span class="sd">HEALPix-native spherical Swin V2 U-Net in Flax NNX) and re-exports its public</span>
@@ -1122,7 +1122,7 @@ Expected: FAIL — <code class="docutils literal notranslate"><span class="pre">
 <span class="sd">:class:`HealSwinParams` — are also exported from :mod:`gensbi.models`</span>
 <span class="sd">directly; everything else (full U-Nets, decoders, HealConv, planar Swin) is</span>
 <span class="sd">available from this module or from ``heal_swin_nnx`` itself.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">heal_swin_nnx</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Buffer</span><span class="p">,</span>
@@ -1141,19 +1141,19 @@ Expected: FAIL — <code class="docutils literal notranslate"><span class="pre">
 <span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;Buffer&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;HealConv&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;HealConvDecoder&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;HealConvEncoder&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;HealConvParams&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;HealSwin&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;HealSwinDecoder&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;HealSwinEncoder&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;HealSwinParams&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;SwinDecoder&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;SwinEncoder&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;SwinParams&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;SwinUnet&quot;</span><span class="p">,</span>
+    <span class="s2">"Buffer"</span><span class="p">,</span>
+    <span class="s2">"HealConv"</span><span class="p">,</span>
+    <span class="s2">"HealConvDecoder"</span><span class="p">,</span>
+    <span class="s2">"HealConvEncoder"</span><span class="p">,</span>
+    <span class="s2">"HealConvParams"</span><span class="p">,</span>
+    <span class="s2">"HealSwin"</span><span class="p">,</span>
+    <span class="s2">"HealSwinDecoder"</span><span class="p">,</span>
+    <span class="s2">"HealSwinEncoder"</span><span class="p">,</span>
+    <span class="s2">"HealSwinParams"</span><span class="p">,</span>
+    <span class="s2">"SwinDecoder"</span><span class="p">,</span>
+    <span class="s2">"SwinEncoder"</span><span class="p">,</span>
+    <span class="s2">"SwinParams"</span><span class="p">,</span>
+    <span class="s2">"SwinUnet"</span><span class="p">,</span>
 <span class="p">]</span>
 </pre></div>
 </div>
@@ -1170,9 +1170,9 @@ Expected: 2 passed.</p>
 <ul class="simple">
 <li><p>[ ] <strong>Step 7: Fast suite + merge</strong></p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-q<span class="w"> </span>-n<span class="w"> </span>auto<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;not slow and not experimental and not extraslow&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-q<span class="w"> </span>-n<span class="w"> </span>auto<span class="w"> </span>-m<span class="w"> </span><span class="s2">"not slow and not experimental and not extraslow"</span>
 git<span class="w"> </span>add<span class="w"> </span>pyproject.toml<span class="w"> </span>src/gensbi/models/healswin.py<span class="w"> </span>src/gensbi/models/__init__.py<span class="w"> </span>tests/models/test_healswin_mirror.py
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: depend on heal-swin-nnx and mirror it via gensbi.models.healswin&quot;</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"feat: depend on heal-swin-nnx and mirror it via gensbi.models.healswin"</span>
 git<span class="w"> </span>checkout<span class="w"> </span>main<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>merge<span class="w"> </span>--ff-only<span class="w"> </span>healswin-mirror<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>branch<span class="w"> </span>-d<span class="w"> </span>healswin-mirror
 </pre></div>
 </div>
@@ -1198,16 +1198,16 @@ Expected: includes <code class="docutils literal notranslate"><span class="pre">
 <li><p>[ ] <strong>Step 2: Update <code class="docutils literal notranslate"><span class="pre">[project]</span> <span class="pre">dependencies</span></code></strong> to (changes: add <code class="docutils literal notranslate"><span class="pre">gensbi</span></code>, fix stale <code class="docutils literal notranslate"><span class="pre">jax</span></code> pin to gensbi’s floor, add the sbibm-jax version floor):</p></li>
 </ul>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;gensbi&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;jax&gt;=0.10.2, &lt;0.12.0&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;datasets&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;huggingface_hub&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;matplotlib&gt;=3.10&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;numpy&gt;=2.3.5&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;flax&gt;=0.12.4&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;grain&gt;=0.2.15&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;imageio&gt;=2.37.2&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;sbibm-jax[loader]&gt;=0.1.3&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"gensbi"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"jax&gt;=0.10.2, &lt;0.12.0"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"datasets"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"huggingface_hub"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"matplotlib&gt;=3.10"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"numpy&gt;=2.3.5"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"flax&gt;=0.12.4"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"grain&gt;=0.2.15"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"imageio&gt;=2.37.2"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"sbibm-jax[loader]&gt;=0.1.3"</span><span class="p">,</span>
 <span class="p">]</span>
 </pre></div>
 </div>
@@ -1216,7 +1216,7 @@ Expected: includes <code class="docutils literal notranslate"><span class="pre">
 <li><p>[ ] <strong>Step 3: Commit</strong></p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>pyproject.toml
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;build(deps): gensbi + sbibm-jax&gt;=0.1.3, fix stale jax pin&quot;</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"build(deps): gensbi + sbibm-jax&gt;=0.1.3, fix stale jax pin"</span>
 </pre></div>
 </div>
 </section>
@@ -1245,14 +1245,14 @@ git<span class="w"> </span>-C<span class="w"> </span>/lhome/ific/a/aamerio/data/
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">task_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spherical_grf</span>
 
 <span class="nt">strategy</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;flow&quot;</span>
-<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;flux&quot;</span>
+<span class="w">  </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">"flow"</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">"flux"</span>
 
-<span class="c1"># Pipeline-side cond-id builder: &quot;healpix-rope&quot; (spherical RoPE on HEALPix</span>
-<span class="c1"># pixel-center 3D coords, gensbi.recipes.HealpixRope) or &quot;pos1d&quot; (1D</span>
+<span class="c1"># Pipeline-side cond-id builder: "healpix-rope" (spherical RoPE on HEALPix</span>
+<span class="c1"># pixel-center 3D coords, gensbi.recipes.HealpixRope) or "pos1d" (1D</span>
 <span class="c1"># sinusoidal ids over NEST order — the A/B baseline, see config_pos1d.yaml).</span>
 <span class="nt">ids</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">cond_kind</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;healpix-rope&quot;</span>
+<span class="w">  </span><span class="nt">cond_kind</span><span class="p">:</span><span class="w"> </span><span class="s">"healpix-rope"</span>
 
 <span class="nt">data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">nside</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
@@ -1276,8 +1276,8 @@ git<span class="w"> </span>-C<span class="w"> </span>/lhome/ific/a/aamerio/data/
 <span class="w">  </span><span class="nt">axes_dim</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">22</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">22</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">20</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># (x, y, z); sum = 64 = hidden/heads</span>
 <span class="w">  </span><span class="nt">theta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">              </span><span class="c1"># null -&gt; derived from HealpixRope(nside_bottleneck).theta</span>
 <span class="w">  </span><span class="nt">qkv_bias</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">  </span><span class="nt">param_dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float32&quot;</span>
-<span class="w">  </span><span class="nt">id_embedding_strategy</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;absolute&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;rope&quot;</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># model-side: apply RoPE to cond ids</span>
+<span class="w">  </span><span class="nt">param_dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"float32"</span>
+<span class="w">  </span><span class="nt">id_embedding_strategy</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"absolute"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"rope"</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># model-side: apply RoPE to cond ids</span>
 
 <span class="nt">optimizer</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">warmup_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span>
@@ -1293,7 +1293,7 @@ git<span class="w"> </span>-C<span class="w"> </span>/lhome/ific/a/aamerio/data/
 <span class="w">  </span><span class="nt">multistep</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">early_stopping</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">val_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
-<span class="w">  </span><span class="nt">experiment_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;spherical_grf_fm_healpix&quot;</span>
+<span class="w">  </span><span class="nt">experiment_id</span><span class="p">:</span><span class="w"> </span><span class="s">"spherical_grf_fm_healpix"</span>
 <span class="w">  </span><span class="nt">train_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">restore_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 
@@ -1311,13 +1311,13 @@ git<span class="w"> </span>-C<span class="w"> </span>/lhome/ific/a/aamerio/data/
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">task_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spherical_grf</span>
 
 <span class="nt">strategy</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;flow&quot;</span>
-<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;flux&quot;</span>
+<span class="w">  </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">"flow"</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">"flux"</span>
 
 <span class="c1"># 1D sinusoidal cond ids over NEST order — baseline arm of the A/B against</span>
 <span class="c1"># config_healpix.yaml (spherical HEALPix RoPE).</span>
 <span class="nt">ids</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">cond_kind</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pos1d&quot;</span>
+<span class="w">  </span><span class="nt">cond_kind</span><span class="p">:</span><span class="w"> </span><span class="s">"pos1d"</span>
 
 <span class="nt">data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">nside</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
@@ -1340,8 +1340,8 @@ git<span class="w"> </span>-C<span class="w"> </span>/lhome/ific/a/aamerio/data/
 <span class="w">  </span><span class="nt">axes_dim</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">64</span><span class="p p-Indicator">]</span><span class="w">           </span><span class="c1"># hidden_size = sum(axes_dim) * heads = 384</span>
 <span class="w">  </span><span class="nt">theta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">              </span><span class="c1"># null -&gt; Flux1Params default (10 * (dim_obs + dim_cond) = 510)</span>
 <span class="w">  </span><span class="nt">qkv_bias</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">  </span><span class="nt">param_dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float32&quot;</span>
-<span class="w">  </span><span class="nt">id_embedding_strategy</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;absolute&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pos1d&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">param_dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"float32"</span>
+<span class="w">  </span><span class="nt">id_embedding_strategy</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"absolute"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"pos1d"</span><span class="p p-Indicator">]</span>
 
 <span class="nt">optimizer</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">warmup_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span>
@@ -1357,7 +1357,7 @@ git<span class="w"> </span>-C<span class="w"> </span>/lhome/ific/a/aamerio/data/
 <span class="w">  </span><span class="nt">multistep</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">early_stopping</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">val_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
-<span class="w">  </span><span class="nt">experiment_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;spherical_grf_fm_pos1d&quot;</span>
+<span class="w">  </span><span class="nt">experiment_id</span><span class="p">:</span><span class="w"> </span><span class="s">"spherical_grf_fm_pos1d"</span>
 <span class="w">  </span><span class="nt">train_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">restore_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 
@@ -1409,15 +1409,15 @@ Debug modes (both CPU-safe, both accept --config):
 <ul class="simple">
 <li><p>[ ] <strong>Step 5: Replace the whole <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">---</span> <span class="pre">config</span> <span class="pre">(tune</span> <span class="pre">here)</span> <span class="pre">---</span></code> block</strong> (from <code class="docutils literal notranslate"><span class="pre">QUICK</span> <span class="pre">=</span> <span class="pre">...</span></code> through the <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">---...---</span></code> closing line, i.e. everything between the flags parsing and <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">make_encoder_params</span></code>) with:</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">QUICK</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;QUICK&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">QUICK</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"QUICK"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"1"</span>
 
 <span class="c1"># --- configuration (edit the YAML files, not this block) ------------------</span>
 <span class="n">BASE_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
 
-<span class="n">_parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Spherical GRF flow-matching NPE&quot;</span><span class="p">)</span>
+<span class="n">_parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Spherical GRF flow-matching NPE"</span><span class="p">)</span>
 <span class="n">_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-    <span class="s2">&quot;--config&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="s2">&quot;config_healpix.yaml&quot;</span><span class="p">),</span>
-    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;YAML run config: config/config_healpix.yaml or config/config_pos1d.yaml&quot;</span><span class="p">,</span>
+    <span class="s2">"--config"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">"config"</span><span class="p">,</span> <span class="s2">"config_healpix.yaml"</span><span class="p">),</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">"YAML run config: config/config_healpix.yaml or config/config_pos1d.yaml"</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">_args</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">()</span>
 <span class="n">CONFIG_PATH</span> <span class="o">=</span> <span class="p">(</span><span class="n">_args</span><span class="o">.</span><span class="n">config</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">_args</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
@@ -1427,60 +1427,60 @@ Debug modes (both CPU-safe, both accept --config):
     <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
 <span class="c1"># task / data</span>
-<span class="n">NSIDE</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;nside&quot;</span><span class="p">]</span>
+<span class="n">NSIDE</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"nside"</span><span class="p">]</span>
 <span class="n">NPIX</span> <span class="o">=</span> <span class="mi">12</span> <span class="o">*</span> <span class="n">NSIDE</span> <span class="o">**</span> <span class="mi">2</span>
-<span class="n">SEED</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;seed&quot;</span><span class="p">]</span>
+<span class="n">SEED</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"seed"</span><span class="p">]</span>
 <span class="n">DIM_THETA</span> <span class="o">=</span> <span class="mi">3</span>
-<span class="n">THETA_LABELS</span> <span class="o">=</span> <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\log A$&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;$n$&quot;</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;$\alpha$&quot;</span><span class="p">)</span>
+<span class="n">THETA_LABELS</span> <span class="o">=</span> <span class="p">(</span><span class="sa">r</span><span class="s2">"$\log A$"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"$n$"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"$\alpha$"</span><span class="p">)</span>
 
 <span class="c1"># HealSwin encoder geometry (bottleneck derived, never written twice)</span>
-<span class="n">_ENC</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">&quot;encoder&quot;</span><span class="p">]</span>
-<span class="n">EMBED_DIM</span> <span class="o">=</span> <span class="n">_ENC</span><span class="p">[</span><span class="s2">&quot;embed_dim&quot;</span><span class="p">]</span>
-<span class="n">DEPTHS</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_ENC</span><span class="p">[</span><span class="s2">&quot;depths&quot;</span><span class="p">])</span>
-<span class="n">ENC_NUM_HEADS</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_ENC</span><span class="p">[</span><span class="s2">&quot;num_heads&quot;</span><span class="p">])</span>
-<span class="n">WINDOW_SIZE</span> <span class="o">=</span> <span class="n">_ENC</span><span class="p">[</span><span class="s2">&quot;window_size&quot;</span><span class="p">]</span>
+<span class="n">_ENC</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">"encoder"</span><span class="p">]</span>
+<span class="n">EMBED_DIM</span> <span class="o">=</span> <span class="n">_ENC</span><span class="p">[</span><span class="s2">"embed_dim"</span><span class="p">]</span>
+<span class="n">DEPTHS</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_ENC</span><span class="p">[</span><span class="s2">"depths"</span><span class="p">])</span>
+<span class="n">ENC_NUM_HEADS</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_ENC</span><span class="p">[</span><span class="s2">"num_heads"</span><span class="p">])</span>
+<span class="n">WINDOW_SIZE</span> <span class="o">=</span> <span class="n">_ENC</span><span class="p">[</span><span class="s2">"window_size"</span><span class="p">]</span>
 <span class="n">NSIDE_BOTTLENECK</span> <span class="o">=</span> <span class="n">NSIDE</span> <span class="o">//</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">DEPTHS</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>  <span class="c1"># patch /2, then mergings</span>
 <span class="n">COND_TOKENS</span> <span class="o">=</span> <span class="mi">12</span> <span class="o">*</span> <span class="n">NSIDE_BOTTLENECK</span> <span class="o">**</span> <span class="mi">2</span>
 <span class="n">COND_FEATURES</span> <span class="o">=</span> <span class="n">EMBED_DIM</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">DEPTHS</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
 <span class="c1"># Flux1 model hyperparameters (model-side id_embedding_strategy lives here)</span>
 <span class="n">FLUX_PARAMS_DICT</span> <span class="o">=</span> <span class="n">parse_flux1_params</span><span class="p">(</span><span class="n">CONFIG_PATH</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">FLUX_PARAMS_DICT</span><span class="p">[</span><span class="s2">&quot;context_in_dim&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">COND_FEATURES</span><span class="p">,</span> <span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;model.context_in_dim=</span><span class="si">{</span><span class="n">FLUX_PARAMS_DICT</span><span class="p">[</span><span class="s1">&#39;context_in_dim&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> must equal &quot;</span>
-    <span class="sa">f</span><span class="s2">&quot;encoder features </span><span class="si">{</span><span class="n">COND_FEATURES</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">FLUX_PARAMS_DICT</span><span class="p">[</span><span class="s2">"context_in_dim"</span><span class="p">]</span> <span class="o">==</span> <span class="n">COND_FEATURES</span><span class="p">,</span> <span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"model.context_in_dim=</span><span class="si">{</span><span class="n">FLUX_PARAMS_DICT</span><span class="p">[</span><span class="s1">'context_in_dim'</span><span class="p">]</span><span class="si">}</span><span class="s2"> must equal "</span>
+    <span class="sa">f</span><span class="s2">"encoder features </span><span class="si">{</span><span class="n">COND_FEATURES</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-<span class="c1"># Pipeline-side cond-id builder: HealpixRope object or &quot;pos1d&quot; string.</span>
-<span class="n">COND_ID_KIND</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">][</span><span class="s2">&quot;cond_kind&quot;</span><span class="p">]</span>
-<span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">&quot;healpix-rope&quot;</span><span class="p">:</span>
+<span class="c1"># Pipeline-side cond-id builder: HealpixRope object or "pos1d" string.</span>
+<span class="n">COND_ID_KIND</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">"ids"</span><span class="p">][</span><span class="s2">"cond_kind"</span><span class="p">]</span>
+<span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">"healpix-rope"</span><span class="p">:</span>
     <span class="n">COND_STRATEGY</span> <span class="o">=</span> <span class="n">HealpixRope</span><span class="p">(</span><span class="n">nside</span><span class="o">=</span><span class="n">NSIDE_BOTTLENECK</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">FLUX_PARAMS_DICT</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">FLUX_PARAMS_DICT</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">COND_STRATEGY</span><span class="o">.</span><span class="n">theta</span>
-<span class="k">elif</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">&quot;pos1d&quot;</span><span class="p">:</span>
-    <span class="n">COND_STRATEGY</span> <span class="o">=</span> <span class="s2">&quot;pos1d&quot;</span>
+    <span class="k">if</span> <span class="n">FLUX_PARAMS_DICT</span><span class="p">[</span><span class="s2">"theta"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">FLUX_PARAMS_DICT</span><span class="p">[</span><span class="s2">"theta"</span><span class="p">]</span> <span class="o">=</span> <span class="n">COND_STRATEGY</span><span class="o">.</span><span class="n">theta</span>
+<span class="k">elif</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">"pos1d"</span><span class="p">:</span>
+    <span class="n">COND_STRATEGY</span> <span class="o">=</span> <span class="s2">"pos1d"</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown ids.cond_kind: </span><span class="si">{</span><span class="n">COND_ID_KIND</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown ids.cond_kind: </span><span class="si">{</span><span class="n">COND_ID_KIND</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># training / data loading</span>
-<span class="n">_TRAIN</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">&quot;training&quot;</span><span class="p">]</span>
-<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">&quot;batch_size&quot;</span><span class="p">]</span>
-<span class="n">VAL_BATCH_SIZE</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">&quot;val_batch_size&quot;</span><span class="p">]</span>
-<span class="n">NSTEPS</span> <span class="o">=</span> <span class="mi">5</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span>
+<span class="n">_TRAIN</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">"training"</span><span class="p">]</span>
+<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">"batch_size"</span><span class="p">]</span>
+<span class="n">VAL_BATCH_SIZE</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">"val_batch_size"</span><span class="p">]</span>
+<span class="n">NSTEPS</span> <span class="o">=</span> <span class="mi">5</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">"nsteps"</span><span class="p">]</span>
 <span class="n">NUM_WORKERS</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="nb">min</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span> <span class="ow">or</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">))</span>
-<span class="n">TRAIN_MODEL</span> <span class="o">=</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">&quot;train_model&quot;</span><span class="p">]</span>
-<span class="n">RESTORE_MODEL</span> <span class="o">=</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">&quot;restore_model&quot;</span><span class="p">]</span>
+<span class="n">TRAIN_MODEL</span> <span class="o">=</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">"train_model"</span><span class="p">]</span>
+<span class="n">RESTORE_MODEL</span> <span class="o">=</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">"restore_model"</span><span class="p">]</span>
 
 <span class="c1"># evaluation</span>
-<span class="n">_EVAL</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">&quot;evaluation&quot;</span><span class="p">]</span>
-<span class="n">EVAL_OBSERVATIONS</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_EVAL</span><span class="p">[</span><span class="s2">&quot;observations&quot;</span><span class="p">])</span>
-<span class="n">NUM_POSTERIOR_SAMPLES</span> <span class="o">=</span> <span class="mi">64</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_EVAL</span><span class="p">[</span><span class="s2">&quot;num_posterior_samples&quot;</span><span class="p">]</span>
-<span class="n">SAMPLE_STEP_SIZE</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_EVAL</span><span class="p">[</span><span class="s2">&quot;sample_step_size&quot;</span><span class="p">]</span>
-<span class="n">TARP_PAIRS</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_EVAL</span><span class="p">[</span><span class="s2">&quot;tarp_pairs&quot;</span><span class="p">]</span>
-<span class="n">TARP_POSTERIOR_SAMPLES</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_EVAL</span><span class="p">[</span><span class="s2">&quot;tarp_posterior_samples&quot;</span><span class="p">]</span>
+<span class="n">_EVAL</span> <span class="o">=</span> <span class="n">CONFIG</span><span class="p">[</span><span class="s2">"evaluation"</span><span class="p">]</span>
+<span class="n">EVAL_OBSERVATIONS</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_EVAL</span><span class="p">[</span><span class="s2">"observations"</span><span class="p">])</span>
+<span class="n">NUM_POSTERIOR_SAMPLES</span> <span class="o">=</span> <span class="mi">64</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_EVAL</span><span class="p">[</span><span class="s2">"num_posterior_samples"</span><span class="p">]</span>
+<span class="n">SAMPLE_STEP_SIZE</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_EVAL</span><span class="p">[</span><span class="s2">"sample_step_size"</span><span class="p">]</span>
+<span class="n">TARP_PAIRS</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_EVAL</span><span class="p">[</span><span class="s2">"tarp_pairs"</span><span class="p">]</span>
+<span class="n">TARP_POSTERIOR_SAMPLES</span> <span class="o">=</span> <span class="mi">8</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="n">_EVAL</span><span class="p">[</span><span class="s2">"tarp_posterior_samples"</span><span class="p">]</span>
 
-<span class="n">EXPERIMENT_ID</span> <span class="o">=</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">&quot;experiment_id&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;_quick&quot;</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-<span class="n">CHECKPOINT_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">,</span> <span class="n">EXPERIMENT_ID</span><span class="p">)</span>
-<span class="n">IMGS_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="s2">&quot;imgs&quot;</span><span class="p">)</span>
-<span class="n">RESULTS_FILE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">EXPERIMENT_ID</span><span class="si">}</span><span class="s2">_results.txt&quot;</span><span class="p">)</span>
+<span class="n">EXPERIMENT_ID</span> <span class="o">=</span> <span class="n">_TRAIN</span><span class="p">[</span><span class="s2">"experiment_id"</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="s2">"_quick"</span> <span class="k">if</span> <span class="n">QUICK</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+<span class="n">CHECKPOINT_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="s2">"checkpoints"</span><span class="p">,</span> <span class="n">EXPERIMENT_ID</span><span class="p">)</span>
+<span class="n">IMGS_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="s2">"imgs"</span><span class="p">)</span>
+<span class="n">RESULTS_FILE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BASE_DIR</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">EXPERIMENT_ID</span><span class="si">}</span><span class="s2">_results.txt"</span><span class="p">)</span>
 <span class="c1"># ------------------------------------------------------------------------</span>
 </pre></div>
 </div>
@@ -1495,26 +1495,26 @@ Debug modes (both CPU-safe, both accept --config):
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">make_training_config</span><span class="p">():</span>
     <span class="n">cfg</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="o">.</span><span class="n">get_default_training_config</span><span class="p">()</span>
     <span class="n">cfg</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">parse_training_config</span><span class="p">(</span><span class="n">CONFIG_PATH</span><span class="p">))</span>
-    <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;checkpoint_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">CHECKPOINT_DIR</span>
+    <span class="n">cfg</span><span class="p">[</span><span class="s2">"checkpoint_dir"</span><span class="p">]</span> <span class="o">=</span> <span class="n">CHECKPOINT_DIR</span>
     <span class="k">if</span> <span class="n">QUICK</span><span class="p">:</span>
-        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;nsteps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NSTEPS</span>
-        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;warmup_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;val_every&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-        <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;decay_transition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">"nsteps"</span><span class="p">]</span> <span class="o">=</span> <span class="n">NSTEPS</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">"warmup_steps"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">"val_every"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">cfg</span><span class="p">[</span><span class="s2">"decay_transition"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">return</span> <span class="n">cfg</span>
 </pre></div>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">make_pipeline</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">val_loader</span><span class="p">):</span>
-    <span class="c1"># Cond ids are first-class now: pass &quot;pos1d&quot; or a HealpixRope IdStrategy</span>
+    <span class="c1"># Cond ids are first-class now: pass "pos1d" or a HealpixRope IdStrategy</span>
     <span class="c1"># straight to the pipeline. The model-side vocabulary (Flux1Params</span>
-    <span class="c1"># id_embedding_strategy, e.g. (&quot;absolute&quot;, &quot;rope&quot;)) is configured</span>
+    <span class="c1"># id_embedding_strategy, e.g. ("absolute", "rope")) is configured</span>
     <span class="c1"># independently in the YAML `model:` section.</span>
     <span class="k">return</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
         <span class="n">model</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">val_loader</span><span class="p">,</span>
         <span class="n">dim_obs</span><span class="o">=</span><span class="n">DIM_THETA</span><span class="p">,</span> <span class="n">dim_cond</span><span class="o">=</span><span class="n">COND_TOKENS</span><span class="p">,</span>
         <span class="n">method</span><span class="o">=</span><span class="n">FlowMatchingMethod</span><span class="p">(),</span>
         <span class="n">ch_obs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ch_cond</span><span class="o">=</span><span class="n">COND_FEATURES</span><span class="p">,</span>
-        <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;absolute&quot;</span><span class="p">,</span> <span class="n">COND_STRATEGY</span><span class="p">),</span>
+        <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="p">(</span><span class="s2">"absolute"</span><span class="p">,</span> <span class="n">COND_STRATEGY</span><span class="p">),</span>
         <span class="n">training_config</span><span class="o">=</span><span class="n">make_training_config</span><span class="p">(),</span>
     <span class="p">)</span>
 </pre></div>
@@ -1523,13 +1523,13 @@ Debug modes (both CPU-safe, both accept --config):
 <ul class="simple">
 <li><p>[ ] <strong>Step 7: Rewrite the SMOKE block</strong> at the bottom of the file:</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SMOKE&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"SMOKE"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"1"</span><span class="p">:</span>
     <span class="c1"># Forward-shape smoke check: no data, no training; runs on CPU.</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">SphericalGRFModel</span><span class="p">(</span><span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
     <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
     <span class="n">B</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">obs_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">DIM_THETA</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># (1, 3, 2) — broadcast over batch</span>
-    <span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">&quot;healpix-rope&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">COND_ID_KIND</span> <span class="o">==</span> <span class="s2">"healpix-rope"</span><span class="p">:</span>
         <span class="n">cond_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">COND_STRATEGY</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">COND_TOKENS</span><span class="p">)</span>  <span class="c1"># (1, 48, 3) float32</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cond_ids</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">init_ids_1d</span><span class="p">(</span><span class="n">COND_TOKENS</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># (1, 48, 2)</span>
@@ -1540,9 +1540,9 @@ Debug modes (both CPU-safe, both accept --config):
         <span class="n">cond</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">B</span><span class="p">,</span> <span class="n">NPIX</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
         <span class="n">cond_ids</span><span class="o">=</span><span class="n">cond_ids</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;vector field shape:&quot;</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"vector field shape:"</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">DIM_THETA</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;forward smoke check OK&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"forward smoke check OK"</span><span class="p">)</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -1560,14 +1560,14 @@ Debug modes (both CPU-safe, both accept --config):
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lhome/ific/a/aamerio/data/github/GenSBI-examples
 git<span class="w"> </span>add<span class="w"> </span>examples/sbi-benchmarks/spherical_grf/train-spherical-grf.py<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>examples/sbi-benchmarks/spherical_grf/config/
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: spherical GRF flow-matching example (HealSwin + healpix-rope ids)</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"feat: spherical GRF flow-matching example (HealSwin + healpix-rope ids)</span>
 
 <span class="s2">Ported from HEAL-SWIN-nnx 0748eda; YAML-config layout per the lensing</span>
 <span class="s2">convention; the healpix-vs-pos1d A/B is now two config files. Uses the</span>
 <span class="s2">first-class HealpixRope pipeline strategy — the fake-strategy +</span>
 <span class="s2">cond_ids-override workaround is gone.</span>
 
-<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;"</span>
 </pre></div>
 </div>
 </section>
@@ -1590,7 +1590,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 #
 # Pick the A/B arm by editing `config` below (config_healpix.yaml or
 # config_pos1d.yaml). `initialdir` makes the condor_logs/ paths resolve
-# relative to this file&#39;s own directory; the executable is given absolute, so
+# relative to this file's own directory; the executable is given absolute, so
 # this can be submitted from anywhere. Edit `repo_root` if your checkout
 # lives elsewhere.
 repo_root   = /lustre/ific.uv.es/ml/ific088/github/GenSBI-examples
@@ -1600,7 +1600,7 @@ config      = config_healpix.yaml
 universe   = vanilla
 initialdir = $(example_dir)/sub
 executable = $(example_dir)/sub/run_spherical_grf.sh
-arguments  = &quot;$(example_dir) $(config)&quot;
+arguments  = "$(example_dir) $(config)"
 getenv     = True
 
 request_cpus   = 8
@@ -1627,16 +1627,16 @@ queue
 <span class="c1">#   $1 = example directory, $2 = config file name (inside $1/config/)</span>
 <span class="nb">set</span><span class="w"> </span>-euo<span class="w"> </span>pipefail
 
-<span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span>
+<span class="nb">cd</span><span class="w"> </span><span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span>
 
 <span class="c1"># The script picks the device itself: JAX_PLATFORMS=cuda for the main</span>
 <span class="c1"># process, cpu for spawned grain workers. Unset any inherited value so a</span>
-<span class="c1"># stray JAX_PLATFORMS=cpu from the submit environment can&#39;t force CPU-only</span>
-<span class="c1"># training. Uses the python on PATH (getenv=True passes the submitter&#39;s</span>
+<span class="c1"># stray JAX_PLATFORMS=cpu from the submit environment can't force CPU-only</span>
+<span class="c1"># training. Uses the python on PATH (getenv=True passes the submitter's</span>
 <span class="c1"># environment) — activate an env with gensbi + heal-swin-nnx + sbibm-jax</span>
 <span class="c1"># before condor_submit.</span>
 <span class="nb">unset</span><span class="w"> </span>JAX_PLATFORMS
-<span class="nb">exec</span><span class="w"> </span>python<span class="w"> </span>train-spherical-grf.py<span class="w"> </span>--config<span class="w"> </span><span class="s2">&quot;config/</span><span class="nv">$2</span><span class="s2">&quot;</span>
+<span class="nb">exec</span><span class="w"> </span>python<span class="w"> </span>train-spherical-grf.py<span class="w"> </span>--config<span class="w"> </span><span class="s2">"config/</span><span class="nv">$2</span><span class="s2">"</span>
 </pre></div>
 </div>
 <p>Run: <code class="docutils literal notranslate"><span class="pre">chmod</span> <span class="pre">+x</span> <span class="pre">examples/sbi-benchmarks/spherical_grf/sub/run_spherical_grf.sh</span></code></p>
@@ -1661,9 +1661,9 @@ queue
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/lhome/ific/a/aamerio/data/github/GenSBI-examples
 git<span class="w"> </span>add<span class="w"> </span>examples/sbi-benchmarks/spherical_grf/sub/
-git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: HTCondor submit files for the spherical GRF example (A/B via config arg)</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"feat: HTCondor submit files for the spherical GRF example (A/B via config arg)</span>
 
-<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;&quot;</span>
+<span class="s2">Co-Authored-By: Claude Fable 5 &lt;noreply@anthropic.com&gt;"</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -1757,8 +1757,8 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1796,7 +1796,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

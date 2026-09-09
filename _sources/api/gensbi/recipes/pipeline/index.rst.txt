@@ -249,6 +249,47 @@ Module Contents
           !! processed by numpydoc !!
 
 
+   .. py:method:: _save_intermediate_checkpoint(checkpoint_manager, checkpoint_manager_ema, step)
+
+      
+      Save an intermediate (mid-training) model + EMA checkpoint.
+
+      Distinct from :meth:`save_model`: writes to the ``wip``/``wip_ema``
+      subdirectories (never the final-checkpoint path/step key) so a
+      wall-time kill mid-save can never corrupt or shadow the final
+      checkpoint that eval restores. ``checkpoint_manager`` /
+      ``checkpoint_manager_ema`` are long-lived managers (``max_to_keep``
+      rotates old intermediates away automatically); orbax writes are
+      atomic (tmp dir + rename), so a kill mid-save always leaves the
+      previous intermediate intact.
+
+      ``CheckpointManager.save`` returns ``False`` (and does nothing) when
+      orbax's ``should_save(step)`` says no -- e.g. ``step`` is not past
+      the manager's last-seen step, which would otherwise silently no-op
+      every save on a resubmission into a directory with leftover state
+      higher than the new run's steps. ``train()`` clears stale ``wip``
+      dirs up front specifically to keep this from happening; this is a
+      belt-and-braces check so a `False` return is never reported as a
+      success.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
    .. py:method:: _wrap_model()
       :abstractmethod:
 
@@ -559,6 +600,43 @@ Module Contents
 
       :returns: Log-probabilities.
       :rtype: Array
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: restore_intermediate(step=None)
+
+      
+      Restore model and EMA model from an intermediate ``wip`` checkpoint.
+
+      Mirrors :meth:`restore_model` exactly (item template, dtype cast,
+      ``nnx.merge``) but targets the ``wip``/``wip_ema`` subdirectories
+      written by periodic ``training.save_every`` checkpoints, not the
+      final checkpoint. This is the recovery path after a wall-time kill:
+      the final checkpoint was never written, but the last intermediate
+      was.
+
+      :param step: Intermediate step to restore. If None (default), restores the
+                   latest step found under ``wip``.
+      :type step: int, optional
+
+      :returns: **step** -- The step that was actually restored (useful when ``step=None``).
+      :rtype: int
 
 
 

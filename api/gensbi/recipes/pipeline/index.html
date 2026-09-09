@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
@@ -39,10 +39,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -782,6 +782,28 @@ Subclasses should implement model creation, default parameter setup, loss functi
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._save_intermediate_checkpoint">
+<span class="sig-name descname"><span class="pre">_save_intermediate_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_manager</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_manager_ema</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._save_intermediate_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._save_intermediate_checkpoint" title="Link to this definition">#</a></dt>
+<dd><p>Save an intermediate (mid-training) model + EMA checkpoint.</p>
+<p>Distinct from <a class="reference internal" href="#gensbi.recipes.pipeline.AbstractPipeline.save_model" title="gensbi.recipes.pipeline.AbstractPipeline.save_model"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save_model()</span></code></a>: writes to the <code class="docutils literal notranslate"><span class="pre">wip</span></code>/<code class="docutils literal notranslate"><span class="pre">wip_ema</span></code>
+subdirectories (never the final-checkpoint path/step key) so a
+wall-time kill mid-save can never corrupt or shadow the final
+checkpoint that eval restores. <code class="docutils literal notranslate"><span class="pre">checkpoint_manager</span></code> /
+<code class="docutils literal notranslate"><span class="pre">checkpoint_manager_ema</span></code> are long-lived managers (<code class="docutils literal notranslate"><span class="pre">max_to_keep</span></code>
+rotates old intermediates away automatically); orbax writes are
+atomic (tmp dir + rename), so a kill mid-save always leaves the
+previous intermediate intact.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CheckpointManager.save</span></code> returns <code class="docutils literal notranslate"><span class="pre">False</span></code> (and does nothing) when
+orbax’s <code class="docutils literal notranslate"><span class="pre">should_save(step)</span></code> says no – e.g. <code class="docutils literal notranslate"><span class="pre">step</span></code> is not past
+the manager’s last-seen step, which would otherwise silently no-op
+every save on a resubmission into a directory with leftover state
+higher than the new run’s steps. <code class="docutils literal notranslate"><span class="pre">train()</span></code> clears stale <code class="docutils literal notranslate"><span class="pre">wip</span></code>
+dirs up front specifically to keep this from happening; this is a
+belt-and-braces check so a <cite>False</cite> return is never reported as a
+success.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._wrap_model">
 <span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">_wrap_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._wrap_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._wrap_model" title="Link to this definition">#</a></dt>
 <dd><p>Wrap the model for evaluation (either using JointWrapper or ConditionalWrapper).</p>
@@ -930,6 +952,30 @@ model. This is a thin wrapper over
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.restore_intermediate">
+<span class="sig-name descname"><span class="pre">restore_intermediate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.restore_intermediate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.restore_intermediate" title="Link to this definition">#</a></dt>
+<dd><p>Restore model and EMA model from an intermediate <code class="docutils literal notranslate"><span class="pre">wip</span></code> checkpoint.</p>
+<p>Mirrors <a class="reference internal" href="#gensbi.recipes.pipeline.AbstractPipeline.restore_model" title="gensbi.recipes.pipeline.AbstractPipeline.restore_model"><code class="xref py py-meth docutils literal notranslate"><span class="pre">restore_model()</span></code></a> exactly (item template, dtype cast,
+<code class="docutils literal notranslate"><span class="pre">nnx.merge</span></code>) but targets the <code class="docutils literal notranslate"><span class="pre">wip</span></code>/<code class="docutils literal notranslate"><span class="pre">wip_ema</span></code> subdirectories
+written by periodic <code class="docutils literal notranslate"><span class="pre">training.save_every</span></code> checkpoints, not the
+final checkpoint. This is the recovery path after a wall-time kill:
+the final checkpoint was never written, but the last intermediate
+was.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>step</strong> (<em>int</em><em>, </em><em>optional</em>) – Intermediate step to restore. If None (default), restores the
+latest step found under <code class="docutils literal notranslate"><span class="pre">wip</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>step</strong> – The step that was actually restored (useful when <code class="docutils literal notranslate"><span class="pre">step=None</span></code>).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1329,6 +1375,7 @@ AdamW moment accumulation and make optax.ema unable to integrate
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._make_model"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._make_model()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._restore_best_state"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._restore_best_state()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._run_validation"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._run_validation()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._save_intermediate_checkpoint"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._save_intermediate_checkpoint()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._wrap_model"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._wrap_model()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.export_safetensors"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.export_safetensors()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.get_default_params"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.get_default_params()</span></code></a></li>
@@ -1341,6 +1388,7 @@ AdamW moment accumulation and make optax.ema unable to integrate
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.import_safetensors"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.import_safetensors()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.init_pipeline_from_config"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.init_pipeline_from_config()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.log_prob"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.log_prob()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.restore_intermediate"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.restore_intermediate()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.restore_model"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.restore_model()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.sample"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.sample()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.sample_batched"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.sample_batched()</span></code></a></li>
@@ -1393,8 +1441,8 @@ AdamW moment accumulation and make optax.ema unable to integrate
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1432,7 +1480,7 @@ AdamW moment accumulation and make optax.ema unable to integrate
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

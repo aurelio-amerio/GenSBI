@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -772,7 +774,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="AttentionBlock">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.AttentionBlock">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AttentionBlock</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Self-attention block with a fixed fp32 compute island.</span>
+<span class="w">    </span><span class="sd">"""Self-attention block with a fixed fp32 compute island.</span>
 
 <span class="sd">    ``flax.nnx.MultiHeadAttention`` (flax 0.12.7) computes its softmax in</span>
 <span class="sd">    whatever ``dtype`` it is given -- there is no internal fp32 upcast for</span>
@@ -781,23 +783,23 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    this block keeps *all* of its internal math (LayerNorm + MultiHeadAttention)</span>
 <span class="sd">    at ``dtype=jnp.float32``, ignoring the ``dtype`` compute-precision knob for</span>
 <span class="sd">    those internals. This is a deliberately larger fp32 island than a single</span>
-<span class="sd">    softmax op, but the bulk of the model&#39;s FLOPs live in the ``DenseBlock``</span>
+<span class="sd">    softmax op, but the bulk of the model's FLOPs live in the ``DenseBlock``</span>
 <span class="sd">    MLP stack (``widening_factor`` x wider), which does honor the bf16</span>
 <span class="sd">    ``dtype`` knob, so this island has a small cost in practice.</span>
 
-<span class="sd">    The island is for the *math* only: the block&#39;s output (after the</span>
+<span class="sd">    The island is for the *math* only: the block's output (after the</span>
 <span class="sd">    optional skip connection) is downcast to the requested ``dtype`` before</span>
-<span class="sd">    being returned, mirroring the codebase&#39;s established fp32-island idiom</span>
-<span class="sd">    (e.g. ``QKNorm.__call__``&#39;s ``.astype(v.dtype)`` in ``flux1/layers.py``).</span>
+<span class="sd">    being returned, mirroring the codebase's established fp32-island idiom</span>
+<span class="sd">    (e.g. ``QKNorm.__call__``'s ``.astype(v.dtype)`` in ``flux1/layers.py``).</span>
 <span class="sd">    Without this downcast, the fp32 residual (``x_in``, captured post</span>
-<span class="sd">    fp32-LayerNorm) would silently re-promote every downstream block&#39;s</span>
-<span class="sd">    output back to fp32 via JAX&#39;s bf16+fp32 promotion rule on the skip-add,</span>
-<span class="sd">    defeating the bf16 knob&#39;s memory/bandwidth benefit for the whole</span>
+<span class="sd">    fp32-LayerNorm) would silently re-promote every downstream block's</span>
+<span class="sd">    output back to fp32 via JAX's bf16+fp32 promotion rule on the skip-add,</span>
+<span class="sd">    defeating the bf16 knob's memory/bandwidth benefit for the whole</span>
 <span class="sd">    inter-block residual stream.</span>
 
 <span class="sd">    ``param_dtype`` (master-weight storage) is unaffected and still threads</span>
 <span class="sd">    through normally.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -813,7 +815,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.AttentionBlock.skip_connection">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">skip_connection</span> <span class="o">=</span> <span class="n">skip_connection</span></div>
 
-        <span class="c1"># Only used to downcast the block&#39;s output back to compute dtype</span>
+        <span class="c1"># Only used to downcast the block's output back to compute dtype</span>
         <span class="c1"># after the fp32-island math below (see class docstring).</span>
 <div class="viewcode-block" id="AttentionBlock.dtype">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.AttentionBlock.dtype">[docs]</a>
@@ -858,19 +860,19 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="DenseBlock">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DenseBlock</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;MLP block (the FLOPs-dominant part of the transformer) with an fp32</span>
+<span class="w">    </span><span class="sd">"""MLP block (the FLOPs-dominant part of the transformer) with an fp32</span>
 <span class="sd">    LayerNorm island.</span>
 
-<span class="sd">    The LayerNorm math runs in fp32 (mirrors ``AttentionBlock``&#39;s</span>
+<span class="sd">    The LayerNorm math runs in fp32 (mirrors ``AttentionBlock``'s</span>
 <span class="sd">    normalization treatment); the wide hidden-layer matmuls run in the</span>
-<span class="sd">    requested compute ``dtype``. The block&#39;s output (after the context-merge</span>
+<span class="sd">    requested compute ``dtype``. The block's output (after the context-merge</span>
 <span class="sd">    and optional skip connection) is downcast to ``dtype`` before being</span>
 <span class="sd">    returned -- otherwise the fp32 residual (``x_in``, captured post</span>
 <span class="sd">    fp32-LayerNorm) would silently re-promote the output back to fp32 via</span>
-<span class="sd">    JAX&#39;s bf16+fp32 promotion rule on the skip-add, defeating the bf16</span>
-<span class="sd">    knob&#39;s memory/bandwidth benefit for the whole inter-block residual</span>
+<span class="sd">    JAX's bf16+fp32 promotion rule on the skip-add, defeating the bf16</span>
+<span class="sd">    knob's memory/bandwidth benefit for the whole inter-block residual</span>
 <span class="sd">    stream (see ``AttentionBlock`` docstring for the same pattern).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -888,7 +890,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.skip_connection">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">skip_connection</span> <span class="o">=</span> <span class="n">skip_connection</span></div>
 
-        <span class="c1"># Only used to downcast the block&#39;s output back to compute dtype</span>
+        <span class="c1"># Only used to downcast the block's output back to compute dtype</span>
         <span class="c1"># after the fp32-island LayerNorm math (see class docstring).</span>
 <div class="viewcode-block" id="DenseBlock.dtype">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.dtype">[docs]</a>
@@ -896,7 +898,7 @@ window.runMermaid = runMermaid;</script>
 
         <span class="n">n_features</span> <span class="o">=</span> <span class="n">din</span>
         <span class="c1"># fp32 island: LayerNorm stays fp32 regardless of the compute dtype</span>
-        <span class="c1"># knob (mirrors AttentionBlock&#39;s normalization treatment).</span>
+        <span class="c1"># knob (mirrors AttentionBlock's normalization treatment).</span>
 <div class="viewcode-block" id="DenseBlock.layer_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.layer_norm">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span>
@@ -979,7 +981,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Transformer">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Transformer</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A transformer stack.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A transformer stack."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1051,7 +1053,7 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># now we define attention and dense blocks</span>
         <span class="n">attention_blocks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">dense_blocks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="c1"># fp32 island: the final norm feeds directly into the model&#39;s output</span>
+        <span class="c1"># fp32 island: the final norm feeds directly into the model's output</span>
         <span class="c1"># projection, so it stays fp32 regardless of the compute dtype knob.</span>
 <div class="viewcode-block" id="Transformer.layer_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.layer_norm">[docs]</a>
@@ -1111,7 +1113,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">elif</span> <span class="n">mask</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
                 <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mask must have ndim 2 or 3, got </span><span class="si">{</span><span class="n">mask</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mask must have ndim 2 or 3, got </span><span class="si">{</span><span class="n">mask</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
 
         <span class="n">x</span> <span class="o">=</span> <span class="n">inputs</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">):</span>
@@ -1151,8 +1153,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1190,7 +1192,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

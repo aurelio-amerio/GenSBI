@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,13 +757,13 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.experimental.models.fielddit.codec</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Conv U-Net halves and the patch boundary for FieldDiT.</span>
+<span></span><span class="sd">"""Conv U-Net halves and the patch boundary for FieldDiT.</span>
 
 <span class="sd">ObsEncoder (conv down, time-only modulation, captures SiD2 skips) and</span>
 <span class="sd">ObsDecoder (conv up, residual skips, time+cond modulation, zero-init final</span>
 <span class="sd">conv) sandwich the MMDiT bottleneck; Tokenizer/Untokenizer cross the</span>
 <span class="sd">patchify boundary.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -778,7 +780,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Downsample2D">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.Downsample2D">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Downsample2D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stride-2 conv that also changes channel count (asymmetric pad, AE-style).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Stride-2 conv that also changes channel count (asymmetric pad, AE-style)."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
@@ -801,7 +803,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Downsample2D.__call__">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.Downsample2D.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"constant"</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
 </div>
 
@@ -810,7 +812,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Upsample2D">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.Upsample2D">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Upsample2D</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Nearest-neighbour 2x upsample + conv that also changes channel count.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Nearest-neighbour 2x upsample + conv that also changes channel count."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
@@ -834,7 +836,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.Upsample2D.__call__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
         <span class="n">b</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">h</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">w</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="p">),</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">h</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">w</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="p">),</span> <span class="n">method</span><span class="o">=</span><span class="s2">"nearest"</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
 </div>
 
@@ -843,14 +845,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ObsEncoder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.ObsEncoder">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ObsEncoder</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Conv encoder: down-sampling stages with time-only AdaGN-zero modulation.</span>
+<span class="w">    </span><span class="sd">"""Conv encoder: down-sampling stages with time-only AdaGN-zero modulation.</span>
 
 <span class="sd">    ``widths`` has length ``D + 1`` (one width per resolution incl. the</span>
 <span class="sd">    bottleneck). Stage ``j`` (j = 0..D-1) runs ``res_blocks`` blocks at width</span>
 <span class="sd">    ``widths[j]``, then downsamples ``widths[j] -&gt; widths[j+1]``. Returns the</span>
 <span class="sd">    bottleneck feature plus per-stage ``pos_skips`` (pre-downsample) and</span>
 <span class="sd">    ``neg_skips`` (post-downsample) for the SiD2 residual decoder.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -926,16 +928,16 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ObsDecoder">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.ObsDecoder">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ObsDecoder</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Conv decoder: SiD2 residual skips + time+cond AdaGN-zero modulation.</span>
+<span class="w">    </span><span class="sd">"""Conv decoder: SiD2 residual skips + time+cond AdaGN-zero modulation.</span>
 
 <span class="sd">    Mirrors ``ObsEncoder``. ``self.up.layers[i]`` corresponds to encoder stage</span>
 <span class="sd">    ``j = depth - 1 - i``. Per stage: subtract the matching ``neg_skip``,</span>
 <span class="sd">    upsample ``widths[j+1] -&gt; widths[j]``, add the matching ``pos_skip``, then</span>
-<span class="sd">    run the stage&#39;s blocks. The final conv is zero-initialized so the velocity</span>
+<span class="sd">    run the stage's blocks. The final conv is zero-initialized so the velocity</span>
 <span class="sd">    field is exactly zero at initialization.</span>
 
 <span class="sd">    ``out_channels`` is the channel count of the produced velocity field.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -993,7 +995,7 @@ window.runMermaid = runMermaid;</script>
 
         <span class="c1"># models-emit-fp32 contract: the final zero-init projection is</span>
         <span class="c1"># constructed with dtype=jnp.float32 (never a post-hoc .astype),</span>
-        <span class="c1"># regardless of the compute-dtype knob -- mirrors flux1&#39;s LastLayer.</span>
+        <span class="c1"># regardless of the compute-dtype knob -- mirrors flux1's LastLayer.</span>
 <div class="viewcode-block" id="ObsDecoder.conv_out">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.ObsDecoder.conv_out">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">conv_out</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Conv</span><span class="p">(</span>
@@ -1031,7 +1033,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Tokenizer">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.Tokenizer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Tokenizer</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Patchify a conv feature map and project to ``hidden_size`` tokens.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Patchify a conv feature map and project to ``hidden_size`` tokens."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
@@ -1065,11 +1067,11 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Untokenizer">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/fielddit/codec/index.html#gensbi.experimental.models.fielddit.codec.Untokenizer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Untokenizer</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Project tokens back to patch pixels and depatchify to a conv feature map.</span>
+<span class="w">    </span><span class="sd">"""Project tokens back to patch pixels and depatchify to a conv feature map.</span>
 
 <span class="sd">    ``grid`` is the ``(h, w)`` token grid (``feat_h // p``, ``feat_w // p``),</span>
 <span class="sd">    passed to the (now grid-aware) ``depatchify_2d``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">patch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">,</span>
@@ -1084,7 +1086,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span></div>
 
         <span class="c1"># bound the transformer residual stream before re-entering conv space</span>
-        <span class="c1"># (Flux1 exits through LastLayer&#39;s norm for the same reason). fp32</span>
+        <span class="c1"># (Flux1 exits through LastLayer's norm for the same reason). fp32</span>
         <span class="c1"># island: its raw output feeds directly into ``self.proj`` (a</span>
         <span class="c1"># compute-dtype Linear) below, which self-heals the downcast via its</span>
         <span class="c1"># own promote_dtype -- no explicit ``.astype`` needed here.</span>
@@ -1146,8 +1148,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1185,7 +1187,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

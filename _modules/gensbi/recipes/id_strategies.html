@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,21 +757,21 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.recipes.id_strategies</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Structured id-builder strategies for the recipe pipelines.</span>
+<span></span><span class="sd">"""Structured id-builder strategies for the recipe pipelines.</span>
 
-<span class="sd">Two DIFFERENT vocabularies share the word &quot;rope&quot; — they collided once</span>
+<span class="sd">Two DIFFERENT vocabularies share the word "rope" — they collided once</span>
 <span class="sd">(2026-07-19 handoff) and are deliberately kept distinct:</span>
 
 <span class="sd">- **Model-side** strategy strings (e.g. ``Flux1Params.id_embedding_strategy``):</span>
-<span class="sd">  ``&quot;rope&quot;`` means *apply RoPE to whatever ids arrive at the forward pass*.</span>
-<span class="sd">- **Pipeline-side** builder strategies (``ConditionalPipeline``&#39;s</span>
-<span class="sd">  ``id_embedding_strategy``): strings like ``&quot;rope1d&quot;``/``&quot;rope2d&quot;`` — and the</span>
+<span class="sd">  ``"rope"`` means *apply RoPE to whatever ids arrive at the forward pass*.</span>
+<span class="sd">- **Pipeline-side** builder strategies (``ConditionalPipeline``'s</span>
+<span class="sd">  ``id_embedding_strategy``): strings like ``"rope1d"``/``"rope2d"`` — and the</span>
 <span class="sd">  objects in this module — *build* the id arrays themselves.</span>
 
 <span class="sd">A :class:`HealpixRope` pipeline strategy pairs with model-side</span>
-<span class="sd">``(&quot;absolute&quot;, &quot;rope&quot;)`` plus a 3-entry even ``axes_dim`` summing to the</span>
+<span class="sd">``("absolute", "rope")`` plus a 3-entry even ``axes_dim`` summing to the</span>
 <span class="sd">per-head dim (e.g. ``(22, 22, 20)`` for 64).</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">runtime_checkable</span>
@@ -785,14 +787,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="IdStrategy">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.id_strategies.IdStrategy">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">IdStrategy</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Structural interface for pipeline id-builder strategy objects.</span>
+<span class="w">    </span><span class="sd">"""Structural interface for pipeline id-builder strategy objects.</span>
 
 <span class="sd">    Any object with a ``name`` and a ``build(dim) -&gt; (ids, resolved_dim)``</span>
 <span class="sd">    method can be passed in an ``id_embedding_strategy`` tuple slot; the</span>
 <span class="sd">    pipeline calls ``build`` with the corresponding ``dim_obs``/``dim_cond``.</span>
 <span class="sd">    Strategies own their full geometry — unlike the string strategies they</span>
 <span class="sd">    receive no ``semantic_id``/``size``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="IdStrategy.name">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/id_strategies/index.html#gensbi.recipes.id_strategies.IdStrategy.name">[docs]</a>
@@ -802,7 +804,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="IdStrategy.build">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.id_strategies.IdStrategy.build">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``(ids, resolved_dim)`` for a stream of ``dim`` tokens.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return ``(ids, resolved_dim)`` for a stream of ``dim`` tokens."""</span>
         <span class="o">...</span></div>
 </div>
 
@@ -812,7 +814,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="HealpixRope">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.id_strategies.HealpixRope">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">HealpixRope</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spherical RoPE ids for tokens on a HEALPix grid (name: &quot;healpix-rope&quot;).</span>
+<span class="w">    </span><span class="sd">"""Spherical RoPE ids for tokens on a HEALPix grid (name: "healpix-rope").</span>
 
 <span class="sd">    Wraps :func:`gensbi.recipes.utils.init_ids_healpix` (see there for the</span>
 <span class="sd">    method and its rationale) with the geometry needed to build the ids —</span>
@@ -825,7 +827,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        HEALPix resolution of the *token* grid (power of 2).</span>
 <span class="sd">    base_pixels : sequence of int, optional</span>
 <span class="sd">        Base pixels (0..11) covered by the grid; ``None`` = full sky.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="HealpixRope.nside">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/id_strategies/index.html#gensbi.recipes.id_strategies.HealpixRope.nside">[docs]</a>
@@ -838,17 +840,17 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="HealpixRope.name">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/id_strategies/index.html#gensbi.recipes.id_strategies.HealpixRope.name">[docs]</a>
-    <span class="n">name</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;healpix-rope&quot;</span></div>
+    <span class="n">name</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"healpix-rope"</span></div>
 
 
 <div class="viewcode-block" id="HealpixRope.__post_init__">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.id_strategies.HealpixRope.__post_init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;nside must be a power of 2, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"nside must be a power of 2, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
-                <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;base_pixels&quot;</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_validate_base_pixels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">))</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="s2">"base_pixels"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_validate_base_pixels</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">))</span>
             <span class="p">)</span></div>
 
 
@@ -856,7 +858,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="HealpixRope.num_tokens">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/id_strategies/index.html#gensbi.recipes.id_strategies.HealpixRope.num_tokens">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">num_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Token count of the grid: ``n_faces * nside**2``.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Token count of the grid: ``n_faces * nside**2``."""</span>
         <span class="n">n_faces</span> <span class="o">=</span> <span class="mi">12</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">n_faces</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="o">**</span><span class="mi">2</span></div>
 
@@ -865,23 +867,23 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="HealpixRope.theta">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/id_strategies/index.html#gensbi.recipes.id_strategies.HealpixRope.theta">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">theta</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Suggested model-side RoPE theta: :func:`healpix_rope_theta`.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Suggested model-side RoPE theta: :func:`healpix_rope_theta`."""</span>
         <span class="k">return</span> <span class="n">healpix_rope_theta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="HealpixRope.build">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/index.html#gensbi.recipes.id_strategies.HealpixRope.build">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``(ids, num_tokens)``; ``dim`` must match the grid.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return ``(ids, num_tokens)``; ``dim`` must match the grid."""</span>
         <span class="k">if</span> <span class="n">dim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_tokens</span><span class="p">:</span>
             <span class="n">sky</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="s2">&quot;full sky&quot;</span>
+                <span class="s2">"full sky"</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span> <span class="ow">is</span> <span class="kc">None</span>
-                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">)</span><span class="si">}</span><span class="s2"> base pixels&quot;</span>
+                <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">)</span><span class="si">}</span><span class="s2"> base pixels"</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: the pipeline stream has dim=</span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2"> tokens, but &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;nside=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">sky</span><span class="si">}</span><span class="s2">) implies </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tokens</span><span class="si">}</span><span class="s2"> tokens&quot;</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: the pipeline stream has dim=</span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2"> tokens, but "</span>
+                <span class="sa">f</span><span class="s2">"nside=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">sky</span><span class="si">}</span><span class="s2">) implies </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_tokens</span><span class="si">}</span><span class="s2"> tokens"</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">init_ids_healpix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_pixels</span><span class="p">)</span></div>
 </div>
@@ -915,8 +917,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -954,7 +956,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

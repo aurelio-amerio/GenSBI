@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,7 +757,7 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.experimental.models.pixeldit.blocks</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Transformer blocks for the PixelDiT port: patch-level MMDiT and pixel-level PiT.</span>
+<span></span><span class="sd">"""Transformer blocks for the PixelDiT port: patch-level MMDiT and pixel-level PiT.</span>
 
 <span class="sd">:class:`MMDiTBlock` is a faithful port of ``MMDiTBlockT2I`` +</span>
 <span class="sd">``MMDiTJointAttention`` (``reference/PixelDiT/pixdit_core/pixeldit_t2i.py:19-132``)</span>
@@ -769,20 +771,20 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">Rope is applied *per stream before* the joint concat, because the two streams</span>
 <span class="sd">carry different rope tables (a 2D grid for obs, a 1D table — or none — for</span>
-<span class="sd">cond). The library&#39;s usual ``attention(pe=...)`` pattern applies one ``pe`` to</span>
+<span class="sd">cond). The library's usual ``attention(pe=...)`` pattern applies one ``pe`` to</span>
 <span class="sd">the whole concatenated sequence, which cannot express per-stream tables; so we</span>
 <span class="sd">call :func:`flux1.math.apply_rope` ourselves on each stream and then invoke</span>
 <span class="sd">``attention(..., pe=None)``, which reduces to plain sdpa plus the output</span>
 <span class="sd">rearrange — math identical to the reference.</span>
 
 <span class="sd">The adaLN projections are *plain* linears with **no internal silu**: ``c``</span>
-<span class="sd">arrives pre-activated, so reusing flux1&#39;s ``Modulation`` (which applies silu</span>
+<span class="sd">arrives pre-activated, so reusing flux1's ``Modulation`` (which applies silu</span>
 <span class="sd">inside) would double-activate. ``zero_init`` zero-initialises the adaLN</span>
 <span class="sd">kernel+bias so the gated residuals start as an exact identity (c2i recipe);</span>
 <span class="sd">``zero_init=False`` uses default init (t2i recipe).</span>
 
 <span class="sd">No attention-mask support: the cond length is fixed (YAGNI).</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
@@ -799,7 +801,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MMDiTBlock">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.blocks.MMDiTBlock">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MMDiTBlock</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Joint-attention MMDiT block with per-stream rope (ref lines 19-132).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Joint-attention MMDiT block with per-stream rope (ref lines 19-132)."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -812,7 +814,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
         <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="k">assert</span> <span class="n">hidden_size</span> <span class="o">%</span> <span class="n">num_heads</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;hidden_size must be divisible by num_heads&quot;</span>
+        <span class="k">assert</span> <span class="n">hidden_size</span> <span class="o">%</span> <span class="n">num_heads</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"hidden_size must be divisible by num_heads"</span>
 <div class="viewcode-block" id="MMDiTBlock.hidden_size">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.MMDiTBlock.hidden_size">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span></div>
@@ -912,9 +914,9 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MMDiTBlock._qkv">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.blocks.MMDiTBlock._qkv">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_qkv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qkv_lin</span><span class="p">,</span> <span class="n">qk_norm</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">pe</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Project, split heads, q/k-norm, and (optionally) apply per-stream rope.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Project, split heads, q/k-norm, and (optionally) apply per-stream rope."""</span>
         <span class="n">qkv</span> <span class="o">=</span> <span class="n">qkv_lin</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
-        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">qkv</span><span class="p">,</span> <span class="s2">&quot;B L (K H D) -&gt; K B H L D&quot;</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">H</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">rearrange</span><span class="p">(</span><span class="n">qkv</span><span class="p">,</span> <span class="s2">"B L (K H D) -&gt; K B H L D"</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">H</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
         <span class="n">q</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">qk_norm</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">pe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">q</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">apply_rope</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">pe</span><span class="p">)</span>
@@ -946,7 +948,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">v</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">v_y</span><span class="p">,</span> <span class="n">v_x</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
         <span class="c1"># pe=None: rope already applied per stream, so attention is pure sdpa</span>
-        <span class="c1"># plus the &quot;B L (H D)&quot; output rearrange.</span>
+        <span class="c1"># plus the "B L (H D)" output rearrange.</span>
         <span class="n">attn</span> <span class="o">=</span> <span class="n">attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">pe</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
         <span class="n">Ly</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">attn_y</span><span class="p">,</span> <span class="n">attn_x</span> <span class="o">=</span> <span class="n">attn</span><span class="p">[:,</span> <span class="p">:</span><span class="n">Ly</span><span class="p">],</span> <span class="n">attn</span><span class="p">[:,</span> <span class="n">Ly</span><span class="p">:]</span>
@@ -967,19 +969,19 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="PiTBlock">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PiTBlock</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pixel-level DiT block: pixel-wise AdaLN + token compaction (ref</span>
+<span class="w">    </span><span class="sd">"""Pixel-level DiT block: pixel-wise AdaLN + token compaction (ref</span>
 <span class="sd">    ``pixeldit_c2i.py:114-187``).</span>
 
 <span class="sd">    Operates on per-patch pixel tokens ``x`` of shape ``(B*L, p^2, D_pix)``</span>
 <span class="sd">    with per-patch conditioning ``s_cond`` of shape ``(B*L, D)``. The adaLN</span>
 <span class="sd">    projection maps ``D -&gt; n_mod * D_pix * p^2`` and is reshaped to</span>
 <span class="sd">    ``(B*L, p^2, n_mod * D_pix)``, so every pixel in the patch receives its</span>
-<span class="sd">    own modulation parameters (&quot;pixel-wise AdaLN&quot;).</span>
+<span class="sd">    own modulation parameters ("pixel-wise AdaLN").</span>
 
-<span class="sd">    Attention runs on *compacted* tokens: each patch&#39;s ``p^2 * D_pix`` pixels</span>
+<span class="sd">    Attention runs on *compacted* tokens: each patch's ``p^2 * D_pix`` pixels</span>
 <span class="sd">    are compressed to a single ``attn_dim`` token, attended globally over the</span>
 <span class="sd">    ``(B, L)`` patch grid with 2D rope, then expanded back. The attention</span>
-<span class="sd">    itself is flux1&#39;s :class:`SelfAttention`, which matches the reference</span>
+<span class="sd">    itself is flux1's :class:`SelfAttention`, which matches the reference</span>
 <span class="sd">    ``RotaryAttention`` (no-bias qkv, per-head RMSNorm on q/k, biased proj).</span>
 
 <span class="sd">    ``post_modulation`` selects the gate-free post-modulation variant</span>
@@ -991,7 +993,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``pe`` is the output of</span>
 <span class="sd">    ``precompute_freqs_cis_2d(attn_dim // num_heads, grid_h, grid_w, ...)``</span>
 <span class="sd">    over the patch grid, shape ``(1, 1, L, head_dim/2, 2, 2)``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1008,7 +1010,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">,</span>
         <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="k">assert</span> <span class="n">attn_dim</span> <span class="o">%</span> <span class="n">num_heads</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;attn_dim must be divisible by num_heads&quot;</span>
+        <span class="k">assert</span> <span class="n">attn_dim</span> <span class="o">%</span> <span class="n">num_heads</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"attn_dim must be divisible by num_heads"</span>
 <div class="viewcode-block" id="PiTBlock.pixel_dim">
 <a class="viewcode-back" href="../../../../../api/gensbi/experimental/models/pixeldit/blocks/index.html#gensbi.experimental.models.pixeldit.blocks.PiTBlock.pixel_dim">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">pixel_dim</span> <span class="o">=</span> <span class="n">pixel_dim</span></div>
@@ -1100,11 +1102,11 @@ window.runMermaid = runMermaid;</script>
         <span class="n">BL</span><span class="p">,</span> <span class="n">P2</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
         <span class="k">if</span> <span class="n">D</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_dim</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;PiTBlock expected pixel_dim=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pixel_dim</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"PiTBlock expected pixel_dim=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pixel_dim</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">D</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">BL</span> <span class="o">%</span> <span class="n">batch</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;BL=</span><span class="si">{</span><span class="n">BL</span><span class="si">}</span><span class="s2"> is not divisible by batch=</span><span class="si">{</span><span class="n">batch</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"BL=</span><span class="si">{</span><span class="n">BL</span><span class="si">}</span><span class="s2"> is not divisible by batch=</span><span class="si">{</span><span class="n">batch</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="n">L</span> <span class="o">=</span> <span class="n">BL</span> <span class="o">//</span> <span class="n">batch</span>
 
@@ -1169,8 +1171,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1208,7 +1210,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

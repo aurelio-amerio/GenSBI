@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
@@ -38,10 +38,10 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=3a97f689" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
     <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
@@ -55,6 +55,8 @@
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+
+
 
 
 
@@ -755,7 +757,7 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for gensbi.inference.samplers</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;blackjax samplers consumed by NLEPosterior. blackjax imported lazily in run().&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""blackjax samplers consumed by NLEPosterior. blackjax imported lazily in run()."""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
@@ -767,15 +769,15 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="_rescale">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference._rescale">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">_rescale</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Map a mean trajectory length to a uniform-integer draw scale.</span>
+<span class="w">    </span><span class="sd">"""Map a mean trajectory length to a uniform-integer draw scale.</span>
 
-<span class="sd">    From blackjax&#39;s ``adjusted_mclmc_dynamic``: drawing the number of</span>
+<span class="sd">    From blackjax's ``adjusted_mclmc_dynamic``: drawing the number of</span>
 <span class="sd">    integration steps as ``ceil(U(0,1) * _rescale(L/step_size))`` makes the</span>
 <span class="sd">    average number of steps exactly ``mu = L / step_size``.</span>
 
 <span class="sd">    ``mu`` must satisfy ``mu &gt;= 1``; see :func:`_check_rescale_domain` for the</span>
 <span class="sd">    host-side guard applied to the tuned value.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">k</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">mu</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="p">(</span><span class="n">mu</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">k</span> <span class="o">+</span> <span class="n">x</span></div>
@@ -785,40 +787,40 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="_check_rescale_domain">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference._check_rescale_domain">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">_check_rescale_domain</span><span class="p">(</span><span class="n">mu</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raise if the tuned ``mu = L / step_size`` is outside ``_rescale``&#39;s domain.</span>
+<span class="w">    </span><span class="sd">"""Raise if the tuned ``mu = L / step_size`` is outside ``_rescale``'s domain.</span>
 
 <span class="sd">    For ``mu &lt; 1``, ``floor(2 * mu - 1) == 0`` and ``_rescale`` returns 0, so</span>
 <span class="sd">    the integration-step draw ``ceil(U(0,1) * 0)`` is 0 — a chain that never</span>
 <span class="sd">    moves. A host-side check on the tuned value turns that silent failure into</span>
 <span class="sd">    an explicit error. (The in-tuning average is left to blackjax; this is a</span>
 <span class="sd">    convenience sampler, not a fully hardened MCMC engine.)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">mu</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">mu</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;adjusted-MCLMC tuning produced L/step_size = </span><span class="si">{</span><span class="n">mu</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2"> &lt; 1, for &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;which the randomized integration-step count rounds to zero and &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;the chain would never move. This usually means tuning did not &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;converge — try increasing num_tuning_steps, increasing &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;num_samples, or using MCLMC(adjusted=False).&quot;</span><span class="p">)</span></div>
+            <span class="sa">f</span><span class="s2">"adjusted-MCLMC tuning produced L/step_size = </span><span class="si">{</span><span class="n">mu</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2"> &lt; 1, for "</span>
+            <span class="sa">f</span><span class="s2">"which the randomized integration-step count rounds to zero and "</span>
+            <span class="sa">f</span><span class="s2">"the chain would never move. This usually means tuning did not "</span>
+            <span class="sa">f</span><span class="s2">"converge — try increasing num_tuning_steps, increasing "</span>
+            <span class="sa">f</span><span class="s2">"num_samples, or using MCLMC(adjusted=False)."</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="Sampler">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.Sampler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Sampler</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for posterior samplers.</span>
+<span class="w">    </span><span class="sd">"""Abstract base class for posterior samplers.</span>
 
 <span class="sd">    Subclasses consume a :class:`~gensbi.inference.posterior.PosteriorTarget`</span>
 <span class="sd">    and return an array of posterior samples together with a sampler-specific</span>
 <span class="sd">    info object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="nd">@abstractmethod</span>
 <div class="viewcode-block" id="Sampler.run">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.Sampler.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples from a log-density target.</span>
+<span class="w">        </span><span class="sd">"""Draw posterior samples from a log-density target.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -839,7 +841,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ------</span>
 <span class="sd">        NotImplementedError</span>
 <span class="sd">            This is an abstract method; subclasses must override it.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 </div>
 
@@ -849,7 +851,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MclmcInfo">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MclmcInfo">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MclmcInfo</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tuning parameters and diagnostics from an MCLMC run.</span>
+<span class="w">    </span><span class="sd">"""Tuning parameters and diagnostics from an MCLMC run.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -859,12 +861,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Tuned integrator step size.</span>
 <span class="sd">    acceptance_rate : float</span>
 <span class="sd">        Mean Metropolis acceptance rate over the sampling run.</span>
-<span class="sd">        ``float(&#39;nan&#39;)`` for the unadjusted variant.</span>
+<span class="sd">        ``float('nan')`` for the unadjusted variant.</span>
 <span class="sd">    num_samples : int</span>
 <span class="sd">        Number of samples drawn per chain.</span>
 <span class="sd">    num_chains : int</span>
 <span class="sd">        Number of independent chains.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="MclmcInfo.L">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MclmcInfo.L">[docs]</a>
@@ -892,7 +894,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="_inference_loop">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference._inference_loop">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">_inference_loop</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">initial_state</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a blackjax SamplingAlgorithm.step for num_samples via lax.scan.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Run a blackjax SamplingAlgorithm.step for num_samples via lax.scan."""</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">one_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
         <span class="n">state</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">step_fn</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">state</span><span class="p">,</span> <span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
@@ -905,7 +907,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MCLMC">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MCLMC</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Microcanonical Langevin Monte Carlo sampler.</span>
+<span class="w">    </span><span class="sd">"""Microcanonical Langevin Monte Carlo sampler.</span>
 
 <span class="sd">    ``adjusted=True`` (the default) applies an MH correction for</span>
 <span class="sd">    asymptotically exact sampling.  ``adjusted=False`` uses the faster</span>
@@ -928,7 +930,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    diagonal_preconditioning : bool, optional</span>
 <span class="sd">        Whether to use diagonal preconditioning during tuning.</span>
 <span class="sd">        Default is ``True``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">adjusted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">num_tuning_steps</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
                  <span class="n">num_chains</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">target_acceptance</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">diagonal_preconditioning</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -960,7 +962,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="MCLMC.run">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.MCLMC.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples using MCLMC.</span>
+<span class="w">        </span><span class="sd">"""Draw posterior samples using MCLMC.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -976,7 +978,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Posterior samples of shape ``(num_chains * num_samples, dim)``.</span>
 <span class="sd">        info : MclmcInfo</span>
 <span class="sd">            Tuning parameters and diagnostic information.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Python loop over chains (not vmap): _run_single returns a plain MclmcInfo</span>
         <span class="c1"># dataclass, which is not a registered pytree and cannot be a vmap output.</span>
         <span class="c1"># num_chains is small, so the loop cost is negligible.</span>
@@ -1045,7 +1047,7 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># kernel(rng_key=..., state=..., logdensity_fn=..., step_size=...,</span>
         <span class="c1"># inverse_mass_matrix=..., integration_steps_params=(avg,)); the</span>
         <span class="c1"># running average number of integration steps arrives as</span>
-        <span class="c1"># integration_steps_fn&#39;s second positional argument.</span>
+        <span class="c1"># integration_steps_fn's second positional argument.</span>
         <span class="n">kernel</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">mcmc</span><span class="o">.</span><span class="n">adjusted_mclmc_dynamic</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">(</span>
             <span class="n">integration_steps_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">avg</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
                 <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">_rescale</span><span class="p">(</span><span class="n">avg</span><span class="p">)),</span>
@@ -1078,7 +1080,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="SmcInfo">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.SmcInfo">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SmcInfo</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagnostics from an adaptive tempered SMC run.</span>
+<span class="w">    </span><span class="sd">"""Diagnostics from an adaptive tempered SMC run.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1088,7 +1090,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Number of temperature increments taken from beta=0 to beta=1.</span>
 <span class="sd">    final_tempering_param : float</span>
 <span class="sd">        Final value of the tempering parameter beta (should be 1.0).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="SmcInfo.log_evidence">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.SmcInfo.log_evidence">[docs]</a>
@@ -1108,14 +1110,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="TemperedSMC">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TemperedSMC</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adaptive tempered Sequential Monte Carlo for (possibly multimodal) posteriors.</span>
+<span class="w">    </span><span class="sd">"""Adaptive tempered Sequential Monte Carlo for (possibly multimodal) posteriors.</span>
 
 <span class="sd">    Walks particles along ``p(theta) * q(x_o | theta)^beta`` for beta from 0</span>
 <span class="sd">    to 1, choosing the beta ladder adaptively to maintain ``target_ess``.  The</span>
 <span class="sd">    inner rejuvenation kernel is adjusted MCLMC by default; fixed-trajectory</span>
 <span class="sd">    HMC is available as an alternative. (NUTS is deliberately not offered: its</span>
 <span class="sd">    data-dependent trajectory length does not vectorize cleanly across SMC</span>
-<span class="sd">    particles, and rejuvenation does not need NUTS&#39;s full-mixing guarantee.)</span>
+<span class="sd">    particles, and rejuvenation does not need NUTS's full-mixing guarantee.)</span>
 
 <span class="sd">    ``target_ess`` and ``num_mcmc_steps`` default to values calibrated for</span>
 <span class="sd">    blackjax &gt;= 1.6, whose adaptive-tempering ESS solver was corrected</span>
@@ -1136,8 +1138,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    num_mcmc_steps : int, optional</span>
 <span class="sd">        Number of inner MCMC rejuvenation steps per temperature.  Default is 10.</span>
 <span class="sd">    inner_kernel : str, optional</span>
-<span class="sd">        Inner MCMC kernel: ``&quot;mclmc&quot;`` (adjusted MCLMC, default) or</span>
-<span class="sd">        ``&quot;hmc&quot;`` (fixed-trajectory HMC).</span>
+<span class="sd">        Inner MCMC kernel: ``"mclmc"`` (adjusted MCLMC, default) or</span>
+<span class="sd">        ``"hmc"`` (fixed-trajectory HMC).</span>
 <span class="sd">    inner_step_size : float, optional</span>
 <span class="sd">        Step size for the inner MCMC kernel.  Default is 0.1.</span>
 <span class="sd">    inner_num_integration_steps : int, optional</span>
@@ -1146,10 +1148,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    inner_inverse_mass_matrix : Array or None, optional</span>
 <span class="sd">        Inverse mass matrix for the inner kernel.  If ``None``, defaults to a</span>
 <span class="sd">        vector of ones of length ``target.dim``.  Default is ``None``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_particles</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">target_ess</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">num_mcmc_steps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-                 <span class="n">inner_kernel</span><span class="o">=</span><span class="s2">&quot;mclmc&quot;</span><span class="p">,</span> <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                 <span class="n">inner_kernel</span><span class="o">=</span><span class="s2">"mclmc"</span><span class="p">,</span> <span class="n">inner_step_size</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
                  <span class="n">inner_num_integration_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">inner_inverse_mass_matrix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <div class="viewcode-block" id="TemperedSMC.num_particles">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.num_particles">[docs]</a>
@@ -1183,18 +1185,18 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="TemperedSMC._inner">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC._inner">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_inner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return (mcmc_step_fn, mcmc_init_fn, mcmc_parameters) for the inner kernel.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return (mcmc_step_fn, mcmc_init_fn, mcmc_parameters) for the inner kernel."""</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
         <span class="n">imm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_inverse_mass_matrix</span>
         <span class="k">if</span> <span class="n">imm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">imm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;hmc&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">"hmc"</span><span class="p">:</span>
             <span class="c1"># blackjax &gt;= 1.6: build_kernel() is a pure factory; the returned</span>
-            <span class="c1"># kernel&#39;s signature is (rng_key, state, logdensity_fn, step_size,</span>
+            <span class="c1"># kernel's signature is (rng_key, state, logdensity_fn, step_size,</span>
             <span class="c1"># inverse_mass_matrix, num_integration_steps), so SMC can call it</span>
-            <span class="c1"># directly with these params as kwargs -- no wrapper needed. HMC&#39;s</span>
+            <span class="c1"># directly with these params as kwargs -- no wrapper needed. HMC's</span>
             <span class="c1"># fixed num_integration_steps gives static per-particle cost that</span>
-            <span class="c1"># vectorizes cleanly across the particle population (unlike NUTS&#39;s</span>
+            <span class="c1"># vectorizes cleanly across the particle population (unlike NUTS's</span>
             <span class="c1"># data-dependent trajectory length).</span>
             <span class="n">step_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">hmc</span><span class="o">.</span><span class="n">build_kernel</span><span class="p">()</span>
             <span class="n">init_fn</span> <span class="o">=</span> <span class="n">blackjax</span><span class="o">.</span><span class="n">hmc</span><span class="o">.</span><span class="n">init</span>
@@ -1202,7 +1204,7 @@ window.runMermaid = runMermaid;</script>
                           <span class="n">num_integration_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_num_integration_steps</span><span class="p">,</span>
                           <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">&quot;mclmc&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span> <span class="o">==</span> <span class="s2">"mclmc"</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc.integrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">isokinetic_mclachlan</span>
 
             <span class="c1"># blackjax &gt;= 1.6: build_kernel is a pure factory (no logdensity_fn /</span>
@@ -1222,13 +1224,13 @@ window.runMermaid = runMermaid;</script>
                           <span class="n">num_integration_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_num_integration_steps</span><span class="p">,</span>
                           <span class="n">inverse_mass_matrix</span><span class="o">=</span><span class="n">imm</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">step_fn</span><span class="p">,</span> <span class="n">init_fn</span><span class="p">,</span> <span class="n">params</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown inner_kernel </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown inner_kernel </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">inner_kernel</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="TemperedSMC.run">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.TemperedSMC.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples using adaptive tempered SMC.</span>
+<span class="w">        </span><span class="sd">"""Draw posterior samples using adaptive tempered SMC.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1244,7 +1246,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Posterior samples of shape ``(num_particles, dim)``.</span>
 <span class="sd">        info : SmcInfo</span>
 <span class="sd">            SMC diagnostics including log evidence and tempering statistics.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
 
         <span class="n">init_key</span><span class="p">,</span> <span class="n">smc_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -1282,7 +1284,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="NestedSamplerInfo">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSamplerInfo">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NestedSamplerInfo</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagnostics from a nested sampling run.</span>
+<span class="w">    </span><span class="sd">"""Diagnostics from a nested sampling run.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1301,7 +1303,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Raw finalised ``blackjax.ns.base.NSInfo`` carrying the full</span>
 <span class="sd">        point history (positions, log-likelihoods, birth contours).</span>
 <span class="sd">        Kept for downstream re-weighting or anesthetic-style analysis.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
 <div class="viewcode-block" id="NestedSamplerInfo.log_evidence">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSamplerInfo.log_evidence">[docs]</a>
@@ -1329,10 +1331,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="NestedSampler">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">NestedSampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Nested slice sampling (blackjax ``nss``) posterior sampler.</span>
+<span class="w">    </span><span class="sd">"""Nested slice sampling (blackjax ``nss``) posterior sampler.</span>
 
-<span class="sd">    Runs blackjax&#39;s Nested Slice Sampling from prior-drawn live points,</span>
-<span class="sd">    accumulating dead points until the live set&#39;s evidence share is</span>
+<span class="sd">    Runs blackjax's Nested Slice Sampling from prior-drawn live points,</span>
+<span class="sd">    accumulating dead points until the live set's evidence share is</span>
 <span class="sd">    negligible, then resamples the dead-point history into equal-weight</span>
 <span class="sd">    posterior draws.  Unlike the MCMC samplers this also estimates the</span>
 <span class="sd">    log evidence, and handles multimodal posteriors without tempering.</span>
@@ -1346,7 +1348,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        batching).  If ``None``, defaults to ``max(1, num_live // 10)``.</span>
 <span class="sd">    num_inner_steps : int or None, optional</span>
 <span class="sd">        Constrained slice moves per replacement.  If ``None``, resolved</span>
-<span class="sd">        at run time to ``max(5, 2 * target.dim)`` (blackjax&#39;s rule of</span>
+<span class="sd">        at run time to ``max(5, 2 * target.dim)`` (blackjax's rule of</span>
 <span class="sd">        thumb for reliable mixing).  Default is ``None``.</span>
 <span class="sd">    num_samples : int, optional</span>
 <span class="sd">        Number of equal-weight posterior draws returned.  Default is 1000.</span>
@@ -1359,29 +1361,29 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    num_rejuvenation_steps : int, optional</span>
 <span class="sd">        Posterior-invariant hit-and-run slice moves applied to each</span>
 <span class="sd">        equal-weight draw after resampling.  The with-replacement resampling</span>
-<span class="sd">        duplicates draws whenever ``num_samples`` is comparable to the run&#39;s</span>
+<span class="sd">        duplicates draws whenever ``num_samples`` is comparable to the run's</span>
 <span class="sd">        ESS; a few slice moves break the duplicated atoms without changing</span>
 <span class="sd">        the sampled distribution.  Default is 0 (no rejuvenation).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">num_live</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">num_delete</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">num_inner_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">dlogz</span><span class="o">=-</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">max_iterations</span><span class="o">=</span><span class="mi">100_000</span><span class="p">,</span>
                  <span class="n">num_rejuvenation_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">num_live</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;num_live must be positive, got </span><span class="si">{</span><span class="n">num_live</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"num_live must be positive, got </span><span class="si">{</span><span class="n">num_live</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">num_delete</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">num_delete</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_live</span> <span class="o">//</span> <span class="mi">10</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">num_delete</span> <span class="o">&lt;</span> <span class="n">num_live</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;num_delete must be in [1, num_live), got num_delete=&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_delete</span><span class="si">}</span><span class="s2"> with num_live=</span><span class="si">{</span><span class="n">num_live</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">"num_delete must be in [1, num_live), got num_delete="</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">num_delete</span><span class="si">}</span><span class="s2"> with num_live=</span><span class="si">{</span><span class="n">num_live</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">num_inner_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">num_inner_steps</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;num_inner_steps must be positive or None, got </span><span class="si">{</span><span class="n">num_inner_steps</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">"num_inner_steps must be positive or None, got </span><span class="si">{</span><span class="n">num_inner_steps</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">num_rejuvenation_steps</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;num_rejuvenation_steps must be non-negative, got &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_rejuvenation_steps</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="sa">f</span><span class="s2">"num_rejuvenation_steps must be non-negative, got "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">num_rejuvenation_steps</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <div class="viewcode-block" id="NestedSampler.num_live">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.num_live">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_live</span> <span class="o">=</span> <span class="n">num_live</span></div>
@@ -1414,7 +1416,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="NestedSampler._resolve_num_inner_steps">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler._resolve_num_inner_steps">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_num_inner_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;``num_inner_steps`` if set, else blackjax&#39;s ``max(5, 2 * dim)``.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""``num_inner_steps`` if set, else blackjax's ``max(5, 2 * dim)``."""</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_inner_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_inner_steps</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dim</span><span class="p">)</span></div>
@@ -1423,7 +1425,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="NestedSampler.run">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Draw posterior samples using nested slice sampling.</span>
+<span class="w">        </span><span class="sd">"""Draw posterior samples using nested slice sampling.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1439,7 +1441,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Equal-weight posterior samples of shape ``(num_samples, dim)``.</span>
 <span class="sd">        info : NestedSamplerInfo</span>
 <span class="sd">            Evidence estimate, ESS and the raw finalised run.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">blackjax</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.ns.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ess</span><span class="p">,</span> <span class="n">finalise</span><span class="p">,</span> <span class="n">log_weights</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.ns.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">sample</span> <span class="k">as</span> <span class="n">ns_sample</span>
@@ -1459,11 +1461,11 @@ window.runMermaid = runMermaid;</script>
         <span class="k">while</span> <span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ_live</span> <span class="o">-</span> <span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dead</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;nested sampling did not terminate within max_iterations=&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="si">}</span><span class="s2"> steps (logZ_live - logZ = &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ_live</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ</span><span class="p">)</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; &gt;= dlogz = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span><span class="si">}</span><span class="s2">). Consider a looser dlogz, more &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;num_live points, or more num_inner_steps.&quot;</span><span class="p">)</span>
+                    <span class="sa">f</span><span class="s2">"nested sampling did not terminate within max_iterations="</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iterations</span><span class="si">}</span><span class="s2"> steps (logZ_live - logZ = "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ_live</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">integrator</span><span class="o">.</span><span class="n">logZ</span><span class="p">)</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2">"</span>
+                    <span class="sa">f</span><span class="s2">" &gt;= dlogz = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dlogz</span><span class="si">}</span><span class="s2">). Consider a looser dlogz, more "</span>
+                    <span class="sa">f</span><span class="s2">"num_live points, or more num_inner_steps."</span><span class="p">)</span>
             <span class="n">run_key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">run_key</span><span class="p">)</span>
             <span class="n">state</span><span class="p">,</span> <span class="n">step_info</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">subkey</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
             <span class="n">dead</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_info</span><span class="p">)</span>
@@ -1487,16 +1489,16 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="NestedSampler._rejuvenate">
 <a class="viewcode-back" href="../../../api/gensbi/inference/samplers/index.html#gensbi.inference.NestedSampler._rejuvenate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_rejuvenate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Break duplicated equal-weight draws with posterior-invariant moves.</span>
+<span class="w">        </span><span class="sd">"""Break duplicated equal-weight draws with posterior-invariant moves.</span>
 
 <span class="sd">        Runs ``num_rejuvenation_steps`` hit-and-run slice moves on every</span>
 <span class="sd">        resampled draw (one vmapped chain per draw), targeting the</span>
 <span class="sd">        unconstrained log-posterior.  Directions are shaped by the empirical</span>
 <span class="sd">        covariance of the resampled cloud and scaled to Mahalanobis norm 2,</span>
-<span class="sd">        the same proposal the NS run&#39;s inner kernel uses -- so the moves are</span>
+<span class="sd">        the same proposal the NS run's inner kernel uses -- so the moves are</span>
 <span class="sd">        local decorrelation only; mode coverage and weights stay as the NS</span>
 <span class="sd">        run left them.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.mcmc</span><span class="w"> </span><span class="kn">import</span> <span class="nb">slice</span> <span class="k">as</span> <span class="n">slice_mcmc</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">blackjax.ns.nss</span><span class="w"> </span><span class="kn">import</span> <span class="n">sample_direction_from_covariance</span>
 
@@ -1557,8 +1559,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1596,7 +1598,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>
