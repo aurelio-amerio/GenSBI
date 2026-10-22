@@ -93,7 +93,12 @@ build-backend = "uv_build"
 [tool.pytest.ini_options]
 addopts = "-n 2"
 env = [
-    "JAX_PLATFORMS=cpu"
+    "JAX_PLATFORMS=cpu",
+    # jaxlib >= 0.12 lets XNNPACK pick CPU-specific f32 dot kernels (single FMA chain over K
+    # on AMD Zen 4/5 with AVX-512, ~2x less accurate for narrow dots; google/XNNPACK#11736).
+    # Request CPU-consistent arithmetic so numerics-sensitive gates give the same result on
+    # every CI runner. Accepted by jax >= 0.11.1.
+    "XLA_FLAGS=--xla_cpu_enable_platform_dependent_math=false",
 ]
 testpaths = [
     "tests",

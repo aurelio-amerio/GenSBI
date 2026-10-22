@@ -355,7 +355,15 @@ def test_tiny_overfit_and_cond_sensitivity():
     so the final loss is evaluated as the mean over 64 fixed random keys to
     get a stable estimate.  The 100x threshold is consistent with the model
     overfitting the 4-sample batch to the point where the velocity field is
-    well-approximated; 3000 steps with a cosine schedule reliably reaches it.
+    well-approximated; 3000 steps with a cosine schedule reliably reaches it
+    (measured 118-136x across Intel and AMD CPUs at jax 0.11.1 and 0.12.0.1).
+
+    Platform note: with jaxlib >= 0.12, XNNPACK's f32 dot kernel on AMD Zen 4/5
+    (AVX-512) sums K in a single FMA chain (google/XNNPACK#11736); every dot in
+    this tiny model is narrow, and that rounding change alone drives the ratio
+    to ~57x on those CPUs. The test suite therefore sets
+    ``XLA_FLAGS=--xla_cpu_enable_platform_dependent_math=false`` (pyproject
+    ``[tool.pytest.ini_options] env``), which restores 119x on the same CPUs.
 
     Cond sensitivity uses structurally different tokens cond_A=[[1],[0]] vs
     cond_B=[[0],[1]] — RMSNorm cannot annihilate these (uniform shifts would
