@@ -25,3 +25,10 @@ import warnings
 warnings.filterwarnings(
     "ignore", category=UserWarning, module="google.protobuf.runtime_version"
 )
+
+# grain 0.2.18 reads an absl flag inside mp_prefetch on jax >= 0.11 and crashes
+# in any non-absl process (scripts, notebooks); see gensbi._compat.
+import grain  # noqa: E402,F401  (registers grain's absl flags)
+from gensbi._compat import guard_grain_profiler_flag as _guard_grain_profiler_flag  # noqa: E402
+
+_guard_grain_profiler_flag()
