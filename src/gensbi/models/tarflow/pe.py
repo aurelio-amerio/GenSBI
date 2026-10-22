@@ -7,7 +7,7 @@ Deliberately omitted relative to the reference: the ``is_1d`` branch (used
 only for the pretrained-LM top block), ``freqs_for='pixel'/'constant'`` and
 ``custom_freqs``, the ``latent_len`` head-dim split (STARFlow's text-prefix
 "3D" axis — GenSBI positions prefix tokens at the identity rotation
-instead; see docs/superpowers/specs/2026-07-11-tarflow-rope-kvcache-design.md),
+instead),
 video ``duplicate`` handling, and the deprecated checkpoint-compat buffers.
 """
 
