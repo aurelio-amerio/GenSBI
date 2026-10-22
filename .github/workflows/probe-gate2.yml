@@ -11,22 +11,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: jax0120-nofm-r1
+          - name: jax0120-avx2cap-r1
             jax: "0.12.0.1"
-            xla_flags: "--xla_cpu_enable_fast_math=false"
-          - name: jax0120-nofm-r2
+            xla_flags: "--xla_cpu_max_isa=AVX2"
+          - name: jax0120-avx2cap-r2
             jax: "0.12.0.1"
-            xla_flags: "--xla_cpu_enable_fast_math=false"
-          - name: jax0120-nofm-r3
+            xla_flags: "--xla_cpu_max_isa=AVX2"
+          - name: jax0120-avx2cap-r3
             jax: "0.12.0.1"
-            xla_flags: "--xla_cpu_enable_fast_math=false"
-          - name: jax0120-nofm-r4
-            jax: "0.12.0.1"
-            xla_flags: "--xla_cpu_enable_fast_math=false"
+            xla_flags: "--xla_cpu_max_isa=AVX2"
           - name: jax0120-default-r1
             jax: "0.12.0.1"
             xla_flags: ""
           - name: jax0120-default-r2
+            jax: "0.12.0.1"
+            xla_flags: ""
+          - name: jax0120-default-r3
             jax: "0.12.0.1"
             xla_flags: ""
     name: ${{ matrix.name }}
@@ -43,8 +43,8 @@ jobs:
           uv pip check
       - name: CPU info
         run: |
-          lscpu | grep -E "Model name|^CPU\(s\)|Flags" | cut -c1-400
-          nproc
+          lscpu | grep -E "Model name"
+          echo "avx512: $(grep -o 'avx512[a-z_0-9]*' /proc/cpuinfo | sort -u | tr '\n' ' ')"
       - name: Environment
         run: uv run --no-sync python -c "import jax; jax.print_environment_info()"
       - name: Gate-2 ratio (seed 2, every 500 steps to 4000)
