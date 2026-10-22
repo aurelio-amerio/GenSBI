@@ -77,6 +77,8 @@ jobs:
         run: |
           uv sync --group test
           uv pip install "jax==0.11.1" "jaxlib==0.11.1"
+      - name: Check the pinned env is consistent (fails the day a dep requires jax > 0.11.1)
+        run: uv pip check
       - name: Assert JAX floor
         run: uv run --no-sync python -c "import jax, jaxlib; assert jax.__version__ == '0.11.1' and jaxlib.__version__ == '0.11.1', (jax.__version__, jaxlib.__version__)"
       - name: Run fast tests at the JAX floor
