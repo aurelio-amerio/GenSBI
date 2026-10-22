@@ -1,0 +1,47 @@
+name: probe-gate2
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: jax0120-default
+            jax: "0.12.0.1"
+            xla_flags: ""
+          - name: jax0120-no-xnnpack
+            jax: "0.12.0.1"
+            xla_flags: "--xla_cpu_use_xnnpack=false"
+          - name: jax0120-no-fastmath
+            jax: "0.12.0.1"
+            xla_flags: "--xla_cpu_enable_fast_math=false"
+          - name: jax0111-default
+            jax: "0.11.1"
+            xla_flags: ""
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: |
+          uv sync --group test
+          uv pip install "jax==${{ matrix.jax }}" "jaxlib==${{ matrix.jax }}"
+          uv pip check
+      - name: CPU info
+        run: |
+          lscpu | grep -E "Model name|^CPU\(s\)|Flags" | cut -c1-400
+          nproc
+      - name: Environment
+        run: uv run --no-sync python -c "import jax; jax.print_environment_info()"
+      - name: Gate-2 ratio (seed 2, every 500 steps to 4000)
+        env:
+          XLA_FLAGS: ${{ matrix.xla_flags }}
+        run: uv run --no-sync python ci_probe_gate2.py 2
