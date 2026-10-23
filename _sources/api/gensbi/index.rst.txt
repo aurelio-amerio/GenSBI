@@ -40,6 +40,7 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
+   /api/gensbi/_compat/index
    /api/gensbi/core/index
    /api/gensbi/diagnostics/index
    /api/gensbi/diffusion/index
@@ -61,8 +62,49 @@ Attributes
    gensbi.__version__
 
 
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi._guard_grain_profiler_flag
+
+
 Package Contents
 ----------------
+
+.. py:function:: _guard_grain_profiler_flag()
+
+   
+   Let grain read its worker-profiling absl flag in a non-absl process.
+
+   grain 0.2.18 (``grain/_src/core/profiler.py``) reads
+   ``--grain_enable_multiprocess_worker_profiling`` inside ``mp_prefetch``
+   whenever ``jaxlib_extension_version >= 448`` (jax >= 0.11). absl raises
+   ``UnparsedFlagAccessError`` on that read in any process that never called
+   ``absl.app.run()`` -- scripts, notebooks, pytest -- so the data pipeline
+   in ``docs/basics/training.md`` dies on its first batch. Marking the single
+   flag as present makes absl return its default without touching the global
+   "parsed" state; it is the same trick grain uses for its own debug flags.
+   grain's main branch already guards the read; this is a no-op once that
+   ships, and a no-op if the flag is absent or flags were really parsed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:data:: __version__
 

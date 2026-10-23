@@ -1,0 +1,72 @@
+gensbi._compat
+==============
+
+.. py:module:: gensbi._compat
+
+.. autoapi-nested-parse::
+
+   Small shims for third-party packages that misbehave on the supported stack.
+
+   Each shim is a no-op once the upstream fix ships, so they can be deleted
+   when the corresponding floor is raised past it.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   gensbi._compat._GRAIN_PROFILER_FLAG
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi._compat.guard_grain_profiler_flag
+
+
+Module Contents
+---------------
+
+.. py:function:: guard_grain_profiler_flag()
+
+   
+   Let grain read its worker-profiling absl flag in a non-absl process.
+
+   grain 0.2.18 (``grain/_src/core/profiler.py``) reads
+   ``--grain_enable_multiprocess_worker_profiling`` inside ``mp_prefetch``
+   whenever ``jaxlib_extension_version >= 448`` (jax >= 0.11). absl raises
+   ``UnparsedFlagAccessError`` on that read in any process that never called
+   ``absl.app.run()`` -- scripts, notebooks, pytest -- so the data pipeline
+   in ``docs/basics/training.md`` dies on its first batch. Marking the single
+   flag as present makes absl return its default without touching the global
+   "parsed" state; it is the same trick grain uses for its own debug flags.
+   grain's main branch already guards the read; this is a no-op once that
+   ships, and a no-op if the flag is absent or flags were really parsed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: _GRAIN_PROFILER_FLAG
+   :value: 'grain_enable_multiprocess_worker_profiling'
+
+

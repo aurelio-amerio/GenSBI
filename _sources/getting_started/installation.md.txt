@@ -64,6 +64,6 @@ pip install gensbi[cuda12,examples]
 ## Requirements
 
 - Python 3.12+
-- JAX
-- Flax
+- JAX >=0.11.1, <0.13 (0.11.x and 0.12.x are both tested)
+- Flax >=0.12.10
 - (See `pyproject.toml` for full requirements)
