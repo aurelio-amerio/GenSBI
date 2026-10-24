@@ -8,7 +8,10 @@ import jax.numpy as jnp
 import pytest
 from flax import nnx
 
+from gensbi import sharding as sh
 from gensbi.models import Flux1JointParams, Flux1Params, SimformerParams
+from gensbi.models.embedding.embedding import PEMatrix
+from gensbi.normalizing_flows.bijections.base import Mask
 from gensbi.recipes.pipeline import AbstractPipeline
 
 # ``tests`` is a package (see tests/__init__.py), so this import works from the
@@ -122,3 +125,19 @@ def test_training_config(tmp_path, nsteps=20) -> dict:
 
 # Not a test, despite the name (pytest would otherwise collect it on import).
 test_training_config.__test__ = False
+
+
+def assert_every_param_annotated(model):
+    """Every ``nnx.Param`` carries a valid logical-axis annotation; constants carry none."""
+    for path, var in nnx.to_flat_state(nnx.state(model, nnx.Param)):
+        meta = var.get_metadata()
+        name = "/".join(map(str, path))
+        assert "out_sharding" in meta, f"{name} has no annotation"
+        assert meta["eager_sharding"] is False, name
+        names = meta["out_sharding"]
+        assert len(names) == var[...].ndim, f"{name}: rank {var[...].ndim} vs {names}"
+        assert set(n for n in names if n is not None) <= set(sh.LOGICAL_AXES), name
+        used = [n for n in names if n is not None]
+        assert len(used) == len(set(used)), f"{name}: repeated logical name in {names}"
+    for path, var in nnx.to_flat_state(nnx.state(model, nnx.Any(Mask, PEMatrix))):
+        assert "out_sharding" not in var.get_metadata(), path

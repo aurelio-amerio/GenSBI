@@ -22,6 +22,7 @@ from gensbi.models.flux1.layers import (
 )
 
 from gensbi.models.embedding import FeatureEmbedder
+from gensbi.sharding import axes
 
 import warnings
 
@@ -169,6 +170,8 @@ class Flux1Joint(nnx.Module):
             rngs=params.rngs,
             dtype=params.dtype,
             param_dtype=params.param_dtype,
+            kernel_metadata=axes("in", "embed"),
+            bias_metadata=axes("embed"),
         )
         self.time_in = MLPEmbedder(
             in_dim=256,
@@ -192,14 +195,16 @@ class Flux1Joint(nnx.Module):
         if params.id_merge_mode == "sum":
             self.condition_embedding = nnx.Param(
                 0.01
-                * jnp.ones((1, 1, self.params.hidden_size), dtype=params.param_dtype)
+                * jnp.ones((1, 1, self.params.hidden_size), dtype=params.param_dtype),
+                **axes(None, None, "embed"),
             )
         elif params.id_merge_mode == "concat":
             self.condition_embedding = nnx.Param(
                 0.01
                 * jnp.ones(
                     (1, 1, self.params.condition_token_dim), dtype=params.param_dtype
-                )
+                ),
+                **axes(None, None, "embed"),
             )
         else:
             raise ValueError(f"Unknown combining strategy: {params.id_merge_mode}")
