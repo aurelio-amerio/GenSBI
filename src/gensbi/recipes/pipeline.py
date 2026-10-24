@@ -40,9 +40,11 @@ from gensbi.utils.serialization import save_safetensors, load_safetensors
 from gensbi.sharding import (
     check_batch_divisible,
     mesh_context,
+    pad_for_mesh,
     resolve_mesh,
     shard_batch,
     shard_model,
+    shard_sample_init,
 )
 
 
@@ -440,6 +442,45 @@ class AbstractPipeline(abc.ABC):
             check_batch_divisible(batch, self.mesh, what)
             self._checked_loaders.add(what)
         return shard_batch(batch, self.mesh)
+
+    def _sharded_init(self, draw, key, nsamples):
+        """Draw a sampler's initial state, padded and placed on the mesh.
+
+        Parameters
+        ----------
+        draw : Callable
+            ``draw(key, n) -> x_init`` with ``n`` rows along axis 0.
+        key : jax.random.PRNGKey
+            Key passed to ``draw`` unchanged.
+        nsamples : int
+            Number of samples requested.
+
+        Returns
+        -------
+        x_init : Array
+            ``draw(key, nsamples)`` when no mesh is set. With a mesh,
+            ``draw(key, n_pad)`` sharded over the data-parallel axes, where
+            ``n_pad`` is ``nsamples`` rounded up to a multiple of the
+            data-parallel size (the extra rows are discarded by
+            :meth:`_trim`).
+        n_pad : int
+            Number of rows actually drawn.
+        """
+        if self.mesh is None:
+            return draw(key, nsamples), nsamples
+        n_pad, _ = pad_for_mesh(nsamples, self.mesh)
+        return shard_sample_init(draw(key, n_pad), self.mesh), n_pad
+
+    def _trim(self, out, nsamples, axis):
+        """Keep the first ``nsamples`` entries of ``out`` along ``axis``.
+
+        ``axis`` is the sample axis (0, or 1 when the sampler returns
+        intermediates, see :func:`_sample_concat_axis`). ``out`` is returned
+        as is when it holds exactly ``nsamples`` entries.
+        """
+        if out.shape[axis] == nsamples:
+            return out
+        return jax.lax.slice_in_dim(out, 0, nsamples, axis=axis)
 
     def _get_ema_optimizer(self):
         """

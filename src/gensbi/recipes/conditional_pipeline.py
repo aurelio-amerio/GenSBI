@@ -257,13 +257,17 @@ class ConditionalPipeline(AbstractPipeline):
             model_wrapped, self.path, extras, **sampler_kwargs,
         )
 
+        axis = _sample_concat_axis(sampler_kwargs)
+
         def sampler(key, nsamples, model_extras=None):
             _extras = model_extras if model_extras is not None else extras
             key, key_init = jax.random.split(key)
-            x_init = self.method.sample_init(
-                key_init, nsamples,
+            # With a mesh, x_init is padded to the data-parallel size and
+            # sharded over it; the extras (cond, ids) stay replicated.
+            x_init, _ = self._sharded_init(
+                lambda k, n: self.method.sample_init(k, n), key_init, nsamples,
             )
-            return sampler_fn(key, x_init, _extras)
+            return self._trim(sampler_fn(key, x_init, _extras), nsamples, axis)
 
         return sampler
 

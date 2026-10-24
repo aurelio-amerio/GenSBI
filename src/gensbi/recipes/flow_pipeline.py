@@ -9,10 +9,16 @@ import warnings
 
 import jax
 import jax.numpy as jnp
+from flax import nnx
 from tqdm.auto import tqdm
 
 from gensbi.recipes.pipeline import AbstractPipeline, _chunked_draw, _validate_chunk_size
 from gensbi.recipes.utils import _require_channel, _single_obs
+from gensbi.sharding import batch_size_divisor, pad_for_mesh, shard_sample_init
+
+# One compiled sampling pass per (flow graph, cond shape/sharding). Both MAF
+# and TarFlow sample under jit; eager sampling is orders of magnitude slower.
+_jit_flow_sample = nnx.jit(lambda flow, key, cond: flow.sample(key, cond=cond))
 
 
 def _warn_unused_kwargs(kwargs):
@@ -253,8 +259,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
         cond = _single_obs(x_o, channel=mode)[0]  # (cond_dim, C_cond) or structured per-obs shape
 
         def sampler(key, nsamples):
-            cond_b = jnp.broadcast_to(cond, (nsamples,) + cond.shape)
-            return flow.sample(key, cond=cond_b)         # model owns (nsamples, dim, C)
+            # With a mesh, pad to the data-parallel size and shard the
+            # broadcast condition over it; the output follows, then is trimmed.
+            n_pad = nsamples if self.mesh is None else pad_for_mesh(nsamples, self.mesh)[0]
+            cond_b = jnp.broadcast_to(cond, (n_pad,) + cond.shape)
+            if self.mesh is not None:
+                cond_b = shard_sample_init(cond_b, self.mesh)
+            # model owns (nsamples, dim, C)
+            return self._trim(_jit_flow_sample(flow, key, cond_b), nsamples, 0)
         return sampler
 
     def sample(self, key, x_o, nsamples=10_000, use_ema=True,
@@ -299,6 +311,16 @@ class ConditionalFlowPipeline(AbstractPipeline):
             sampler, key, nsamples, chunk_size,
             show_progress_bars=show_progress_bars,
         )
+
+    def _place_cond(self, cond):
+        """Shard ``cond`` over the batch axes if its leading size allows it.
+
+        Without a mesh, or when the leading size is not a multiple of the
+        data-parallel size (no padding here), ``cond`` is returned as is.
+        """
+        if self.mesh is None or cond.shape[0] % batch_size_divisor(self.mesh):
+            return cond
+        return shard_sample_init(cond, self.mesh)
 
     def sample_batched(self, key, x_o, nsamples=10_000, *, use_ema=True,
                        chunk_size=None, show_progress_bars=True, **kwargs):
@@ -359,7 +381,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         total = B * nsamples
 
         if chunk_size is None or chunk_size >= total:
-            samples = flow.sample(key, cond=cond)  # ONE batched AR pass
+            samples = _jit_flow_sample(flow, key, self._place_cond(cond))  # ONE batched AR pass
         else:
             n_chunks = (total + chunk_size - 1) // chunk_size
             keys = jax.random.split(key, n_chunks)
@@ -369,7 +391,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             chunks = []
             for i in loop:
                 sl = slice(i * chunk_size, min((i + 1) * chunk_size, total))
-                chunk = flow.sample(keys[i], cond=cond[sl])
+                chunk = _jit_flow_sample(flow, keys[i], self._place_cond(cond[sl]))
                 chunks.append(jax.block_until_ready(chunk))
             samples = jnp.concatenate(chunks, axis=0)
 

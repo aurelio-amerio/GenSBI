@@ -385,17 +385,23 @@ class JointPipeline(AbstractPipeline):
             **sampler_kwargs,
         )
 
+        axis = _sample_concat_axis(sampler_kwargs)
+
         def sampler(key, nsamples, model_extras=None):
             _extras = model_extras if model_extras is not None else extras
             key, key_init = jax.random.split(key)
-            x_init_joint = self.method.sample_init(key_init, nsamples)
             # Marginalize joint prior to obs dims. This matches
             # JointWrapper.conditioned() which assumes obs = first dim_obs
             # dims, cond = remaining dims.
             # When supporting arbitrary condition masks, update both this
             # and the wrapper.
-            x_init = x_init_joint[:, :self.dim_obs, :]
-            return sampler_fn(key, x_init, _extras)
+            # With a mesh, x_init is padded to the data-parallel size and
+            # sharded over it; the extras (cond, ids) stay replicated.
+            x_init, _ = self._sharded_init(
+                lambda k, n: self.method.sample_init(k, n)[:, :self.dim_obs, :],
+                key_init, nsamples,
+            )
+            return self._trim(sampler_fn(key, x_init, _extras), nsamples, axis)
 
         return sampler
 
