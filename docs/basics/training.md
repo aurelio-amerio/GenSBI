@@ -283,10 +283,18 @@ pipeline.train(rngs)
 samples = pipeline.sample(key, x_o, nsamples=100_000)
 ```
 
-- **Config keys:** `mesh: auto` and `sharding_rule: replicated` can also be set in `training_config` or the YAML recipes. `mesh` also accepts a dict of `make_mesh` keyword arguments (`devices`, `model_axis`).
+- **Config keys:** `mesh` and `sharding_rule` can also be set in `training_config`, or in a YAML recipe under the `training:` section:
+
+  ```yaml
+  training:
+    mesh: auto
+    sharding_rule: replicated
+  ```
+
+  `mesh` also accepts a dict of `make_mesh` keyword arguments. From Python that can include `devices` (a list of `jax.Device`); YAML cannot express devices, so there the dict form is only useful for `model_axis` (e.g. `mesh: {model_axis: 2}`).
 - **Batch size:** the batch size of both the training and validation loaders must be divisible by the number of data-parallel devices. Otherwise a `ValueError` names the offending loader.
-- **Sampling:** `nsamples` is padded to a multiple of the device count and trimmed afterwards, so it has no constraint. Flow pipelines (MAF, TarFlow) jit their sampling, so the flow must be an `nnx.Module`.
-- **Rules:** `"replicated"` (default) is plain data parallelism. `"fsdp"` shards parameters and optimizer state over the mesh; it is *experimental* and its memory benefit is not yet measured. `"tensor"` is *experimental* and untuned. Both emit a warning.
+- **Sampling:** `nsamples` is padded to a multiple of the device count and trimmed afterwards, so it has no constraint. The condition `x_o` may live on any device; it is replicated over the mesh.
+- **Rules:** `"replicated"` (default) is plain data parallelism. An unknown rule raises `ValueError`; a non-default rule without a mesh has no effect and warns. `"fsdp"` shards parameters and optimizer state over the mesh; it is *experimental* and its memory benefit is not yet measured. `"tensor"` is *experimental* and untuned. Both emit a warning.
 - **Custom models:** your own `nnx.Module` needs no annotations for data parallelism. For FSDP, annotate parameters with `gensbi.sharding.axes`; unannotated parameters stay replicated and a single warning lists them.
 - **Testing without hardware:** simulate 8 CPU devices with `XLA_FLAGS=--xla_force_host_platform_device_count=8` (already set for the test suite).
 
