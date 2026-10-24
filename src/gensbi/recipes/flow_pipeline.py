@@ -189,6 +189,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         std = jnp.where(std < 1e-6, 1.0, std)     # guard zero-variance dims
         self.model.set_standardization(mean, std)
         self.ema_model.set_standardization(mean, std)
+        self._reshard()
         self._standardized = True
 
     def train(self, rngs, nsteps=None, save_model=True):

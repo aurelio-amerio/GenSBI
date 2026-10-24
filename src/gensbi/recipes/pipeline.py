@@ -769,6 +769,7 @@ class AbstractPipeline(abc.ABC):
         self.ema_model.eval()
 
         # wrap models
+        self._reshard()
         self._wrap_model()
 
         print("Restored model from checkpoint")
@@ -839,6 +840,7 @@ class AbstractPipeline(abc.ABC):
         self.ema_model.eval()
 
         # wrap models
+        self._reshard()
         self._wrap_model()
 
         print(f"Restored model from intermediate checkpoint @ step {step}")
@@ -863,6 +865,7 @@ class AbstractPipeline(abc.ABC):
         """
         model = self.ema_model if ema else self.model
         load_safetensors(model, path, strict=strict)
+        self._reshard()
 
     @abc.abstractmethod
     def _wrap_model(self):
