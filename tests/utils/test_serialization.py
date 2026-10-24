@@ -163,7 +163,8 @@ def test_pipeline_export_import_selects_ema(tmp_path):
     from gensbi.recipes.pipeline import AbstractPipeline
 
     class _Stub:  # stands in for a pipeline; only .model / .ema_model are used
-        pass
+        def _reshard(self):  # import_safetensors re-places weights on the pipeline's mesh
+            pass
 
     src = _Stub()
     src.model = _TinyNet(0)       # primary weights
