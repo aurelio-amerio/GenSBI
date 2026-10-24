@@ -1,4 +1,5 @@
 import jax
+import pytest
 from flax import nnx
 from jax.sharding import NamedSharding
 from jax.sharding import PartitionSpec as P
@@ -8,6 +9,7 @@ from gensbi.models import Flux1, Flux1Joint
 
 from .helpers import (
     assert_every_param_annotated,
+    has_healswin_sharding,
     requires_8_devices,
     small_flux1_params,
     small_flux1joint_params,
@@ -108,3 +110,31 @@ def test_shard_model_replicated_on_simformer_places_rng_state():
     assert any("rngs" in str(p) for p in shardings)
     for path, s in shardings.items():
         assert isinstance(s, NamedSharding) and s.is_equivalent_to(NamedSharding(mesh, P()), 1), path
+
+
+def test_tarflow_every_param_annotated():
+    from gensbi.models import TarFlow, TarFlowParams
+
+    assert_every_param_annotated(
+        TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=4, cond_dim=2, num_blocks=2, num_heads=2, head_dim=8))
+    )
+
+
+def test_maf_every_param_annotated():
+    from gensbi.models import MAFlow, MAFlowParams
+
+    assert_every_param_annotated(
+        MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=3, cond_dim=2, n_layers=2, nn_width=16))
+    )
+
+
+def test_healswin_encoder_annotated_via_gensbi():
+    if not has_healswin_sharding():
+        pytest.skip("installed heal_swin_nnx predates its sharding module")
+    from gensbi.models import HealSwinEncoder, HealSwinParams
+
+    p = HealSwinParams(
+        nside=16, in_channels=1, out_channels=1, base_pixels=tuple(range(8)),
+        embed_dim=16, depths=(2, 2), num_heads=(2, 4), drop_path_rate=0.0,
+    )
+    assert_every_param_annotated(HealSwinEncoder(p, rngs=nnx.Rngs(0)))
