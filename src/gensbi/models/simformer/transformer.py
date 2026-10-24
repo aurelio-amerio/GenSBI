@@ -6,6 +6,8 @@ from typing import Callable, Optional
 from jaxtyping import Array, PyTree
 from jax.typing import DTypeLike
 
+from gensbi.sharding import axes
+
 
 # layer = nnx.MultiHeadAttention(
 #     num_heads=8, in_features=5, qkv_features=16, decode=False, rngs=nnx.Rngs(0)
@@ -58,7 +60,12 @@ class AttentionBlock(nnx.Module):
         # fp32 island: dtype is intentionally fixed to float32 regardless of
         # the dtype knob above (see class docstring).
         self.layer_norm = nnx.LayerNorm(
-            din, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+            din,
+            rngs=rngs,
+            dtype=jnp.float32,
+            param_dtype=param_dtype,
+            scale_metadata=axes("embed"),
+            bias_metadata=axes("embed"),
         )
         self.attn = nnx.MultiHeadAttention(
             in_features=din,
@@ -68,6 +75,10 @@ class AttentionBlock(nnx.Module):
             rngs=rngs,
             dtype=jnp.float32,
             param_dtype=param_dtype,
+            kernel_metadata=axes("embed", "heads", None),
+            bias_metadata=axes("heads", None),
+            out_kernel_metadata=axes("heads", None, "embed"),
+            out_bias_metadata=axes("embed"),
         )
 
     def __call__(self, x: jnp.ndarray, mask: jnp.ndarray | None) -> jnp.ndarray:
@@ -115,7 +126,12 @@ class DenseBlock(nnx.Module):
         # fp32 island: LayerNorm stays fp32 regardless of the compute dtype
         # knob (mirrors AttentionBlock's normalization treatment).
         self.layer_norm = nnx.LayerNorm(
-            din, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+            din,
+            rngs=rngs,
+            dtype=jnp.float32,
+            param_dtype=param_dtype,
+            scale_metadata=axes("embed"),
+            bias_metadata=axes("embed"),
         )
         hidden_blocks = []
         hidden_blocks.append(
@@ -125,6 +141,8 @@ class DenseBlock(nnx.Module):
                 rngs=rngs,
                 dtype=dtype,
                 param_dtype=param_dtype,
+                kernel_metadata=axes("embed", "mlp"),
+                bias_metadata=axes("mlp"),
             )
         )
 
@@ -138,18 +156,34 @@ class DenseBlock(nnx.Module):
                     rngs=rngs,
                     dtype=dtype,
                     param_dtype=param_dtype,
+                    kernel_metadata=axes("mlp", None),
+                    bias_metadata=axes(None),
                 )
             )
 
         hidden_blocks.append(
-            nnx.Linear(n_features, din, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
+            nnx.Linear(
+                n_features,
+                din,
+                rngs=rngs,
+                dtype=dtype,
+                param_dtype=param_dtype,
+                kernel_metadata=axes("mlp", "embed"),
+                bias_metadata=axes("embed"),
+            )
         )
 
         self.hidden_blocks = nnx.List(hidden_blocks)
 
         self.act = act
         self.context_block = nnx.Linear(
-            dcontext, din, rngs=rngs, dtype=dtype, param_dtype=param_dtype
+            dcontext,
+            din,
+            rngs=rngs,
+            dtype=dtype,
+            param_dtype=param_dtype,
+            kernel_metadata=axes("in", "embed"),
+            bias_metadata=axes("embed"),
         )
         return
 
@@ -217,7 +251,12 @@ class Transformer(nnx.Module):
         # fp32 island: the final norm feeds directly into the model's output
         # projection, so it stays fp32 regardless of the compute dtype knob.
         self.layer_norm = nnx.LayerNorm(
-            din, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+            din,
+            rngs=rngs,
+            dtype=jnp.float32,
+            param_dtype=param_dtype,
+            scale_metadata=axes("embed"),
+            bias_metadata=axes("embed"),
         )
 
         for _ in range(num_layers):

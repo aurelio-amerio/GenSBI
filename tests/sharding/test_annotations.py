@@ -79,3 +79,32 @@ def test_shard_model_replicated_on_flux1_places_every_leaf():
     sh.shard_model(m, mesh, "replicated")
     for path, s in sh.sharding_of(m).items():
         assert isinstance(s, NamedSharding) and s.is_equivalent_to(NamedSharding(mesh, P()), 1), path
+
+
+def test_simformer_every_param_annotated():
+    from gensbi.models import Simformer
+
+    from .helpers import small_simformer_params
+
+    m = Simformer(small_simformer_params())
+    assert_every_param_annotated(m)
+    # transformer.rngs is part of the model state; RNG variables are not annotated.
+    rng_vars = nnx.to_flat_state(nnx.state(m, nnx.Any(nnx.RngKey, nnx.RngCount)))
+    assert len(rng_vars) > 0
+    for path, var in rng_vars:
+        assert "out_sharding" not in var.get_metadata(), path
+
+
+@requires_8_devices
+def test_shard_model_replicated_on_simformer_places_rng_state():
+    from gensbi.models import Simformer
+
+    from .helpers import small_simformer_params
+
+    m = Simformer(small_simformer_params())
+    mesh = sh.make_mesh()
+    sh.shard_model(m, mesh, "replicated")
+    shardings = sh.sharding_of(m)
+    assert any("rngs" in str(p) for p in shardings)
+    for path, s in shardings.items():
+        assert isinstance(s, NamedSharding) and s.is_equivalent_to(NamedSharding(mesh, P()), 1), path

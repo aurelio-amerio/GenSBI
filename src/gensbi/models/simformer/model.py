@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from .transformer import Transformer
 from gensbi.models.embedding import GaussianFourierEmbedding, MLPEmbedder
 
+from gensbi.sharding import axes
 from gensbi.utils.model_wrapping import ModelWrapper, _expand_dims, _expand_time
 
 
@@ -134,9 +135,11 @@ class Simformer(nnx.Module):
             rngs=params.rngs,
             dtype=params.dtype,
             param_dtype=params.param_dtype,
+            embedding_metadata=axes("vocab", "embed"),
         )
         self.condition_embedding = nnx.Param(
-            0.01 * jnp.ones((1, 1, params.cond_emb_dim), dtype=params.param_dtype)
+            0.01 * jnp.ones((1, 1, params.cond_emb_dim), dtype=params.param_dtype),
+            **axes(None, None, "embed"),
         )
 
         self.total_tokens = params.val_emb_dim + params.id_emb_dim + params.cond_emb_dim
@@ -166,6 +169,8 @@ class Simformer(nnx.Module):
             rngs=params.rngs,
             dtype=jnp.float32,
             param_dtype=params.param_dtype,
+            kernel_metadata=axes("embed", "out"),
+            bias_metadata=axes("out"),
         )
         return
 
