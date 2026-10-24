@@ -58,9 +58,6 @@ attention and MLP blocks, GPU tuning) is a follow-up.
   sequence parallelism, pipeline parallelism.
 * Sharding anything inside `sbibm-jax` (its loaders, simulators). Second pass.
 * Ensemble parallelism (K independent models, one per device). Separate design.
-* Sharded sampling for models whose sampling is not jitted today (TarFlow,
-  MAF `sample`/`log_prob`). Their training is covered; their sampling is a
-  follow-up.
 * Annotating the experimental models (PixelDiT, FieldDiT, autoencoders, the
   VAE pipeline). They still work under the `replicated` rule through the
   fallback described below; the `fsdp` rule will replicate them too.
@@ -322,6 +319,14 @@ Small, pure, no pipeline imports. Public surface:
   `x_init` and places it with `shard_sample_init`, runs the existing jitted
   solver unchanged, and trims back to `nsamples`. The SDE solver splits its
   per-sample keys inside its own jit, so nothing is needed for keys.
+* `ConditionalFlowPipeline.get_sampler` (TarFlow, MAF) calls
+  `flow.sample` eagerly today, unlike the other pipelines. It is wrapped in
+  `nnx.jit` (verified jit-compatible on both models; on one CPU device 4096
+  samples drop from ~650 ms to ~4 ms for MAF and ~730 ms to ~31 ms for
+  TarFlow), and when a mesh is set the broadcast condition is placed on the
+  batch axes with the same `nsamples` padding; a condition sharded over
+  `data` propagates through the models' internal `vmap`/`scan` and the
+  output lands on `data` with identical values (verified).
 * The concrete pipelines (`Flux1*Pipeline`, `Simformer*Pipeline`,
   `Flux1Joint*Pipeline`, …) build the model before calling
   `AbstractPipeline.__init__`, so `mesh` and `sharding_rule` are threaded
@@ -404,9 +409,10 @@ for `tests/sharding/` with its own flags.)
    and after steps. Sharding comparisons use
    `NamedSharding.is_equivalent_to(other, ndim)`, never spec equality
    (`P('data')` and `P('data', None)` are the same sharding).
-6. Sampling: ODE and EDM samplers give the same samples with and without a
-   mesh for the same key (tolerance); `nsamples` not divisible by 8 is
-   padded and trimmed; SDE sampler runs and has the right shape.
+6. Sampling: ODE and EDM samplers, and the flow pipeline's jitted MAF and
+   TarFlow samplers, give the same samples with and without a mesh for the
+   same key (tolerance); `nsamples` not divisible by 8 is padded and
+   trimmed; SDE sampler runs and has the right shape.
 7. Checkpointing: orbax save/restore and safetensors export/import each
    preserve sharding.
 8. Recipe config: `mesh: auto` and `sharding_rule: fsdp` parsed and applied.
@@ -500,7 +506,6 @@ runs for two steps on a synthetic batch.
   `fsdp` rule maps `embed` to `fsdp`; batch sharding follows automatically
   from `batch_axes(mesh)`.
 * Ensemble parallelism.
-* Jitted and sharded sampling for TarFlow and MAF.
 * Multi-host.
 * Annotations for experimental models.
 * Multi-GPU peak-memory measurement for FSDP (6.4).
