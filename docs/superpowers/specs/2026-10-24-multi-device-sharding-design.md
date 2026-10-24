@@ -188,11 +188,23 @@ self.condition_embedding = nnx.Param(
 `axes(*names)` returns `{"out_sharding": names}`; `partitioned(init,
 names)` is `nnx.with_partitioning(init, names)`.
 
-**Guaranteeing the mesh context.** Every top-level model constructor
-(`Flux1`, `Flux1Joint`, `Simformer`, `TarFlow`, `MAFlow`; `HealSwin`,
-`HealSwinEncoder`, `HealConv`, `Swin*`) runs its body under a
-`sharding.mesh_context(rule=...)` context manager (a decorator on
-`__init__` or an explicit `with` as the first statement). It behaves as:
+**Which operations need the mesh context.** Verified on the installed
+Flax: constructing an annotated module, creating an `nnx.Optimizer` on it
+(its `OptVariable`s copy the parameter metadata and eager-shard again; the
+EMA is an optimizer subclass), and `nnx.eval_shape` abstract init all
+raise outside a mesh context. `nnx.clone`, `split`/`merge`,
+`state`/`update`, `nnx.jit`, `nnx.value_and_grad` and
+`get_partition_spec` do not. A module **without** annotations is never
+affected by any of this.
+
+**Guaranteeing the mesh context.** Every public `nnx.Module` class that
+creates annotated parameters, top-level models (`Flux1`, `Flux1Joint`,
+`Simformer`, `TarFlow`, `MAFlow`; `HealSwin`, `HealSwinEncoder`,
+`HealConv`, `Swin*`) **and** the reusable building blocks users may
+compose into their own models (embedding layers, attention/MLP blocks,
+conditioners), runs its constructor body under
+`sharding.mesh_context(rule=...)` (a decorator on `__init__` or an
+explicit `with` as the first statement). It behaves as:
 
 * if a mesh is already active (`jax.sharding.get_mesh()` is non-empty) and
   logical rules are already set, do nothing;
@@ -200,13 +212,18 @@ names)` is `nnx.with_partitioning(init, names)`.
   the default device with axes `("data","model")`, and
   `nnx.logical_axis_rules(RULES["replicated"])`.
 
-So `Flux1(params)` on a laptop with no mesh anywhere keeps working, and the
-pipeline, which builds the model inside the user's mesh and chosen rule
-(5.4), gets parameters born already sharded. Sub-layers (`MLPEmbedder`,
-attention blocks, …) are constructed inside those bodies and need nothing.
-If a user builds an annotated sub-layer standalone, Flax's own contract
-applies: build it under a mesh. Users who do not annotate their own
-modules are unaffected and get data parallel through the fallback.
+So `Flux1(params)` on a laptop with no mesh anywhere keeps working, a
+user model that composes our building blocks keeps working, and the
+pipeline, which builds the model, the optimizer and the EMA inside the
+user's mesh and chosen rule (5.4), gets parameters born already sharded.
+Nesting is free because the guard is a no-op when a mesh is active.
+
+Users who do **not** annotate their own modules are unaffected everywhere:
+construction, optimizer, placement (all parameters resolve to replicated,
+which is data parallel), FSDP (replicated plus one warning). The one
+documented gotcha is for users who bypass the pipeline and build their own
+`nnx.Optimizer` on a GenSBI/HEAL-SWIN model: that must happen inside a
+mesh context, and `with gensbi.sharding.mesh_context():` is the one-liner.
 
 Rank of the annotation must equal rank of the array. Non-parameter state
 (`Mask`, `PEMatrix`, `Buffer`, `RopeIds`, `RngKey`, `RngCount`, `BatchStat`)
@@ -252,10 +269,11 @@ Small, pure, no pipeline imports. Public surface:
   placement. A user-supplied model (built with no mesh, hence on the 1x1
   default mesh) is re-placed with `shard_model(model, mesh, rule)`, which
   also serves as the idempotent "fix-up" after buffer writes and imports.
-* `train()`: `optimizer = self._get_optimizer()` is built on already-placed
-  parameters and inherits their sharding (verified); a test asserts it
-  rather than re-placing. The training loop body runs inside
-  `jax.set_mesh(mesh)`. Every `next(iter)` result passes through `shard_batch` before
+* `train()`: `optimizer = self._get_optimizer()` runs inside
+  `mesh_context(mesh, rule)` (required: optimizer state eager-shards from
+  the parameter metadata) and so inherits the parameters' sharding; a test
+  asserts it. `ModelEMA` creation is wrapped the same way. The training
+  loop body runs inside the same context. Every `next(iter)` result passes through `shard_batch` before
   `train_step`/`val_step`. The first train and first validation batch pass
   through `check_batch_divisible`. The per-step key is left as is (a scalar
   key is replicated automatically).
@@ -336,7 +354,9 @@ for `tests/sharding/` with its own flags.)
 1. `make_mesh` shape and axis names; `model_axis` splitting.
    `mesh_context`: no-op when a mesh and rules are active; installs the
    default mesh otherwise; nothing leaks after exit; a model built with no
-   mesh has every variable on the default mesh with `P()`.
+   mesh has every variable on the default mesh with `P()`; a building block
+   composed into a user module outside any mesh constructs; an unannotated
+   user module passed to a pipeline with a mesh trains and samples.
 2. Annotation coverage: for every model class exported from
    `gensbi.models` (built small), every `nnx.Param` has `out_sharding`
    metadata of matching rank, using only names from `LOGICAL_AXES`.
@@ -393,8 +413,9 @@ runs for two steps on a synthetic batch.
 
 * Logical axis names resolved through rules, rather than mesh names written
   directly into layers. Costs nothing now, avoids a second sweep later.
-* Eager sharding stays on; constructors guarantee a mesh context with a
-  cached 1x1 default mesh when none is active, instead of per-variable
+* Eager sharding stays on; every public annotated module class guarantees
+  a mesh context with a cached 1x1 default mesh when none is active, and the
+  pipeline wraps model, optimizer and EMA creation, instead of per-variable
   `eager_sharding=False` or flipping Flax's global flag. Parameters built
   without a user mesh therefore carry a `NamedSharding` on the default mesh
   rather than a `SingleDeviceSharding`; same layout, different label.
