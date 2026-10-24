@@ -184,7 +184,8 @@ class UnconditionalPipeline(AbstractPipeline):
         """
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
-        model_extras = {"obs_ids": self.obs_ids}
+        # With a mesh, the ids are replicated over it.
+        model_extras = self._replicate({"obs_ids": self.obs_ids})
 
         sampler_fn = self.method.build_sampler_fn(
             model_wrapped, self.path, model_extras, **sampler_kwargs,
@@ -195,7 +196,7 @@ class UnconditionalPipeline(AbstractPipeline):
         def sampler(key, nsamples):
             key, key_init = jax.random.split(key)
             # With a mesh, x_init is padded to the data-parallel size and
-            # sharded over it; the ids stay replicated.
+            # sharded over it; the ids are replicated.
             x_init, _ = self._sharded_init(
                 lambda k, n: self.method.sample_init(k, n), key_init, nsamples,
             )

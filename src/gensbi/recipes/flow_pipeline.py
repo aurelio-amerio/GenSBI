@@ -77,6 +77,10 @@ class ConditionalFlowPipeline(AbstractPipeline):
     structured. A bare ``(B, dim)`` tensor is rejected — add ``[..., None]``
     for ``C = 1``. A batch axis > 1 raises ``ValueError`` — pass a batch to
     :meth:`sample_batched` instead.
+
+    The flow must be an ``nnx.Module``: sampling always runs under
+    ``nnx.jit`` (with or without a mesh), since eager autoregressive
+    sampling is orders of magnitude slower.
     """
 
     def __init__(self, model, train_dataset, val_dataset, dim_obs, dim_cond,
@@ -313,13 +317,16 @@ class ConditionalFlowPipeline(AbstractPipeline):
         )
 
     def _place_cond(self, cond):
-        """Shard ``cond`` over the batch axes if its leading size allows it.
+        """Place ``cond`` on the mesh for one jitted sampling pass.
 
-        Without a mesh, or when the leading size is not a multiple of the
-        data-parallel size (no padding here), ``cond`` is returned as is.
+        Without a mesh ``cond`` is returned as is. With a mesh it is sharded
+        over the batch axes when its leading size is a multiple of the
+        data-parallel size, and replicated otherwise (no padding here).
         """
-        if self.mesh is None or cond.shape[0] % batch_size_divisor(self.mesh):
+        if self.mesh is None:
             return cond
+        if cond.shape[0] % batch_size_divisor(self.mesh):
+            return self._replicate(cond)
         return shard_sample_init(cond, self.mesh)
 
     def sample_batched(self, key, x_o, nsamples=10_000, *, use_ema=True,

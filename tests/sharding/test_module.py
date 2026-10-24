@@ -185,7 +185,8 @@ def test_pad_for_mesh():
 @requires_8_devices
 def test_shard_batch_jax_input_already_on_device():
     mesh = sh.make_mesh()
-    x = jnp.ones((16, 4, 1))  # committed to device 0 as in notebook .map(split_data)
+    x = jax.device_put(jnp.ones((16, 4, 1)), jax.devices()[0])  # committed, as in notebook .map(split_data)
+    assert x.committed
     y = sh.shard_batch(x, mesh)
     assert y.sharding.is_equivalent_to(NamedSharding(mesh, P("data")), 3)
     np.testing.assert_array_equal(np.asarray(y), np.asarray(x))
@@ -201,3 +202,24 @@ def test_shard_sample_init():
 def test_mesh_context_is_nullcontext_without_mesh():
     with sh.mesh_context(None):
         assert jax.sharding.get_mesh().empty
+
+
+def test_mesh_context_activates_only_inside_with():
+    mesh = sh.make_mesh()
+    ctx = sh.mesh_context(mesh)  # creating the context must not set the global mesh
+    assert jax.sharding.get_mesh().empty
+    with ctx:
+        assert jax.sharding.get_mesh() == mesh
+    assert jax.sharding.get_mesh().empty
+
+
+@requires_8_devices
+def test_replicate_places_array_leaves_only():
+    mesh = sh.make_mesh()
+    committed = jax.device_put(jnp.arange(4.0), jax.devices()[0])
+    tree = {"a": committed, "b": np.ones((2, 3), np.float32), "c": 3, "d": None, "e": "ids"}
+    out = sh.replicate(tree, mesh)
+    for k in ("a", "b"):
+        assert out[k].sharding.is_equivalent_to(NamedSharding(mesh, P()), out[k].ndim), k
+        np.testing.assert_array_equal(np.asarray(out[k]), np.asarray(tree[k]))
+    assert out["c"] == 3 and out["d"] is None and out["e"] == "ids"

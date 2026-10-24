@@ -49,7 +49,6 @@ def test_tensor_rule_flux1_sampling_matches_no_mesh(tmp_path):
         p.ema_model = p.model; p._wrap_model()
         outs.append(np.asarray(p.sample(jax.random.key(1), x_o, nsamples=16, use_ema=False,
                                         show_progress_bars=False)))
-    print("max sampling deviation", np.abs(outs[1] - outs[0]).max())
     np.testing.assert_allclose(outs[1], outs[0], rtol=1e-4, atol=1e-5)
 
 

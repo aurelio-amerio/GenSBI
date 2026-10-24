@@ -122,4 +122,44 @@ def test_flow_sample_batched_places_only_divisible_chunks(tmp_path, jit_calls):
     assert out.shape == (5, 4, dim_obs, 2)
     assert [c.shape[0] for c in jit_calls] == [8, 8, 4]
     assert _on_data(jit_calls[0], b.mesh) and _on_data(jit_calls[1], b.mesh)
-    assert isinstance(jit_calls[2].sharding, jax.sharding.SingleDeviceSharding)
+    # The non-divisible tail is replicated over the mesh, never left on one device.
+    assert jit_calls[2].sharding.is_equivalent_to(NamedSharding(b.mesh, P()), jit_calls[2].ndim)
+
+# A condition committed to one device (e.g. built under jax.default_device or
+# returned by a jitted function) must not clash with the mesh-placed model:
+# the pipeline replicates the sampler extras over the mesh.
+def _committed(x):
+    return jax.device_put(x, jax.devices()[0])
+
+@requires_8_devices
+def test_committed_condition_samples_with_mesh(tmp_path):
+    a = _pipe(Flux1FlowPipeline, None, tmp_path / "a"); b = _pipe(Flux1FlowPipeline, sh.make_mesh(), tmp_path / "b")
+    sa = a.sample(jax.random.key(1), x_o, nsamples=16, use_ema=False, show_progress_bars=False)
+    sb = b.sample(jax.random.key(1), _committed(x_o), nsamples=16, use_ema=False, show_progress_bars=False)
+    np.testing.assert_allclose(np.asarray(sb), np.asarray(sa), rtol=1e-4, atol=1e-5)
+
+@requires_8_devices
+def test_committed_condition_samples_with_mesh_joint(tmp_path):
+    from gensbi.recipes import SimformerFlowPipeline
+    outs = []
+    for name, mesh, x in [("a", None, x_o), ("b", sh.make_mesh(), _committed(x_o))]:
+        p = SimformerFlowPipeline(train_dataset_joint, val_dataset_joint, dim_obs, dim_cond, ch_obs=2,
+                                  params=small_simformer_params(), training_config=test_training_config(tmp_path / name), mesh=mesh)
+        p.ema_model = p.model; p._wrap_model()
+        outs.append(np.asarray(p.sample(jax.random.key(1), x, nsamples=16, use_ema=False, show_progress_bars=False)))
+    np.testing.assert_allclose(outs[1], outs[0], rtol=1e-4, atol=1e-5)
+
+@requires_8_devices
+def test_flow_committed_condition_samples_with_mesh(tmp_path, jit_calls):
+    a = _flow_pipe(_maf, None, tmp_path / "a"); b = _flow_pipe(_maf, sh.make_mesh(), tmp_path / "b")
+    sa = a.sample(jax.random.key(1), x_o, nsamples=16, use_ema=False, show_progress_bars=False)
+    sb = b.sample(jax.random.key(1), _committed(x_o), nsamples=16, use_ema=False, show_progress_bars=False)
+    np.testing.assert_allclose(np.asarray(sb), np.asarray(sa), rtol=1e-4, atol=1e-5)
+    # B * nsamples = 9 is not a multiple of 8: the condition is replicated, not sharded.
+    xb = jax.random.normal(jax.random.key(3), (3, dim_cond, 2))
+    ra = a.sample_batched(jax.random.key(1), xb, nsamples=3, use_ema=False, show_progress_bars=False)
+    jit_calls.clear()
+    rb = b.sample_batched(jax.random.key(1), _committed(xb), nsamples=3, use_ema=False, show_progress_bars=False)
+    np.testing.assert_allclose(np.asarray(rb), np.asarray(ra), rtol=1e-4, atol=1e-5)
+    assert [c.shape[0] for c in jit_calls] == [9]
+    assert jit_calls[0].sharding.is_equivalent_to(NamedSharding(b.mesh, P()), jit_calls[0].ndim)

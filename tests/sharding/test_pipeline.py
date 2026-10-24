@@ -28,6 +28,38 @@ def test_no_mesh_is_unchanged(tmp_path):
     assert p.mesh is None and p.sharding_rule == "replicated"
     assert isinstance(p.model.obs_in.kernel[...].sharding, jax.sharding.SingleDeviceSharding)
 
+def _flux1(tmp_path, training_config=None, **kw):
+    return Flux1FlowPipeline(train_dataset_cond, val_dataset_cond, dim_obs, dim_cond, ch_obs=2, ch_cond=2,
+                             params=small_flux1_params(),
+                             training_config=training_config or test_training_config(tmp_path), **kw)
+
+def test_unknown_rule_raises_without_mesh(tmp_path):
+    with pytest.raises(ValueError, match="Unknown sharding rule 'fdsp'"):
+        _flux1(tmp_path, sharding_rule="fdsp")
+    tc = test_training_config(tmp_path); tc["sharding_rule"] = "fdsp"
+    with pytest.raises(ValueError, match="Unknown sharding rule 'fdsp'"):
+        _flux1(tmp_path, training_config=tc)
+
+def _no_mesh_warnings(rec):
+    return [str(w.message) for w in rec if "has no effect without a mesh" in str(w.message)]
+
+@pytest.mark.parametrize("source", ["kwarg", "config"])
+def test_rule_without_mesh_warns_and_changes_nothing(source, tmp_path):
+    tc = test_training_config(tmp_path)
+    kw = {"sharding_rule": "fsdp"} if source == "kwarg" else {}
+    if source == "config":
+        tc["sharding_rule"] = "fsdp"
+    with pytest.warns(UserWarning, match="has no effect without a mesh") as rec:
+        p = _flux1(tmp_path, training_config=tc, **kw)
+    assert len(_no_mesh_warnings(rec)) == 1
+    assert p.mesh is None and p.sharding_rule == "fsdp"
+    assert isinstance(p.model.obs_in.kernel[...].sharding, jax.sharding.SingleDeviceSharding)
+
+def test_replicated_or_default_rule_without_mesh_is_silent(tmp_path, recwarn):
+    _flux1(tmp_path / "a")
+    _flux1(tmp_path / "b", sharding_rule="replicated")
+    assert not _no_mesh_warnings(recwarn)
+
 @requires_8_devices
 def test_flux1_replicated_matches_no_mesh(tmp_path):
     ref, l_ref, v_ref = _train(Flux1FlowPipeline, small_flux1_params(), None, None, tmp_path / "a")
@@ -108,6 +140,10 @@ def _train_joint(cls, params, mesh, rule, tmp_path, nsteps=20):
 def test_joint_pipelines_match_no_mesh(cls, params_fn, atol, rule, tmp_path):
     ref, l_ref = _train_joint(cls, params_fn(), None, None, tmp_path / "a")
     p, l = _train_joint(cls, params_fn(), sh.make_mesh(), rule, tmp_path / "b")
+    if rule == "fsdp":  # the fsdp case must actually shard something
+        ranks = {"/".join(map(str, k)): v[...].ndim for k, v in nnx.to_flat_state(nnx.state(p.model))}
+        assert any(not s.is_equivalent_to(NamedSharding(p.mesh, P()), ranks[k])
+                   for k, s in sh.sharding_of(p.model).items()), "fsdp sharded nothing"
     np.testing.assert_allclose(l, l_ref, rtol=1e-3, atol=1e-5)
     _assert_params_close(ref.model, p.model, atol=atol)  # R6: reduction-order noise over 8 devices
 

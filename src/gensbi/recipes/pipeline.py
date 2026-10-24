@@ -38,9 +38,11 @@ import flax.traverse_util as tu
 from gensbi.utils.misc import get_colored_value
 from gensbi.utils.serialization import save_safetensors, load_safetensors
 from gensbi.sharding import (
+    RULES,
     check_batch_divisible,
     mesh_context,
     pad_for_mesh,
+    replicate,
     resolve_mesh,
     shard_batch,
     shard_model,
@@ -342,9 +344,22 @@ class AbstractPipeline(abc.ABC):
         self.mesh = resolve_mesh(
             mesh if mesh is not None else self.training_config.get("mesh")
         )
-        self.sharding_rule = (
-            sharding_rule or self.training_config.get("sharding_rule") or "replicated"
-        )
+        explicit_rule = sharding_rule or self.training_config.get("sharding_rule")
+        self.sharding_rule = explicit_rule or "replicated"
+        # Validated with or without a mesh, so a typo fails at construction
+        # instead of when a mesh is added later. Touches no arrays.
+        if self.sharding_rule not in RULES:
+            raise ValueError(
+                f"Unknown sharding rule '{self.sharding_rule}'. "
+                f"Available rules: {sorted(RULES)}."
+            )
+        if self.mesh is None and explicit_rule not in (None, "replicated"):
+            warnings.warn(
+                f"sharding_rule '{self.sharding_rule}' has no effect without a mesh; "
+                "pass mesh=... (or set training_config['mesh']) to use it.",
+                UserWarning,
+                stacklevel=2,
+            )
         self._checked_loaders: set[str] = set()
 
         self.model = model
@@ -470,6 +485,17 @@ class AbstractPipeline(abc.ABC):
             return draw(key, nsamples), nsamples
         n_pad, _ = pad_for_mesh(nsamples, self.mesh)
         return shard_sample_init(draw(key, n_pad), self.mesh), n_pad
+
+    def _replicate(self, tree):
+        """Replicate the array leaves of ``tree`` over the mesh (no-op without one).
+
+        Sampler extras (condition, node ids, masks) are not split over the
+        batch; replicating them also moves arrays committed to a single
+        device, which jit would otherwise reject next to mesh-placed inputs.
+        """
+        if self.mesh is None:
+            return tree
+        return replicate(tree, self.mesh)
 
     def _trim(self, out, nsamples, axis):
         """Keep the first ``nsamples`` entries of ``out`` along ``axis``.
@@ -1031,7 +1057,9 @@ class AbstractPipeline(abc.ABC):
 
         rng_val = rngs.val_step()
         batch_val = self._prepare_batch(next(self.val_dataset_iter), "validation")
-        min_val = val_step(self.model, batch_val, rng_val)
+        # Same mesh context as the loop below, so val_step compiles once.
+        with mesh_context(self.mesh):
+            min_val = val_step(self.model, batch_val, rng_val)
 
         val_error_ratio = self.training_config.get("val_error_ratio", 1.3)
         counter = 0

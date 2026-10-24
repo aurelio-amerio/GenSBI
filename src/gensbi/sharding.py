@@ -279,6 +279,46 @@ def shard_sample_init(x_init, mesh):
     return shard_batch(x_init, mesh)
 
 
-def mesh_context(mesh) -> contextlib.AbstractContextManager:
-    """``jax.set_mesh(mesh)`` if a mesh is given, else a no-op context."""
-    return jax.set_mesh(mesh) if mesh is not None else contextlib.nullcontext()
+def replicate(tree, mesh):
+    """Replicate every array leaf of ``tree`` over every device of ``mesh``.
+
+    Used for inputs that must live on the mesh without being split, such as
+    a sampler's condition and node ids.  Arrays committed to a single device
+    are moved; non-array leaves are returned untouched.
+
+    Parameters
+    ----------
+    tree : pytree
+        Arrays (``jax.Array`` or ``numpy.ndarray``) and arbitrary other leaves.
+    mesh : jax.sharding.Mesh
+        Target mesh.
+
+    Returns
+    -------
+    pytree
+        Same structure, array leaves placed with ``NamedSharding(mesh, P())``.
+    """
+    sharding = NamedSharding(mesh, P())
+    return jax.tree.map(
+        lambda x: jax.device_put(x, sharding) if _is_array(x) else x, tree
+    )
+
+
+@contextlib.contextmanager
+def mesh_context(mesh):
+    """Make ``mesh`` the active mesh for the body of a ``with`` block.
+
+    ``jax.set_mesh(mesh)`` is entered when the ``with`` block is entered (not
+    when this function is called) and left on exit.  With ``mesh=None`` this
+    is a no-op context.
+
+    Parameters
+    ----------
+    mesh : jax.sharding.Mesh or None
+        Mesh to activate.
+    """
+    if mesh is None:
+        yield
+        return
+    with jax.set_mesh(mesh):
+        yield

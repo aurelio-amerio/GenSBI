@@ -252,6 +252,8 @@ class ConditionalPipeline(AbstractPipeline):
                     f"model_extras cannot override protected keys: {conflict}"
                 )
             extras.update(model_extras)
+        # With a mesh, the extras (cond, ids, ...) are replicated over it.
+        extras = self._replicate(extras)
 
         sampler_fn = self.method.build_sampler_fn(
             model_wrapped, self.path, extras, **sampler_kwargs,
@@ -260,10 +262,10 @@ class ConditionalPipeline(AbstractPipeline):
         axis = _sample_concat_axis(sampler_kwargs)
 
         def sampler(key, nsamples, model_extras=None):
-            _extras = model_extras if model_extras is not None else extras
+            _extras = self._replicate(model_extras) if model_extras is not None else extras
             key, key_init = jax.random.split(key)
             # With a mesh, x_init is padded to the data-parallel size and
-            # sharded over it; the extras (cond, ids) stay replicated.
+            # sharded over it; the extras (cond, ids) are replicated.
             x_init, _ = self._sharded_init(
                 lambda k, n: self.method.sample_init(k, n), key_init, nsamples,
             )
