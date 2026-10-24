@@ -20,8 +20,11 @@ the door open to **FSDP** (shard parameters and optimizer state across the
 same devices to save memory) and to **tensor parallel** later, without a
 second rewrite. FSDP is in scope as a tested opt-in, **marked experimental**
 in docs and in the warning it emits, because its memory benefit cannot be
-measured on simulated CPU devices (see 6.4). Tensor parallel is prepared
-for (annotations and a mesh axis exist) but no tensor rule ships.
+measured on simulated CPU devices (see 6.4). A `tensor` rule also ships,
+**experimental and untuned**: it is one row in the rule table plus a
+correctness smoke test, and exists mainly to validate the `heads`/`mlp`
+annotations early. Making it fast (activation sharding constraints in
+attention and MLP blocks, GPU tuning) is a follow-up.
 
 ### Why
 
@@ -39,8 +42,9 @@ for (annotations and a mesh axis exist) but no tensor rule ships.
 2. All models under `src/gensbi/models` (Flux1, Flux1Joint, Simformer,
    TarFlow, MAF, the embedding layers, wrappers) and the HEAL-SWIN models
    carry sharding annotations on every parameter.
-3. Two shipped sharding rules: `replicated` (plain data parallel, the
-   default when a mesh is given) and `fsdp`.
+3. Three shipped sharding rules: `replicated` (plain data parallel, the
+   default when a mesh is given), `fsdp` (experimental) and `tensor`
+   (experimental, correctness only).
 4. Batches, the per-step random key, samplers, the EMA model, the optimizer
    state and checkpoints all behave correctly under both rules.
 5. Everything is exercised in CI on 8 simulated CPU devices, in both repos.
@@ -50,7 +54,8 @@ for (annotations and a mesh axis exist) but no tensor rule ships.
 **Non-goals (this pass)**
 
 * Multi-host / multi-process training. One process, many local devices.
-* A shipped tensor-parallel rule, sequence parallelism, pipeline parallelism.
+* A *tuned* tensor-parallel rule (activation constraints, benchmarks),
+  sequence parallelism, pipeline parallelism.
 * Sharding anything inside `sbibm-jax` (its loaders, simulators). Second pass.
 * Ensemble parallelism (K independent models, one per device). Separate design.
 * Sharded sampling for models whose sampling is not jitted today (TarFlow,
@@ -168,7 +173,7 @@ Every parameter is annotated with **logical** axis names, never with mesh
 axis names. A rule maps logical names to mesh axes at placement time. One
 annotation serves every rule, now and later.
 
-| Logical name | Meaning | `replicated` | `fsdp` | future `tensor` |
+| Logical name | Meaning | `replicated` | `fsdp` | `tensor` |
 |---|---|---|---|---|
 | `embed` | model/residual hidden width | – | `data` | – |
 | `mlp` | MLP hidden width | – | – | `model` |
@@ -180,7 +185,19 @@ annotation serves every rule, now and later.
 
 The `fsdp` rule shards only `embed`. That is the standard choice: every
 large kernel has one `embed` axis, so every large kernel and its optimizer
-state gets split, while small vectors stay cheap to gather.
+state gets split, while small vectors stay cheap to gather. The `tensor`
+rule shards `mlp`, `heads` and `vocab` over `model` and leaves `embed`
+replicated (Megatron-style column/row split); the same divisibility
+fallback applies to the sharded dims (head count and hidden widths must
+divide by the `model` axis size). XLA guarantees correct results for any
+placement, so this rule is safe to ship untuned; it only affects speed.
+
+**Batch axes are derived from the mesh**, not hard-coded: a batch is
+sharded over every mesh axis except `model`. With today's 2-D mesh that is
+`P("data")`; a future 3-D mesh `("data","fsdp","model")`, where the FSDP
+rule maps `embed` to `fsdp` instead of `data`, needs only a change to
+`make_mesh` and the rule table, with models, checkpoints and the pipeline
+untouched.
 
 The vocabulary and the two rule tables above must be identical in
 `gensbi/sharding.py` and `heal_swin_nnx/sharding.py`. A test in each repo
@@ -249,8 +266,11 @@ Small, pure, no pipeline imports. Public surface:
   not divisible by the `data` size, or which has no annotation, is placed
   replicated; one warning lists them.
 * `shard_batch(batch, mesh) -> batch`. `tree_map` over arrays (numpy or
-  `jax.Array`), placing axis 0 on `data` and the rest replicated.
-  Rank-agnostic. Leaves non-array leaves alone.
+  `jax.Array`), placing axis 0 on the batch axes (`batch_axes(mesh)`: every
+  mesh axis except `model`) and the rest replicated. Rank-agnostic. Leaves
+  non-array leaves alone.
+* `batch_axes(mesh) -> tuple[str, ...]` and `batch_size_divisor(mesh)`
+  (product of the batch axes' sizes), used by `check_batch_divisible`.
 * `check_batch_divisible(batch, mesh, what: str)`. Raises the `ValueError`
   described above.
 * `sharding_of(module) -> dict[path, NamedSharding]` for tests and debugging.
@@ -382,6 +402,11 @@ for `tests/sharding/` with its own flags.)
 7. Checkpointing: orbax save/restore and safetensors export/import each
    preserve sharding.
 8. Recipe config: `mesh: auto` and `sharding_rule: fsdp` parsed and applied.
+9. Tensor smoke test: `make_mesh(model_axis=2)` (4x2), a small Flux1 and
+   Simformer under the `tensor` rule, 20 training steps and one sampling
+   call match the unsharded run to tolerance; qkv and MLP kernels are
+   placed over `model`; an indivisible head count falls back with a
+   warning. Correctness only, no performance assertion.
 
 ### 6.3 Cross-repo sequencing
 
@@ -427,7 +452,11 @@ runs for two steps on a synthetic batch.
   loss (born-sharded parameters) is irrelevant while models fit on one
   device, and the large-model path is verified to work with the opt-out.
   An independent review reached the same conclusion.
-* `fsdp` shards the `embed` axis only.
+* `fsdp` shards the `embed` axis only; `tensor` ships as a correctness-only
+  experimental rule with a 4x2 smoke test, so mislabelled `heads`/`mlp`
+  axes are caught now rather than when someone needs them.
+* Batch axes are derived from the mesh (everything except `model`) so a
+  3-D mesh later is a helper change, not a redesign.
 * Indivisible or unannotated arrays under `fsdp` fall back to replication
   with one warning, instead of raising.
 * Sampling pads `nsamples` up to a multiple of the device count and trims,
@@ -455,8 +484,13 @@ runs for two steps on a synthetic batch.
   `shard_options`-aware loader belongs there. Offline `TaskDataset` needs
   nothing: its batches are host numpy with a leading batch axis and are
   placed by `shard_batch`.
-* Tensor-parallel rule (`mlp`, `heads`, `vocab` → `model`), with a test
-  using `make_mesh(model_axis=2)`.
+* Tuning the `tensor` rule: `with_sharding_constraint` on activations in
+  attention and MLP blocks (written with logical names, resolved through
+  the rules, so models still do not know which rule is active) and GPU
+  benchmarks.
+* 3-D mesh `("data","fsdp","model")`: `make_mesh` grows an axis and the
+  `fsdp` rule maps `embed` to `fsdp`; batch sharding follows automatically
+  from `batch_axes(mesh)`.
 * Ensemble parallelism.
 * Jitted and sharded sampling for TarFlow and MAF.
 * Multi-host.
