@@ -3,7 +3,7 @@ import numpy as np, jax, jax.numpy as jnp, pytest
 from flax import nnx
 from jax.sharding import NamedSharding, PartitionSpec as P
 from gensbi import sharding as sh
-from gensbi.recipes import ConditionalPipeline, Flux1FlowPipeline
+from gensbi.recipes import ConditionalPipeline, Flux1FlowPipeline, SimformerFlowPipeline, Flux1JointFlowPipeline
 from gensbi.core import FlowMatchingMethod
 from .helpers import *
 import sys, pathlib; sys.path.append(str(pathlib.Path(__file__).parents[1] / "recipes"))
@@ -90,3 +90,56 @@ def test_ema_model_follows_model_placement(tmp_path):
     assert any(not s.is_equivalent_to(NamedSharding(p.mesh, P()), ranks[k]) for k, s in model_s.items())
     for k, s in model_s.items():
         assert ema_s[k].is_equivalent_to(s, ranks[k]), k
+
+
+def _train_joint(cls, params, mesh, rule, tmp_path, nsteps=20):
+    p = cls(train_dataset_joint, val_dataset_joint, dim_obs, dim_cond, ch_obs=2, params=params,
+            training_config=test_training_config(tmp_path, nsteps), mesh=mesh, sharding_rule=rule)
+    losses, _ = p.train(nnx.Rngs(0), save_model=False)
+    return p, np.asarray([float(l) for l in losses])
+
+@requires_8_devices
+@pytest.mark.parametrize("rule", ["replicated", "fsdp"])
+# Simformer needs atol 2e-4: the attention key bias has a mathematically zero
+# gradient (softmax is shift-invariant), so Adam turns pure reduction-order noise
+# into a drift. Measured max |dparam| after 20 steps: 1.2e-4 for that one bias
+# (rule replicated and fsdp); every other parameter deviates by <= 2.1e-5.
+@pytest.mark.parametrize("cls,params_fn,atol", [(SimformerFlowPipeline, small_simformer_params, 2e-4), (Flux1JointFlowPipeline, small_flux1joint_params, 1e-4)])
+def test_joint_pipelines_match_no_mesh(cls, params_fn, atol, rule, tmp_path):
+    ref, l_ref = _train_joint(cls, params_fn(), None, None, tmp_path / "a")
+    p, l = _train_joint(cls, params_fn(), sh.make_mesh(), rule, tmp_path / "b")
+    np.testing.assert_allclose(l, l_ref, rtol=1e-3, atol=1e-5)
+    _assert_params_close(ref.model, p.model, atol=atol)  # R6: reduction-order noise over 8 devices
+
+@requires_8_devices
+def test_flux1_fsdp_matches_and_shards_params_opt_and_ema(tmp_path):
+    ref, l_ref, _ = _train(Flux1FlowPipeline, small_flux1_params(), None, None, tmp_path / "a")
+    mesh = sh.make_mesh()
+    p = Flux1FlowPipeline(train_dataset_cond, val_dataset_cond, dim_obs, dim_cond, ch_obs=2, ch_cond=2,
+                          params=small_flux1_params(), training_config=test_training_config(tmp_path / "b"), mesh=mesh, sharding_rule="fsdp")
+    s = sh.sharding_of(p.model)
+    ranks = {"/".join(map(str, k)): v[...].ndim for k, v in nnx.to_flat_state(nnx.state(p.model))}
+    sharded = [k for k, v in s.items() if not v.is_equivalent_to(NamedSharding(mesh, P()), ranks[k])]
+    assert sharded, "FSDP sharded nothing: hidden size must be divisible by 8"
+    optimizer = p._get_optimizer(); sh.shard_model(optimizer, mesh, "fsdp")
+    mu = {"/".join(map(str, k)): v for k, v in nnx.to_flat_state(nnx.state(optimizer)) if "mu" in map(str, k)}
+    # Match the optimizer's mu twin by full path suffix on a "/" boundary.
+    matched = 0
+    for name in sharded:
+        twins = [v for k, v in mu.items() if k == name or k.endswith("/" + name)]
+        assert len(twins) == 1, (name, len(twins))
+        assert twins[0][...].sharding.is_equivalent_to(s[name], twins[0][...].ndim), name
+        matched += 1
+    assert matched == len(sharded) > 0
+    losses, _ = p.train(nnx.Rngs(0), save_model=False)
+    np.testing.assert_allclose(np.asarray([float(l) for l in losses]), l_ref, rtol=1e-3, atol=1e-5)
+    _assert_params_close(ref.model, p.model, atol=1e-4)  # R6
+    for name, var in sh.sharding_of(p.ema_model).items():
+        assert var.is_equivalent_to(s[name], ranks[name]), name  # EMA mirrors the model's placement after training
+
+@requires_8_devices
+def test_one_device_mesh_matches_no_mesh(tmp_path):
+    ref, l_ref, _ = _train(Flux1FlowPipeline, small_flux1_params(), None, None, tmp_path / "a")
+    one = sh.make_mesh(devices=jax.devices()[:1])
+    p, l, _ = _train(Flux1FlowPipeline, small_flux1_params(), one, "replicated", tmp_path / "b")
+    np.testing.assert_allclose(l, l_ref, rtol=1e-5, atol=1e-6)
