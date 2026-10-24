@@ -197,6 +197,14 @@ class JointPipeline(AbstractPipeline):
         Model parameters (stored but not used directly).
     training_config : dict, optional
         Training configuration.
+    mesh : jax.sharding.Mesh or None, optional
+        Device mesh for multi-device training (also ``"auto"`` or a dict of
+        :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+        ``training_config["mesh"]``; absent too, training stays on one device.
+    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+        Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+        to ``training_config["sharding_rule"]``, then ``"replicated"``.
+        ``"fsdp"`` and ``"tensor"`` are experimental.
 
     Examples
     --------
@@ -222,6 +230,8 @@ class JointPipeline(AbstractPipeline):
         condition_mask_kind="structured",
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         self.method = method
 
@@ -240,6 +250,8 @@ class JointPipeline(AbstractPipeline):
             ch_obs=ch_obs,
             params=params,
             training_config=training_config,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
 
         self.dim_joint = self.dim_obs + self.dim_cond

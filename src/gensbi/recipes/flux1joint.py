@@ -132,6 +132,8 @@ class Flux1JointFlowPipeline(JointPipeline):
         params=None,
         training_config=None,
         condition_mask_kind="structured",
+        mesh=None,
+        sharding_rule=None,
     ):
         """
         Flow pipeline for training and using a Flux1Joint model for simulation-based inference.
@@ -154,6 +156,14 @@ class Flux1JointFlowPipeline(JointPipeline):
             Configuration for training. If None, default configuration is used.
         condition_mask_kind : str, optional
             Kind of condition mask to use. One of ["structured", "posterior"].
+        mesh : jax.sharding.Mesh or None, optional
+            Device mesh for multi-device training (also ``"auto"`` or a dict of
+            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+            ``training_config["mesh"]``; absent too, training stays on one device.
+        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+            Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+            to ``training_config["sharding_rule"]``, then ``"replicated"``.
+            ``"fsdp"`` and ``"tensor"`` are experimental.
 
         Examples
         --------
@@ -193,6 +203,8 @@ class Flux1JointFlowPipeline(JointPipeline):
             params=params,
             training_config=training_config,
             condition_mask_kind=condition_mask_kind,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
 
         self.ema_model = nnx.clone(self.model)
@@ -271,6 +283,8 @@ class Flux1JointSMPipeline(JointPipeline):
         params=None,
         training_config=None,
         condition_mask_kind="structured",
+        mesh=None,
+        sharding_rule=None,
     ):
         """
         Score matching pipeline for training and using a Flux1Joint model for simulation-based inference.
@@ -295,6 +309,14 @@ class Flux1JointSMPipeline(JointPipeline):
             Configuration for training. If None, default configuration is used.
         condition_mask_kind : str, optional
             Kind of condition mask to use. One of ["structured", "posterior"].
+        mesh : jax.sharding.Mesh or None, optional
+            Device mesh for multi-device training (also ``"auto"`` or a dict of
+            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+            ``training_config["mesh"]``; absent too, training stays on one device.
+        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+            Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+            to ``training_config["sharding_rule"]``, then ``"replicated"``.
+            ``"fsdp"`` and ``"tensor"`` are experimental.
         """
         self.dim_joint = dim_obs + dim_cond
 
@@ -317,6 +339,8 @@ class Flux1JointSMPipeline(JointPipeline):
             params=params,
             training_config=training_config,
             condition_mask_kind=condition_mask_kind,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
 
         self.ema_model = nnx.clone(self.model)
@@ -393,6 +417,8 @@ class Flux1JointDiffusionPipeline(JointPipeline):
         params=None,
         training_config=None,
         condition_mask_kind="structured",
+        mesh=None,
+        sharding_rule=None,
     ):
         """
         Diffusion pipeline for training and using a Flux1Joint model for simulation-based inference.
@@ -415,6 +441,14 @@ class Flux1JointDiffusionPipeline(JointPipeline):
             Configuration for training. If None, default configuration is used.
         condition_mask_kind : str, optional
             Kind of condition mask to use. One of ["structured", "posterior"]. Default is "structured".
+        mesh : jax.sharding.Mesh or None, optional
+            Device mesh for multi-device training (also ``"auto"`` or a dict of
+            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+            ``training_config["mesh"]``; absent too, training stays on one device.
+        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+            Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+            to ``training_config["sharding_rule"]``, then ``"replicated"``.
+            ``"fsdp"`` and ``"tensor"`` are experimental.
 
         Examples
         --------
@@ -454,6 +488,8 @@ class Flux1JointDiffusionPipeline(JointPipeline):
             params=params,
             training_config=training_config,
             condition_mask_kind=condition_mask_kind,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
 
         self.ema_model = nnx.clone(self.model)

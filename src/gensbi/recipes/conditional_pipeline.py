@@ -101,6 +101,14 @@ class ConditionalPipeline(AbstractPipeline):
     training_config : dict, optional
         Training configuration. If ``None``, uses defaults augmented
         by ``method.get_extra_training_config()``.
+    mesh : jax.sharding.Mesh or None, optional
+        Device mesh for multi-device training (also ``"auto"`` or a dict of
+        :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+        ``training_config["mesh"]``; absent too, training stays on one device.
+    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+        Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+        to ``training_config["sharding_rule"]``, then ``"replicated"``.
+        ``"fsdp"`` and ``"tensor"`` are experimental.
 
     Examples
     --------
@@ -128,6 +136,8 @@ class ConditionalPipeline(AbstractPipeline):
         size=2,
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         self.method = method
 
@@ -149,6 +159,8 @@ class ConditionalPipeline(AbstractPipeline):
             ch_cond=ch_cond,
             params=params,
             training_config=training_config,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
 
         obs_size, cond_size = _normalize_patch_size(size)

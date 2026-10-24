@@ -449,6 +449,10 @@ def parse_training_config(config_path: str):
         # `.get("save_every") or 0` keeps it off, unchanged behavior for
         # every config that doesn't set it.
         "save_every": train_params.get("save_every"),
+        # Multi-device sharding (see AbstractPipeline.__init__). Absent ->
+        # None -> single device and the "replicated" rule, as before.
+        "mesh": train_params.get("mesh"),
+        "sharding_rule": train_params.get("sharding_rule"),
     }
 
     # Optimizer parameters

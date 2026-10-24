@@ -37,6 +37,13 @@ import flax.traverse_util as tu
 
 from gensbi.utils.misc import get_colored_value
 from gensbi.utils.serialization import save_safetensors, load_safetensors
+from gensbi.sharding import (
+    check_batch_divisible,
+    mesh_context,
+    resolve_mesh,
+    shard_batch,
+    shard_model,
+)
 
 
 def _warn_if_not_fp32_master_weights(model):
@@ -270,6 +277,15 @@ class AbstractPipeline(abc.ABC):
         Number of channels in the conditional data (if applicable). Default is None.
     training_config : dict, optional
         Training configuration. If None, uses defaults from `get_default_training_config`.
+    mesh : jax.sharding.Mesh or None, optional
+        Device mesh to place the model, optimizer state and batches on. Also
+        accepts ``"auto"`` or a dict of :func:`gensbi.sharding.make_mesh`
+        kwargs. If None, falls back to ``training_config["mesh"]``; if that is
+        absent too, everything stays on a single device as before.
+    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+        Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+        to ``training_config["sharding_rule"]``, then ``"replicated"``.
+        ``"fsdp"`` and ``"tensor"`` are experimental.
 
     """
 
@@ -284,6 +300,8 @@ class AbstractPipeline(abc.ABC):
         ch_cond=None,
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
@@ -317,9 +335,22 @@ class AbstractPipeline(abc.ABC):
 
         os.makedirs(self.training_config["checkpoint_dir"], exist_ok=True)
 
+        # Multi-device placement. mesh=None (and no "mesh" key) keeps the
+        # single-device path untouched: no device_put, no mesh context.
+        self.mesh = resolve_mesh(
+            mesh if mesh is not None else self.training_config.get("mesh")
+        )
+        self.sharding_rule = (
+            sharding_rule or self.training_config.get("sharding_rule") or "replicated"
+        )
+        self._checked_loaders: set[str] = set()
+
         self.model = model
         if model is not None:
             _warn_if_not_fp32_master_weights(model)
+            if self.mesh is not None:
+                # Place before cloning so the EMA copy inherits the placement.
+                shard_model(model, self.mesh, self.sharding_rule)
         self.model_wrapped = None  # to be set in subclass
 
         if model is None:
@@ -373,6 +404,42 @@ class AbstractPipeline(abc.ABC):
         Create and return the model to be trained.
         """
         ...  # pragma: no cover
+
+    def _reshard(self) -> None:
+        """Re-place ``model`` and ``ema_model`` on the mesh (no-op without one).
+
+        Idempotent fix-up for code paths that write fresh, single-device
+        arrays into the model state (buffer writes, imports).
+        """
+        if self.mesh is None:
+            return
+        for node in (self.model, self.ema_model):
+            if node is not None:
+                shard_model(node, self.mesh, self.sharding_rule)
+
+    def _prepare_batch(self, batch, what: str):
+        """Place a batch on the mesh, sharding its leading axis.
+
+        Parameters
+        ----------
+        batch : pytree
+            Batch as yielded by a data loader.
+        what : str
+            Loader label (``"train"`` or ``"validation"``) used in the
+            divisibility error; the check runs once per label.
+
+        Returns
+        -------
+        pytree
+            ``batch`` itself when no mesh is set, otherwise a copy whose
+            array leaves are sharded over the data-parallel mesh axes.
+        """
+        if self.mesh is None:
+            return batch
+        if what not in self._checked_loaders:
+            check_batch_divisible(batch, self.mesh, what)
+            self._checked_loaders.add(what)
+        return shard_batch(batch, self.mesh)
 
     def _get_ema_optimizer(self):
         """
@@ -903,6 +970,12 @@ class AbstractPipeline(abc.ABC):
 
         optimizer = self._get_optimizer()
         ema_optimizer = self._get_ema_optimizer()
+        if self.mesh is not None:
+            # Optimizer state normally inherits the parameters' placement
+            # (optax zeros_like); this catches transforms that allocate with
+            # jnp.zeros(shape) instead.
+            shard_model(optimizer, self.mesh, self.sharding_rule)
+            shard_model(ema_optimizer, self.mesh, self.sharding_rule)
 
         best_state = nnx.state(self.model)
         best_state_ema = nnx.state(self.ema_model)
@@ -913,7 +986,7 @@ class AbstractPipeline(abc.ABC):
         val_step = self.get_val_step_fn(loss_fn)
 
         rng_val = rngs.val_step()
-        batch_val = next(self.val_dataset_iter)
+        batch_val = self._prepare_batch(next(self.val_dataset_iter), "validation")
         min_val = val_step(self.model, batch_val, rng_val)
 
         val_error_ratio = self.training_config.get("val_error_ratio", 1.3)
@@ -998,48 +1071,51 @@ class AbstractPipeline(abc.ABC):
         l_val = min_val  # initialize l_val
 
         try:
-            for j in pbar:
-                if counter > cmax and early_stopping:
-                    print("Early stopping")
-                    self._restore_best_state(best_state, best_state_ema)
-                    break
+            # The loop runs under the mesh (jax.set_mesh) so sharding
+            # constraints inside jitted steps resolve; a no-op without one.
+            with mesh_context(self.mesh):
+                for j in pbar:
+                    if counter > cmax and early_stopping:
+                        print("Early stopping")
+                        self._restore_best_state(best_state, best_state_ema)
+                        break
 
-                batch = next(self.train_dataset_iter)
+                    batch = self._prepare_batch(next(self.train_dataset_iter), "train")
 
-                loss = train_step(self.model, optimizer, batch, rngs.train_step())
-                # update the parameters ema
-                if j % self.training_config["multistep"] == 0:
-                    ema_step(self.ema_model, self.model, ema_optimizer)
+                    loss = train_step(self.model, optimizer, batch, rngs.train_step())
+                    # update the parameters ema
+                    if j % self.training_config["multistep"] == 0:
+                        ema_step(self.ema_model, self.model, ema_optimizer)
 
-                decay = 0.99
+                    decay = 0.99
 
-                if j == 0:
-                    l_train = loss
-                else:
-                    l_train = decay * l_train + (1 - decay) * loss
+                    if j == 0:
+                        l_train = loss
+                    else:
+                        l_train = decay * l_train + (1 - decay) * loss
 
-                if j > 0 and j % val_every == 0:
-                    l_val, ratio, min_val, best_state, best_state_ema, counter = (
-                        self._run_validation(
-                            val_step, batch_val, rng_val, min_val,
-                            best_state, best_state_ema, counter, val_error_ratio,
-                            loss_array, val_loss_array, l_train,
+                    if j > 0 and j % val_every == 0:
+                        l_val, ratio, min_val, best_state, best_state_ema, counter = (
+                            self._run_validation(
+                                val_step, batch_val, rng_val, min_val,
+                                best_state, best_state_ema, counter, val_error_ratio,
+                                loss_array, val_loss_array, l_train,
+                            )
                         )
-                    )
 
-                if save_every and j > 0 and j % save_every == 0:
-                    self._save_intermediate_checkpoint(
-                        intermediate_manager, intermediate_manager_ema, j
-                    )
+                    if save_every and j > 0 and j % save_every == 0:
+                        self._save_intermediate_checkpoint(
+                            intermediate_manager, intermediate_manager_ema, j
+                        )
 
-                # print stats
-                if j > 0 and j % 10 == 0:
-                    pbar.set_postfix(
-                        loss=f"{l_train:.4f}",
-                        ratio=get_colored_value(ratio, thresholds=(1.1, 1.3)),
-                        counter=counter,
-                        val_loss=f"{l_val:.4f}",
-                    )
+                    # print stats
+                    if j > 0 and j % 10 == 0:
+                        pbar.set_postfix(
+                            loss=f"{l_train:.4f}",
+                            ratio=get_colored_value(ratio, thresholds=(1.1, 1.3)),
+                            counter=counter,
+                            val_loss=f"{l_val:.4f}",
+                        )
         finally:
             # Runs on normal completion, early-stopping break, and any
             # exception raised out of the loop, so a long-lived manager is
