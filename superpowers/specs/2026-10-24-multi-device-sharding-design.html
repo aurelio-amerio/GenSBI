@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Multi-device sharding for GenSBI and HEAL-SWIN-nnx &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/specs/2026-10-24-multi-device-sharding-design';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Multi-device sharding for GenSBI and HEAL-SWIN-nnx</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="multi-device-sharding-for-gensbi-and-heal-swin-nnx">
+<h1>Multi-device sharding for GenSBI and HEAL-SWIN-nnx<a class="headerlink" href="#multi-device-sharding-for-gensbi-and-heal-swin-nnx" title="Link to this heading">#</a></h1>
+<p>Date: 2026-10-24
+Status: reviewed, awaiting approval
+Repos: <code class="docutils literal notranslate"><span class="pre">GenSBI</span></code> (this repo) and <code class="docutils literal notranslate"><span class="pre">HEAL-SWIN-nnx</span></code> (<code class="docutils literal notranslate"><span class="pre">/home/aure/github/HEAL-SWIN-nnx</span></code>).
+A second pass on <code class="docutils literal notranslate"><span class="pre">sbibm-jax</span></code> is out of scope here and listed under follow-ups.</p>
+<section id="intent">
+<h2>1. Intent<a class="headerlink" href="#intent" title="Link to this heading">#</a></h2>
+<p>Let a user train and sample GenSBI models, and HEAL-SWIN models, on all the
+GPUs or TPUs in one machine with one extra line of code, and with no change
+to the model code they already have. Today neither repo contains any
+sharding, <code class="docutils literal notranslate"><span class="pre">pmap</span></code>, <code class="docutils literal notranslate"><span class="pre">device_put</span></code> or mesh code; everything runs on the default
+device.</p>
+<p>The parallelism wanted now is <strong>data parallel</strong>: every device holds the
+full model, each device processes a slice of the batch, gradients are
+averaged. The models all fit on one device today. The design must leave
+the door open to <strong>FSDP</strong> (shard parameters and optimizer state across the
+same devices to save memory) and to <strong>tensor parallel</strong> later, without a
+second rewrite. FSDP is in scope as a tested opt-in, <strong>marked experimental</strong>
+in docs and in the warning it emits, because its memory benefit cannot be
+measured on simulated CPU devices (see 6.4). Tensor parallel is prepared
+for (annotations and a mesh axis exist) but no tensor rule ships.</p>
+<section id="why">
+<h3>Why<a class="headerlink" href="#why" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Larger effective batch or faster steps when a multi-GPU box is available.</p></li>
+<li><p>Posterior sampling (10k samples by default) is embarrassingly parallel.</p></li>
+<li><p>HEAL-SWIN at high HEALPix resolution is the first model likely to need
+the memory relief of FSDP.</p></li>
+</ul>
+</section>
+</section>
+<section id="goals-non-goals-anti-goals">
+<h2>2. Goals, non-goals, anti-goals<a class="headerlink" href="#goals-non-goals-anti-goals" title="Link to this heading">#</a></h2>
+<p><strong>Goals</strong></p>
+<ol class="arabic simple">
+<li><p>One mesh, passed once to the pipeline, then forgotten. Same user code on
+one device and on eight.</p></li>
+<li><p>All models under <code class="docutils literal notranslate"><span class="pre">src/gensbi/models</span></code> (Flux1, Flux1Joint, Simformer,
+TarFlow, MAF, the embedding layers, wrappers) and the HEAL-SWIN models
+carry sharding annotations on every parameter.</p></li>
+<li><p>Two shipped sharding rules: <code class="docutils literal notranslate"><span class="pre">replicated</span></code> (plain data parallel, the
+default when a mesh is given) and <code class="docutils literal notranslate"><span class="pre">fsdp</span></code>.</p></li>
+<li><p>Batches, the per-step random key, samplers, the EMA model, the optimizer
+state and checkpoints all behave correctly under both rules.</p></li>
+<li><p>Everything is exercised in CI on 8 simulated CPU devices, in both repos.</p></li>
+<li><p>A sharded loss curve matches the unsharded one for the same seed, within
+floating-point tolerance.</p></li>
+</ol>
+<p><strong>Non-goals (this pass)</strong></p>
+<ul class="simple">
+<li><p>Multi-host / multi-process training. One process, many local devices.</p></li>
+<li><p>A shipped tensor-parallel rule, sequence parallelism, pipeline parallelism.</p></li>
+<li><p>Sharding anything inside <code class="docutils literal notranslate"><span class="pre">sbibm-jax</span></code> (its loaders, simulators). Second pass.</p></li>
+<li><p>Ensemble parallelism (K independent models, one per device). Separate design.</p></li>
+<li><p>Sharded sampling for models whose sampling is not jitted today (TarFlow,
+MAF <code class="docutils literal notranslate"><span class="pre">sample</span></code>/<code class="docutils literal notranslate"><span class="pre">log_prob</span></code>). Their training is covered; their sampling is a
+follow-up.</p></li>
+<li><p>Annotating the experimental models (PixelDiT, FieldDiT, autoencoders, the
+VAE pipeline). They still work under the <code class="docutils literal notranslate"><span class="pre">replicated</span></code> rule through the
+fallback described below; the <code class="docutils literal notranslate"><span class="pre">fsdp</span></code> rule will replicate them too.</p></li>
+<li><p>Removing the per-step host syncs in the training loop (tqdm postfix,
+validation comparisons). Performance work, not correctness.</p></li>
+</ul>
+<p><strong>Anti-goals (would make this a failure even if it works)</strong></p>
+<ul class="simple">
+<li><p>Any change in behaviour, speed or numerics when no mesh is given.</p></li>
+<li><p>A user having to annotate their own layers to get data parallel.</p></li>
+<li><p>A cryptic XLA error where a one-line validation message would do.</p></li>
+<li><p>Code in the models, losses or solvers that knows which rule is active.</p></li>
+</ul>
+</section>
+<section id="constraints">
+<h2>3. Constraints<a class="headerlink" href="#constraints" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Flax <code class="docutils literal notranslate"><span class="pre">&gt;=</span> <span class="pre">0.12.7</span></code> NNX, JAX <code class="docutils literal notranslate"><span class="pre">&gt;=</span> <span class="pre">0.11.1</span></code> (GenSBI pins <code class="docutils literal notranslate"><span class="pre">&gt;=0.11.1,&lt;0.13</span></code>;
+HEAL-SWIN’s pyproject is being bumped to the same floor). Verified on both
+installed environments (GenSBI jax 0.12.0.1 / flax 0.12.10, HEAL-SWIN jax
+0.10.2 / flax 0.12.7): <code class="docutils literal notranslate"><span class="pre">nnx.with_partitioning</span></code>, <code class="docutils literal notranslate"><span class="pre">nnx.logical_axis_rules</span></code>,
+<code class="docutils literal notranslate"><span class="pre">nnx.get_partition_spec</span></code>, <code class="docutils literal notranslate"><span class="pre">nnx.get_named_sharding</span></code>, <code class="docutils literal notranslate"><span class="pre">*_metadata</span></code> kwargs on
+<code class="docutils literal notranslate"><span class="pre">Linear</span></code>, <code class="docutils literal notranslate"><span class="pre">Conv</span></code>, <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code>, <code class="docutils literal notranslate"><span class="pre">RMSNorm</span></code>, <code class="docutils literal notranslate"><span class="pre">Embed</span></code>, <code class="docutils literal notranslate"><span class="pre">MultiHeadAttention</span></code>;
+<code class="docutils literal notranslate"><span class="pre">jax.set_mesh</span></code> exists (<code class="docutils literal notranslate"><span class="pre">jax.sharding.use_mesh</span></code> does not); <code class="docutils literal notranslate"><span class="pre">device_put</span></code> of
+typed PRNG key arrays onto a <code class="docutils literal notranslate"><span class="pre">NamedSharding</span></code> works; <code class="docutils literal notranslate"><span class="pre">nnx.clone</span></code> preserves
+<code class="docutils literal notranslate"><span class="pre">out_sharding</span></code> and <code class="docutils literal notranslate"><span class="pre">eager_sharding</span></code> metadata; an <code class="docutils literal notranslate"><span class="pre">nnx.Optimizer</span></code> built on
+placed parameters inherits their sharding because optax initialises its
+state with <code class="docutils literal notranslate"><span class="pre">zeros_like</span></code> on the placed arrays (verified for adam, adamw and
+the pipeline’s <code class="docutils literal notranslate"><span class="pre">MultiSteps(chain(adaptive_grad_clip,</span> <span class="pre">adamw))</span></code>, with no
+mesh context); the moments keep their <code class="docutils literal notranslate"><span class="pre">data</span></code> sharding across <code class="docutils literal notranslate"><span class="pre">nnx.jit</span></code>
+steps, so no sharding constraint inside the train step is needed.</p></li>
+<li><p><strong>Flax eager sharding (FLIP 4844).</strong> In Flax 0.12 a variable created with
+<code class="docutils literal notranslate"><span class="pre">out_sharding</span></code> metadata is placed on the mesh at creation, and creation
+<strong>requires</strong> an active mesh context (<code class="docutils literal notranslate"><span class="pre">jax.set_mesh</span></code>) plus, for logical
+names, an active <code class="docutils literal notranslate"><span class="pre">nnx.logical_axis_rules</span></code> context. Without them it raises.
+Unannotated variables are unaffected, which is why stock Flax models never
+meet this. Since every parameter in both repos will be annotated, and
+models must keep building with no mesh anywhere, every library annotation
+sets the per-variable opt-out <code class="docutils literal notranslate"><span class="pre">eager_sharding=False</span></code> (the FLIP’s documented
+per-variable escape hatch). Models therefore never touch a mesh; placement
+happens once, explicitly, in <code class="docutils literal notranslate"><span class="pre">shard_model</span></code> (5.3). We do <strong>not</strong> flip the
+global <code class="docutils literal notranslate"><span class="pre">flax_always_shard_variable</span></code> flag or use <code class="docutils literal notranslate"><span class="pre">nnx.use_eager_sharding</span></code>,
+which would silently change Flax semantics for the user’s own variables.
+Verified on both installed Flax versions: with the opt-out, construction,
+<code class="docutils literal notranslate"><span class="pre">nnx.Optimizer</span></code>, <code class="docutils literal notranslate"><span class="pre">ModelEMA</span></code>, <code class="docutils literal notranslate"><span class="pre">nnx.eval_shape</span></code> and <code class="docutils literal notranslate"><span class="pre">nnx.get_abstract_model</span></code>
+all work with no mesh; the flag survives <code class="docutils literal notranslate"><span class="pre">clone</span></code>, <code class="docutils literal notranslate"><span class="pre">split</span></code>/<code class="docutils literal notranslate"><span class="pre">merge</span></code>,
+<code class="docutils literal notranslate"><span class="pre">OptVariable</span></code> creation and orbax restore. The only thing given up is
+parameters being born sharded, which is irrelevant while models fit on one
+device (and the future large-model path, <code class="docutils literal notranslate"><span class="pre">nnx.get_abstract_model</span></code> plus a
+<code class="docutils literal notranslate"><span class="pre">jax.jit(init,</span> <span class="pre">out_shardings=...)</span></code>, is verified to work with the opt-out).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jax_threefry_partitionable</span></code> is on by default in the installed JAX. Random
+draws inside a jitted step therefore give the same values regardless of
+how the output is sharded. The design relies on this for the
+sharded-equals-unsharded test.</p></li>
+<li><p>GenSBI depends on <code class="docutils literal notranslate"><span class="pre">heal-swin-nnx</span></code>, never the reverse. Shared vocabulary
+between the two must be a documented convention, not an import.</p></li>
+<li><p>Models are constructed eagerly with a live <code class="docutils literal notranslate"><span class="pre">nnx.Rngs</span></code>. HEAL-SWIN
+construction runs tens of seconds of host-side numpy geometry. Abstract
+initialisation is therefore not used; we build eagerly and place state
+afterwards.</p></li>
+<li><p>Batch sizes are powers of two in practice. We validate divisibility and
+error clearly; we do not pad or reshape training batches.</p></li>
+<li><p>Both test suites use <code class="docutils literal notranslate"><span class="pre">pytest-xdist</span></code> (<code class="docutils literal notranslate"><span class="pre">-n</span> <span class="pre">2</span></code>) and <code class="docutils literal notranslate"><span class="pre">pytest-env</span></code>, and GenSBI
+hard-sets <code class="docutils literal notranslate"><span class="pre">XLA_FLAGS</span></code> in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>.</p></li>
+</ul>
+</section>
+<section id="user-facing-behaviour-decided">
+<h2>4. User-facing behaviour (decided)<a class="headerlink" href="#user-facing-behaviour-decided" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_mesh</span>
+
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">make_mesh</span><span class="p">()</span>                      <span class="c1"># all local devices on the 'data' axis</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Flux1FlowPipeline</span><span class="p">(</span><span class="n">train_ds</span><span class="p">,</span> <span class="n">val_ds</span><span class="p">,</span> <span class="n">dim_obs</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span>
+                             <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">)</span>             <span class="c1"># rule defaults to "replicated"</span>
+<span class="n">pipeline</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">rngs</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mesh=None</span></code> (the default) is exactly today’s behaviour. No code path
+differs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sharding_rule=&quot;fsdp&quot;</span></code> on the pipeline switches to FSDP. Nothing else
+changes for the user.</p></li>
+<li><p>Both are also accepted through <code class="docutils literal notranslate"><span class="pre">training_config</span></code> / the YAML recipes as
+<code class="docutils literal notranslate"><span class="pre">mesh:</span> <span class="pre">auto</span></code> and <code class="docutils literal notranslate"><span class="pre">sharding_rule:</span> <span class="pre">fsdp</span></code>, so <code class="docutils literal notranslate"><span class="pre">init_pipeline_from_config</span></code>
+users get them without Python changes.</p></li>
+<li><p>A user who passes their own <code class="docutils literal notranslate"><span class="pre">nnx.Module</span></code> with no annotations gets plain
+data parallel. Under <code class="docutils literal notranslate"><span class="pre">fsdp</span></code> their unannotated parameters are replicated
+and a single warning lists them.</p></li>
+<li><p>Batch size must be divisible by the mesh <code class="docutils literal notranslate"><span class="pre">data</span></code> size, for both train and
+validation loaders. The pipeline checks the first batch of each and
+raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> naming the batch size, the device count and the
+loader.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make_mesh(devices=None,</span> <span class="pre">model_axis=1)</span></code> returns a 2-D
+<code class="docutils literal notranslate"><span class="pre">jax.sharding.Mesh</span></code> with axes <code class="docutils literal notranslate"><span class="pre">(&quot;data&quot;,</span> <span class="pre">&quot;model&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">data</span> <span class="pre">=</span> <span class="pre">n_devices</span> <span class="pre">//</span> <span class="pre">model_axis</span></code>, and <strong>Auto</strong> axis types. On the installed JAX,
+<code class="docutils literal notranslate"><span class="pre">jax.make_mesh</span></code> defaults to Explicit axis types, and Flax’s eager
+sharding is documented to work only in auto mode, so the helper sets
+<code class="docutils literal notranslate"><span class="pre">axis_types</span></code> explicitly; a user-supplied mesh with Explicit axes gets a
+warning (construction never depends on the mesh, only <code class="docutils literal notranslate"><span class="pre">shard_model</span></code> does). <code class="docutils literal notranslate"><span class="pre">model_axis</span></code> stays 1 in this pass; it
+exists so a tensor rule can be added later without changing meshes or
+checkpoints.</p></li>
+<li><p>A user model with <strong>no</strong> annotations works unchanged: verified by
+constructing a plain <code class="docutils literal notranslate"><span class="pre">nnx.Module</span></code> and its optimizer inside a 2x4 mesh on 8
+simulated devices and running a jitted train step with the batch split
+over <code class="docutils literal notranslate"><span class="pre">data</span></code>. Parameters and optimizer state come out replicated, which is
+plain data parallel.</p></li>
+</ul>
+</section>
+<section id="architecture">
+<h2>5. Architecture<a class="headerlink" href="#architecture" title="Link to this heading">#</a></h2>
+<section id="logical-axis-names-the-contract-shared-by-both-repos">
+<h3>5.1 Logical axis names (the contract shared by both repos)<a class="headerlink" href="#logical-axis-names-the-contract-shared-by-both-repos" title="Link to this heading">#</a></h3>
+<p>Every parameter is annotated with <strong>logical</strong> axis names, never with mesh
+axis names. A rule maps logical names to mesh axes at placement time. One
+annotation serves every rule, now and later.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Logical name</p></th>
+<th class="head"><p>Meaning</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">replicated</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">fsdp</span></code></p></th>
+<th class="head"><p>future <code class="docutils literal notranslate"><span class="pre">tensor</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">embed</span></code></p></td>
+<td><p>model/residual hidden width</p></td>
+<td><p>–</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">data</span></code></p></td>
+<td><p>–</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mlp</span></code></p></td>
+<td><p>MLP hidden width</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">model</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">heads</span></code></p></td>
+<td><p>attention qkv / head-merged width</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">model</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">vocab</span></code></p></td>
+<td><p>rows of an embedding table</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">model</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">in</span></code></p></td>
+<td><p>raw input feature dim (data dims, channels)</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">out</span></code></p></td>
+<td><p>raw output feature dim</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>any other axis (window, 1-sized broadcast dims, kernel taps)</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+<td><p>–</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">fsdp</span></code> rule shards only <code class="docutils literal notranslate"><span class="pre">embed</span></code>. That is the standard choice: every
+large kernel has one <code class="docutils literal notranslate"><span class="pre">embed</span></code> axis, so every large kernel and its optimizer
+state gets split, while small vectors stay cheap to gather.</p>
+<p>The vocabulary and the two rule tables above must be identical in
+<code class="docutils literal notranslate"><span class="pre">gensbi/sharding.py</span></code> and <code class="docutils literal notranslate"><span class="pre">heal_swin_nnx/sharding.py</span></code>. A test in each repo
+pins them.</p>
+</section>
+<section id="how-annotations-are-written">
+<h3>5.2 How annotations are written<a class="headerlink" href="#how-annotations-are-written" title="Link to this heading">#</a></h3>
+<p>Through the standard layers’ metadata kwargs where they exist, otherwise
+through <code class="docutils literal notranslate"><span class="pre">nnx.with_partitioning</span></code> on the initializer. Two tiny helpers in each
+repo’s <code class="docutils literal notranslate"><span class="pre">sharding.py</span></code> keep the sites short and identical:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">axes</span><span class="p">,</span> <span class="n">partitioned</span>   <span class="c1"># heal_swin_nnx.sharding has the same two</span>
+
+<span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_hidden</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+           <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"mlp"</span><span class="p">),</span>
+           <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">))</span>
+
+<span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
+    <span class="n">partitioned</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">zeros</span><span class="p">,</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">))(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hidden</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">axes(*names)</span></code> returns <code class="docutils literal notranslate"><span class="pre">{&quot;out_sharding&quot;:</span> <span class="pre">names,</span> <span class="pre">&quot;eager_sharding&quot;:</span> <span class="pre">False}</span></code>;
+<code class="docutils literal notranslate"><span class="pre">partitioned(init,</span> <span class="pre">names)</span></code> is <code class="docutils literal notranslate"><span class="pre">nnx.with_partitioning(init,</span> <span class="pre">names,</span> <span class="pre">eager_sharding=False)</span></code>. <strong>All library annotations go through these two
+helpers</strong>; a raw <code class="docutils literal notranslate"><span class="pre">out_sharding</span></code> written by hand would raise at construction
+without a mesh, so the annotation-coverage test (6.2) also asserts
+<code class="docutils literal notranslate"><span class="pre">eager_sharding</span> <span class="pre">is</span> <span class="pre">False</span></code> on every annotated variable.</p>
+<p>Consequences: models and building blocks never import mesh code and build
+on the default device exactly as today, whether called directly
+(<code class="docutils literal notranslate"><span class="pre">Flux1(params)</span></code> in a notebook), composed into a user’s own module, or
+built by the pipeline. <code class="docutils literal notranslate"><span class="pre">nnx.Optimizer</span></code>, <code class="docutils literal notranslate"><span class="pre">ModelEMA</span></code> and <code class="docutils literal notranslate"><span class="pre">nnx.eval_shape</span></code> on
+them work with no mesh. A user with an unrelated active mesh is unaffected
+(placement only happens in <code class="docutils literal notranslate"><span class="pre">shard_model</span></code>, with the pipeline’s mesh).</p>
+<p>Users who do <strong>not</strong> annotate their own modules are unaffected everywhere:
+construction, optimizer, placement (all parameters resolve to replicated,
+which is data parallel), FSDP (replicated plus one warning). Users who want
+FSDP on their own layers use the same two helpers.</p>
+<p>Cosmetic: <code class="docutils literal notranslate"><span class="pre">nnx.display</span></code> shows <code class="docutils literal notranslate"><span class="pre">eager_sharding=False</span></code> on every library
+parameter because it differs from the global default. Documented, accepted.</p>
+<p>Rank of the annotation must equal rank of the array. Non-parameter state
+(<code class="docutils literal notranslate"><span class="pre">Mask</span></code>, <code class="docutils literal notranslate"><span class="pre">PEMatrix</span></code>, <code class="docutils literal notranslate"><span class="pre">Buffer</span></code>, <code class="docutils literal notranslate"><span class="pre">RopeIds</span></code>, <code class="docutils literal notranslate"><span class="pre">RngKey</span></code>, <code class="docutils literal notranslate"><span class="pre">RngCount</span></code>, <code class="docutils literal notranslate"><span class="pre">BatchStat</span></code>)
+is left unannotated and resolves to replicated through Flax’s existing
+fallback (<code class="docutils literal notranslate"><span class="pre">get_partition_spec</span></code> returns an empty <code class="docutils literal notranslate"><span class="pre">PartitionSpec</span></code> for any
+variable without <code class="docutils literal notranslate"><span class="pre">out_sharding</span></code>).</p>
+</section>
+<section id="gensbi-sharding-module">
+<h3>5.3 <code class="docutils literal notranslate"><span class="pre">gensbi.sharding</span></code> module<a class="headerlink" href="#gensbi-sharding-module" title="Link to this heading">#</a></h3>
+<p>Small, pure, no pipeline imports. Public surface:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">LOGICAL_AXES</span></code>, <code class="docutils literal notranslate"><span class="pre">RULES:</span> <span class="pre">dict[str,</span> <span class="pre">tuple[tuple[str,</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None],</span> <span class="pre">...]]</span></code>.
+Every rule maps <strong>every</strong> logical name explicitly (to <code class="docutils literal notranslate"><span class="pre">None</span></code> when
+unsharded); <code class="docutils literal notranslate"><span class="pre">get_named_sharding</span></code> fails on a logical name the mesh does
+not know, so the <code class="docutils literal notranslate"><span class="pre">replicated</span></code> rule cannot be an empty tuple.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">axes(*names)</span></code>, <code class="docutils literal notranslate"><span class="pre">partitioned(init,</span> <span class="pre">names)</span></code> (see 5.2).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make_mesh(devices=None,</span> <span class="pre">model_axis=1)</span> <span class="pre">-&gt;</span> <span class="pre">Mesh</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shard_model(module,</span> <span class="pre">mesh,</span> <span class="pre">rule=&quot;replicated&quot;)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code>. Resolves every
+variable’s <code class="docutils literal notranslate"><span class="pre">PartitionSpec</span></code> under the rule, turns it into a
+<code class="docutils literal notranslate"><span class="pre">NamedSharding</span></code>, and <code class="docutils literal notranslate"><span class="pre">device_put</span></code>s the state in place. Idempotent: calling
+it again re-places anything that drifted (used after <code class="docutils literal notranslate"><span class="pre">fit_standardization</span></code>
+and after safetensors import). For <code class="docutils literal notranslate"><span class="pre">fsdp</span></code>, any array whose <code class="docutils literal notranslate"><span class="pre">embed</span></code> axis is
+not divisible by the <code class="docutils literal notranslate"><span class="pre">data</span></code> size, or which has no annotation, is placed
+replicated; one warning lists them.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shard_batch(batch,</span> <span class="pre">mesh)</span> <span class="pre">-&gt;</span> <span class="pre">batch</span></code>. <code class="docutils literal notranslate"><span class="pre">tree_map</span></code> over arrays (numpy or
+<code class="docutils literal notranslate"><span class="pre">jax.Array</span></code>), placing axis 0 on <code class="docutils literal notranslate"><span class="pre">data</span></code> and the rest replicated.
+Rank-agnostic. Leaves non-array leaves alone.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">check_batch_divisible(batch,</span> <span class="pre">mesh,</span> <span class="pre">what:</span> <span class="pre">str)</span></code>. Raises the <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
+described above.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sharding_of(module)</span> <span class="pre">-&gt;</span> <span class="pre">dict[path,</span> <span class="pre">NamedSharding]</span></code> for tests and debugging.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shard_sample_init(x_init,</span> <span class="pre">mesh)</span></code> and <code class="docutils literal notranslate"><span class="pre">pad_for_mesh(n,</span> <span class="pre">mesh)</span> <span class="pre">-&gt;</span> <span class="pre">(n_padded,</span> <span class="pre">n)</span></code>
+used by samplers.</p></li>
+</ul>
+</section>
+<section id="pipeline-integration-recipes-pipeline-py-and-subclasses">
+<h3>5.4 Pipeline integration (<code class="docutils literal notranslate"><span class="pre">recipes/pipeline.py</span></code> and subclasses)<a class="headerlink" href="#pipeline-integration-recipes-pipeline-py-and-subclasses" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.__init__</span></code> gains <code class="docutils literal notranslate"><span class="pre">mesh:</span> <span class="pre">Mesh</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></code> and
+<code class="docutils literal notranslate"><span class="pre">sharding_rule:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&quot;replicated&quot;</span></code>. <code class="docutils literal notranslate"><span class="pre">training_config</span></code> / recipe parsing
+accept the same two keys.</p></li>
+<li><p>The pipeline builds the model (<code class="docutils literal notranslate"><span class="pre">_make_model</span></code>, or takes the user’s) as
+today, on one device, then calls <code class="docutils literal notranslate"><span class="pre">shard_model(model,</span> <span class="pre">mesh,</span> <span class="pre">rule)</span></code> once.
+<code class="docutils literal notranslate"><span class="pre">ema_model</span> <span class="pre">=</span> <span class="pre">nnx.clone(model)</span></code> keeps that placement (verified; the clone
+happens after placement). <code class="docutils literal notranslate"><span class="pre">shard_model</span></code> is idempotent and is also the
+“fix-up” after buffer writes and imports.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">train()</span></code>: <code class="docutils literal notranslate"><span class="pre">optimizer</span> <span class="pre">=</span> <span class="pre">self._get_optimizer()</span></code> runs as today and
+inherits the parameters’ placement through optax’s <code class="docutils literal notranslate"><span class="pre">zeros_like</span></code> init;
+the pipeline then calls <code class="docutils literal notranslate"><span class="pre">shard_model(optimizer,</span> <span class="pre">mesh,</span> <span class="pre">rule)</span></code> once as an
+idempotent safety net for transforms that allocate state with
+<code class="docutils literal notranslate"><span class="pre">jnp.zeros(shape)</span></code> instead, and a test asserts equivalence with the
+parameters’ sharding. The same applies to <code class="docutils literal notranslate"><span class="pre">ModelEMA</span></code>. The training loop
+body runs inside <code class="docutils literal notranslate"><span class="pre">jax.set_mesh(mesh)</span></code> for <code class="docutils literal notranslate"><span class="pre">with_sharding_constraint</span></code>
+compatibility; correctness does not depend on it (verified with and
+without). Every <code class="docutils literal notranslate"><span class="pre">next(iter)</span></code> result passes through <code class="docutils literal notranslate"><span class="pre">shard_batch</span></code> before
+<code class="docutils literal notranslate"><span class="pre">train_step</span></code>/<code class="docutils literal notranslate"><span class="pre">val_step</span></code>. The first train and first validation batch pass
+through <code class="docutils literal notranslate"><span class="pre">check_batch_divisible</span></code>. The per-step key is left as is (a scalar
+key is replicated automatically).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">train_step</span></code>, <code class="docutils literal notranslate"><span class="pre">val_step</span></code>, <code class="docutils literal notranslate"><span class="pre">ema_step</span></code>, loss functions, <code class="docutils literal notranslate"><span class="pre">prepare_batch</span></code>:
+<strong>unchanged</strong>. Sharding propagates from the placed inputs and parameters.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">best_state</span> <span class="pre">=</span> <span class="pre">nnx.state(model)</span></code>: unchanged; the copies keep their sharding.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fit_standardization</span></code> (flow pipeline): call <code class="docutils literal notranslate"><span class="pre">shard_model</span></code> again after it
+writes the standardisation buffers.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">import_safetensors</span></code> / <code class="docutils literal notranslate"><span class="pre">load_safetensors</span></code>: call <code class="docutils literal notranslate"><span class="pre">shard_model</span></code> again after
+<code class="docutils literal notranslate"><span class="pre">nnx.update</span></code>. Orbax <code class="docutils literal notranslate"><span class="pre">restore_model</span></code> and <code class="docutils literal notranslate"><span class="pre">restore_intermediate</span></code> already
+restore onto the concrete current state, so sharding is preserved; a test
+pins this.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_sampler</span></code> in the conditional, joint and unconditional pipelines
+already draws <code class="docutils literal notranslate"><span class="pre">x_init</span></code> outside the jitted solver. When a mesh is set, the
+returned sampler pads <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> up to a multiple of the <code class="docutils literal notranslate"><span class="pre">data</span></code> size, draws
+<code class="docutils literal notranslate"><span class="pre">x_init</span></code> and places it with <code class="docutils literal notranslate"><span class="pre">shard_sample_init</span></code>, runs the existing jitted
+solver unchanged, and trims back to <code class="docutils literal notranslate"><span class="pre">nsamples</span></code>. The SDE solver splits its
+per-sample keys inside its own jit, so nothing is needed for keys.</p></li>
+<li><p>The concrete pipelines (<code class="docutils literal notranslate"><span class="pre">Flux1*Pipeline</span></code>, <code class="docutils literal notranslate"><span class="pre">Simformer*Pipeline</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Flux1Joint*Pipeline</span></code>, …) build the model before calling
+<code class="docutils literal notranslate"><span class="pre">AbstractPipeline.__init__</span></code>, so <code class="docutils literal notranslate"><span class="pre">mesh</span></code> and <code class="docutils literal notranslate"><span class="pre">sharding_rule</span></code> are threaded
+through each of their constructors. Model extras (broadcast <code class="docutils literal notranslate"><span class="pre">cond</span></code>, ids) stay replicated.
+<code class="docutils literal notranslate"><span class="pre">_chunked_draw</span></code> and <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code> sit on top unchanged.</p></li>
+</ul>
+</section>
+<section id="heal-swin-nnx">
+<h3>5.5 HEAL-SWIN-nnx<a class="headerlink" href="#heal-swin-nnx" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Annotate every parameter in <code class="docutils literal notranslate"><span class="pre">models/healswin.py</span></code>, <code class="docutils literal notranslate"><span class="pre">models/swin.py</span></code>,
+<code class="docutils literal notranslate"><span class="pre">models/healconv.py</span></code>, <code class="docutils literal notranslate"><span class="pre">layers.py</span></code> with the shared vocabulary:
+qkv <code class="docutils literal notranslate"><span class="pre">(&quot;embed&quot;,&quot;heads&quot;)</span></code>, proj <code class="docutils literal notranslate"><span class="pre">(&quot;heads&quot;,&quot;embed&quot;)</span></code> (bias <code class="docutils literal notranslate"><span class="pre">(&quot;embed&quot;,)</span></code>),
+Mlp fc1 <code class="docutils literal notranslate"><span class="pre">(&quot;embed&quot;,&quot;mlp&quot;)</span></code>, fc2 <code class="docutils literal notranslate"><span class="pre">(&quot;mlp&quot;,&quot;embed&quot;)</span></code>, PatchEmbed conv
+<code class="docutils literal notranslate"><span class="pre">(None,&quot;in&quot;,&quot;embed&quot;)</span></code>, PatchMerging reduction <code class="docutils literal notranslate"><span class="pre">(None,&quot;embed&quot;)</span></code> (its input
+axis is 4×C concatenated tokens, not the residual width, so it stays
+<code class="docutils literal notranslate"><span class="pre">None</span></code>; its output is the next stage’s width);
+PatchExpand / FinalPatchExpand <code class="docutils literal notranslate"><span class="pre">(&quot;embed&quot;,</span> <span class="pre">None)</span></code>; output conv
+<code class="docutils literal notranslate"><span class="pre">(None,&quot;embed&quot;,&quot;out&quot;)</span></code>; LayerNorm scale/bias <code class="docutils literal notranslate"><span class="pre">(&quot;embed&quot;,)</span></code>;
+<code class="docutils literal notranslate"><span class="pre">logit_scale</span></code> <code class="docutils literal notranslate"><span class="pre">(None,None,None)</span></code>; <code class="docutils literal notranslate"><span class="pre">relative_position_bias_table</span></code>
+<code class="docutils literal notranslate"><span class="pre">(None,&quot;heads&quot;)</span></code>; <code class="docutils literal notranslate"><span class="pre">rope_freqs</span></code> <code class="docutils literal notranslate"><span class="pre">(None,&quot;heads&quot;,None)</span></code>. The flat <code class="docutils literal notranslate"><span class="pre">Swin</span></code>
+model’s conv kernels are rank 4 (<code class="docutils literal notranslate"><span class="pre">(None,None,&quot;in&quot;,&quot;embed&quot;)</span></code>).
+<code class="docutils literal notranslate"><span class="pre">Buffer</span></code> variables (shift indices, attention masks, RoPE tables, validity)
+stay unannotated and replicated. The pixel axis is never sharded.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">heal_swin_nnx/sharding.py</span></code>: self-contained copy of <code class="docutils literal notranslate"><span class="pre">LOGICAL_AXES</span></code>,
+<code class="docutils literal notranslate"><span class="pre">RULES</span></code>, <code class="docutils literal notranslate"><span class="pre">make_mesh</span></code>, <code class="docutils literal notranslate"><span class="pre">shard_model</span></code>, <code class="docutils literal notranslate"><span class="pre">shard_batch</span></code>,
+<code class="docutils literal notranslate"><span class="pre">check_batch_divisible</span></code>. Same semantics as GenSBI’s; GenSBI does not
+import it.</p></li>
+<li><p>New example <code class="docutils literal notranslate"><span class="pre">examples/mnist_healpix_classify_sharded.py</span></code>: a copy of the
+classifier script with a mesh, <code class="docutils literal notranslate"><span class="pre">shard_model</span></code>, <code class="docutils literal notranslate"><span class="pre">shard_batch</span></code> per step,
+<code class="docutils literal notranslate"><span class="pre">drop_remainder=True</span></code> on the grain batch, and <code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS</span></code> left to the
+user. The original script is untouched.</p></li>
+<li><p>Dropout and DropPath RNG state lives on the modules and is replicated;
+DropPath’s per-sample Bernoulli draw over the batch-sharded shape is
+correct under partitionable threefry. A test pins that a sharded forward
+in training mode matches an unsharded one for the same RNG state.</p></li>
+</ul>
+</section>
+<section id="random-keys">
+<h3>5.6 Random keys<a class="headerlink" href="#random-keys" title="Link to this heading">#</a></h3>
+<p>The pipeline draws one key per step on the host and passes it in. Inside
+the step, <code class="docutils literal notranslate"><span class="pre">prepare_batch</span></code> draws noise and times of global batch shape. With
+partitionable threefry those draws are identical whether the output lands
+on one device or eight, so no per-device key folding is needed anywhere.
+This is a property to test, not to assume: the end-to-end test below checks
+it.</p>
+</section>
+</section>
+<section id="testing">
+<h2>6. Testing<a class="headerlink" href="#testing" title="Link to this heading">#</a></h2>
+<section id="environment">
+<h3>6.1 Environment<a class="headerlink" href="#environment" title="Link to this heading">#</a></h3>
+<p>Both repos add <code class="docutils literal notranslate"><span class="pre">--xla_force_host_platform_device_count=8</span></code> to the
+<code class="docutils literal notranslate"><span class="pre">XLA_FLAGS</span></code> entry set by <code class="docutils literal notranslate"><span class="pre">pytest-env</span></code> in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, so the whole
+suite runs in processes that see 8 CPU devices. This doubles as a check
+that single-device behaviour is unchanged by the mere presence of extra
+devices. Sharding tests carry a <code class="docutils literal notranslate"><span class="pre">sharding</span></code> marker and skip with a clear
+reason when <code class="docutils literal notranslate"><span class="pre">jax.device_count()</span> <span class="pre">&lt;</span> <span class="pre">8</span></code>. CI needs no new job. (My call; if the
+suite slows down measurably, the fallback is a separate pytest invocation
+for <code class="docutils literal notranslate"><span class="pre">tests/sharding/</span></code> with its own flags.)</p>
+</section>
+<section id="gensbi-tests-tests-sharding">
+<h3>6.2 GenSBI tests (<code class="docutils literal notranslate"><span class="pre">tests/sharding/</span></code>)<a class="headerlink" href="#gensbi-tests-tests-sharding" title="Link to this heading">#</a></h3>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">make_mesh</span></code> shape, axis names and Auto axis types; <code class="docutils literal notranslate"><span class="pre">model_axis</span></code>
+splitting. No-mesh behaviour: every exported model builds with no mesh,
+every variable on <code class="docutils literal notranslate"><span class="pre">SingleDeviceSharding</span></code>; <code class="docutils literal notranslate"><span class="pre">nnx.Optimizer</span></code>, <code class="docutils literal notranslate"><span class="pre">ModelEMA</span></code>,
+<code class="docutils literal notranslate"><span class="pre">nnx.eval_shape</span></code> and <code class="docutils literal notranslate"><span class="pre">nnx.get_abstract_model</span></code> work on it with no mesh; a
+building block composed into a user module builds; an unannotated user
+module passed to a pipeline with a mesh trains and samples.</p></li>
+<li><p>Annotation coverage: for every model class exported from
+<code class="docutils literal notranslate"><span class="pre">gensbi.models</span></code> (built small), every <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code> has <code class="docutils literal notranslate"><span class="pre">out_sharding</span></code>
+metadata of matching rank, using only names from <code class="docutils literal notranslate"><span class="pre">LOGICAL_AXES</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">eager_sharding</span> <span class="pre">is</span> <span class="pre">False</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shard_model</span></code> with <code class="docutils literal notranslate"><span class="pre">replicated</span></code>: every variable leaf, including <code class="docutils literal notranslate"><span class="pre">Mask</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PEMatrix</span></code>, <code class="docutils literal notranslate"><span class="pre">RngKey</span></code>, has a fully replicated <code class="docutils literal notranslate"><span class="pre">NamedSharding</span></code> on the mesh.
+With <code class="docutils literal notranslate"><span class="pre">fsdp</span></code>: every annotated <code class="docutils literal notranslate"><span class="pre">embed</span></code> axis divisible by 8 is sharded over
+<code class="docutils literal notranslate"><span class="pre">data</span></code>; indivisible or unannotated arrays are replicated and warned about.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shard_batch</span></code>: tuple and single-array batches, numpy and jax inputs,
+ranks 3 and 4; <code class="docutils literal notranslate"><span class="pre">check_batch_divisible</span></code> error text.</p></li>
+<li><p>End to end, for a small Flux1, Simformer and Flux1Joint pipeline each,
+under both rules: train 20 steps with <code class="docutils literal notranslate"><span class="pre">mesh</span></code> and without, same seed; the
+loss sequences agree to fp32 tolerance; parameters agree afterwards;
+optimizer and EMA state carry the same sharding as the parameters before
+and after steps. Sharding comparisons use
+<code class="docutils literal notranslate"><span class="pre">NamedSharding.is_equivalent_to(other,</span> <span class="pre">ndim)</span></code>, never spec equality
+(<code class="docutils literal notranslate"><span class="pre">P('data')</span></code> and <code class="docutils literal notranslate"><span class="pre">P('data',</span> <span class="pre">None)</span></code> are the same sharding).</p></li>
+<li><p>Sampling: ODE and EDM samplers give the same samples with and without a
+mesh for the same key (tolerance); <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> not divisible by 8 is
+padded and trimmed; SDE sampler runs and has the right shape.</p></li>
+<li><p>Checkpointing: orbax save/restore and safetensors export/import each
+preserve sharding.</p></li>
+<li><p>Recipe config: <code class="docutils literal notranslate"><span class="pre">mesh:</span> <span class="pre">auto</span></code> and <code class="docutils literal notranslate"><span class="pre">sharding_rule:</span> <span class="pre">fsdp</span></code> parsed and applied.</p></li>
+</ol>
+</section>
+<section id="cross-repo-sequencing">
+<h3>6.3 Cross-repo sequencing<a class="headerlink" href="#cross-repo-sequencing" title="Link to this heading">#</a></h3>
+<p>GenSBI installs <code class="docutils literal notranslate"><span class="pre">heal-swin-nnx</span></code> from PyPI, and <code class="docutils literal notranslate"><span class="pre">gensbi.models</span></code> re-exports
+<code class="docutils literal notranslate"><span class="pre">HealSwinEncoder</span></code>. During development, the GenSBI feature branch overrides
+the dependency with a local path source (<code class="docutils literal notranslate"><span class="pre">[tool.uv.sources]</span></code>) pointing at
+the HEAL-SWIN checkout, so the HEAL-SWIN annotations are visible to GenSBI’s
+tests before any release. Before merge: release HEAL-SWIN with the
+annotations, bump GenSBI’s <code class="docutils literal notranslate"><span class="pre">heal-swin-nnx&gt;=</span></code> floor to that version, and
+remove the path override. GenSBI’s HEAL-SWIN-specific checks (annotation
+coverage of <code class="docutils literal notranslate"><span class="pre">HealSwinEncoder</span></code>, vocabulary pin against
+<code class="docutils literal notranslate"><span class="pre">heal_swin_nnx.sharding</span></code>) skip with a clear reason when the installed
+<code class="docutils literal notranslate"><span class="pre">heal_swin_nnx</span></code> has no <code class="docutils literal notranslate"><span class="pre">sharding</span></code> module, so GenSBI CI is never blocked on
+the other repo.</p>
+</section>
+<section id="fsdp-acceptance">
+<h3>6.4 FSDP acceptance<a class="headerlink" href="#fsdp-acceptance" title="Link to this heading">#</a></h3>
+<p>On 8 CPU devices we can verify placement (parameters, optimizer state and
+EMA state actually split along <code class="docutils literal notranslate"><span class="pre">data</span></code>) and numerics (loss and parameters
+match the unsharded run). We cannot measure peak device memory, and XLA’s
+partitioner may keep gathered weights live through a step. The accepted
+criterion for this pass is <strong>placement plus numerics</strong>. FSDP is documented
+and warned as experimental; a manual multi-GPU memory measurement is a
+follow-up before it is advertised as a memory feature.</p>
+</section>
+<section id="heal-swin-tests-tests-test-sharding-py">
+<h3>6.5 HEAL-SWIN tests (<code class="docutils literal notranslate"><span class="pre">tests/test_sharding.py</span></code>)<a class="headerlink" href="#heal-swin-tests-tests-test-sharding-py" title="Link to this heading">#</a></h3>
+<p>Annotation coverage for <code class="docutils literal notranslate"><span class="pre">HealSwin</span></code>, <code class="docutils literal notranslate"><span class="pre">HealConv</span></code> and the flat <code class="docutils literal notranslate"><span class="pre">Swin</span></code>; buffers
+replicated; vocabulary identical to GenSBI’s table; sharded vs unsharded
+forward (eval and train mode) and one gradient step agree; <code class="docutils literal notranslate"><span class="pre">fsdp</span></code> places
+qkv and MLP kernels over <code class="docutils literal notranslate"><span class="pre">data</span></code>; the sharded example script’s train step
+runs for two steps on a synthetic batch.</p>
+</section>
+</section>
+<section id="calls-i-made-not-discussed-flag-if-wrong">
+<h2>7. Calls I made (not discussed; flag if wrong)<a class="headerlink" href="#calls-i-made-not-discussed-flag-if-wrong" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Logical axis names resolved through rules, rather than mesh names written
+directly into layers. Costs nothing now, avoids a second sweep later.</p></li>
+<li><p>Per-variable <code class="docutils literal notranslate"><span class="pre">eager_sharding=False</span></code> on every library annotation, via
+the two helpers, instead of keeping eager sharding on with a mesh guard
+in constructors or flipping Flax’s global flag. Reason: models stay
+declarative and mesh-free; no guard on ~69 module classes; users building
+their own optimizer or holding an unrelated mesh are unaffected; the only
+loss (born-sharded parameters) is irrelevant while models fit on one
+device, and the large-model path is verified to work with the opt-out.
+An independent review reached the same conclusion.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fsdp</span></code> shards the <code class="docutils literal notranslate"><span class="pre">embed</span></code> axis only.</p></li>
+<li><p>Indivisible or unannotated arrays under <code class="docutils literal notranslate"><span class="pre">fsdp</span></code> fall back to replication
+with one warning, instead of raising.</p></li>
+<li><p>Sampling pads <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> up to a multiple of the device count and trims,
+instead of refusing or falling back to one device.</p></li>
+<li><p>Eager construction then in-place placement, instead of abstract init in a
+sharded <code class="docutils literal notranslate"><span class="pre">nnx.jit</span></code>.</p></li>
+<li><p>The 8-device flag goes into the whole test suite’s environment.</p></li>
+<li><p>HEAL-SWIN gets its own small <code class="docutils literal notranslate"><span class="pre">sharding.py</span></code> instead of importing GenSBI’s.</p></li>
+<li><p>Experimental models and the VAE pipeline are not annotated in this pass.</p></li>
+</ul>
+</section>
+<section id="left-to-the-builder">
+<h2>8. Left to the builder<a class="headerlink" href="#left-to-the-builder" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Exact placement of the <code class="docutils literal notranslate"><span class="pre">jax.set_mesh</span></code> context in the training loop and
+the samplers.</p></li>
+<li><p>Tolerances in the sharded-vs-unsharded tests.</p></li>
+<li><p>How <code class="docutils literal notranslate"><span class="pre">mesh:</span> <span class="pre">auto</span></code> is spelled in the recipe parser and whether a device
+count can be given.</p></li>
+<li><p>Order of annotation sweep and module layout, provided the public surface
+in 5.3 is kept.</p></li>
+</ul>
+</section>
+<section id="follow-ups-not-this-pass">
+<h2>9. Follow-ups (not this pass)<a class="headerlink" href="#follow-ups-not-this-pass" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sbibm-jax</span></code>: the online loader converts to host numpy and back to device 0
+(<code class="docutils literal notranslate"><span class="pre">data/dataset.py:304,311</span></code>, <code class="docutils literal notranslate"><span class="pre">process.py:115</span></code>); a sharded placement or a
+<code class="docutils literal notranslate"><span class="pre">shard_options</span></code>-aware loader belongs there. Offline <code class="docutils literal notranslate"><span class="pre">TaskDataset</span></code> needs
+nothing: its batches are host numpy with a leading batch axis and are
+placed by <code class="docutils literal notranslate"><span class="pre">shard_batch</span></code>.</p></li>
+<li><p>Tensor-parallel rule (<code class="docutils literal notranslate"><span class="pre">mlp</span></code>, <code class="docutils literal notranslate"><span class="pre">heads</span></code>, <code class="docutils literal notranslate"><span class="pre">vocab</span></code> → <code class="docutils literal notranslate"><span class="pre">model</span></code>), with a test
+using <code class="docutils literal notranslate"><span class="pre">make_mesh(model_axis=2)</span></code>.</p></li>
+<li><p>Ensemble parallelism.</p></li>
+<li><p>Jitted and sharded sampling for TarFlow and MAF.</p></li>
+<li><p>Multi-host.</p></li>
+<li><p>Annotations for experimental models.</p></li>
+<li><p>Multi-GPU peak-memory measurement for FSDP (6.4).</p></li>
+<li><p>Born-sharded / abstract init for models that do not fit on one device:
+<code class="docutils literal notranslate"><span class="pre">nnx.get_abstract_model(init_fn,</span> <span class="pre">mesh)</span></code> under the rule’s logical axis
+rules, then <code class="docutils literal notranslate"><span class="pre">jax.jit(init_fn,</span> <span class="pre">out_shardings=nnx.get_named_sharding(...))</span></code>.
+Verified to work with the existing annotations and the opt-out.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#intent">1. Intent</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why">Why</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goals-non-goals-anti-goals">2. Goals, non-goals, anti-goals</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#constraints">3. Constraints</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#user-facing-behaviour-decided">4. User-facing behaviour (decided)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture">5. Architecture</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#logical-axis-names-the-contract-shared-by-both-repos">5.1 Logical axis names (the contract shared by both repos)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#how-annotations-are-written">5.2 How annotations are written</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi-sharding-module">5.3 <code class="docutils literal notranslate"><span class="pre">gensbi.sharding</span></code> module</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pipeline-integration-recipes-pipeline-py-and-subclasses">5.4 Pipeline integration (<code class="docutils literal notranslate"><span class="pre">recipes/pipeline.py</span></code> and subclasses)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#heal-swin-nnx">5.5 HEAL-SWIN-nnx</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#random-keys">5.6 Random keys</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#testing">6. Testing</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#environment">6.1 Environment</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi-tests-tests-sharding">6.2 GenSBI tests (<code class="docutils literal notranslate"><span class="pre">tests/sharding/</span></code>)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cross-repo-sequencing">6.3 Cross-repo sequencing</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fsdp-acceptance">6.4 FSDP acceptance</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#heal-swin-tests-tests-test-sharding-py">6.5 HEAL-SWIN tests (<code class="docutils literal notranslate"><span class="pre">tests/test_sharding.py</span></code>)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#calls-i-made-not-discussed-flag-if-wrong">7. Calls I made (not discussed; flag if wrong)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#left-to-the-builder">8. Left to the builder</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#follow-ups-not-this-pass">9. Follow-ups (not this pass)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
