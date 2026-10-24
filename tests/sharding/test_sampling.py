@@ -83,8 +83,8 @@ def _flow_pipe(flow_fn, mesh, tmp_path):
                                 training_config=test_training_config(tmp_path), mesh=mesh)
     p.ema_model = p.model; p._wrap_model(); return p
 
-_maf = lambda: MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=dim_obs, cond_dim=dim_cond, n_layers=2, nn_width=16, channels=2, cond_channels=2))
-_tar = lambda: TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=dim_obs, cond_dim=dim_cond, num_blocks=2, num_heads=2, head_dim=8, vec_channels=2, cond_channels=2))
+_maf = lambda: MAFlow(MAFlowParams(rngs=nnx.Rngs(0), dim=dim_obs, cond_dim=dim_cond, n_layers=2, nn_width=16, channels=2, cond_channels=2, zero_init=False))
+_tar = lambda: TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=dim_obs, cond_dim=dim_cond, num_blocks=2, num_heads=2, head_dim=8, vec_channels=2, cond_channels=2, zero_init=False))
 
 @pytest.fixture
 def jit_calls(monkeypatch):
