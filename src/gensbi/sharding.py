@@ -29,8 +29,8 @@ from jax.sharding import PartitionSpec as P
 LOGICAL_AXES: tuple[str, ...] = ("embed", "mlp", "heads", "vocab", "in", "out")
 RULES: dict[str, tuple[tuple[str, str | None], ...]] = {
     "replicated": (("embed", None), ("mlp", None), ("heads", None), ("vocab", None), ("in", None), ("out", None)),
-    "fsdp": (("embed", "data"), ("mlp", None), ("heads", None), ("vocab", None), ("in", None), ("out", None)),
-    "tensor": (("embed", None), ("mlp", "model"), ("heads", "model"), ("vocab", "model"), ("in", None), ("out", None)),
+    "fsdp":       (("embed", "data"), ("mlp", None), ("heads", None), ("vocab", None), ("in", None), ("out", None)),
+    "tensor":     (("embed", None), ("mlp", "model"), ("heads", "model"), ("vocab", "model"), ("in", None), ("out", None)),
 }
 MODEL_AXIS = "model"
 
@@ -125,7 +125,8 @@ def shard_model(node, mesh, rule: str = "replicated") -> None:
     annotation are replicated; variables with an unknown logical name or a
     dimension not divisible by the mapped mesh axis fall back to replicated
     and are reported in a single warning.  ``"replicated"`` ignores annotations
-    (so never warns about them).
+    (so never warns about them); under other rules unannotated ``nnx.Param`` s
+    are replicated and listed in that warning too.
 
     Parameters
     ----------
@@ -166,6 +167,8 @@ def shard_model(node, mesh, rule: str = "replicated") -> None:
         names = var.get_metadata().get("out_sharding")
         spec = P()
         where = "/".join(map(str, path))
+        if names is None and rule != "replicated" and isinstance(var, nnx.Param):
+            problems.append(f"{where}: no annotation")
         if names is not None and rule != "replicated":  # replicated ignores annotations
             ndim = np.ndim(value)
             unknown = [n for n in names if n is not None and n not in LOGICAL_AXES]

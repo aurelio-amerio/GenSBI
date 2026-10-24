@@ -97,6 +97,20 @@ def test_shard_model_fsdp_shards_embed_and_falls_back():
 
 
 @requires_8_devices
+def test_shard_model_warns_on_unannotated_param():
+    class M(nnx.Module):
+        def __init__(self):
+            self.w = nnx.Param(jnp.ones((8, 8)), **sh.axes("embed", None))
+            self.naked = nnx.Param(jnp.ones((8,)))
+
+    mesh = sh.make_mesh()
+    with pytest.warns(UserWarning) as rec:
+        sh.shard_model(M(), mesh, "fsdp")
+    msgs = " ".join(str(w.message) for w in rec)
+    assert "naked: no annotation" in msgs and "w:" not in msgs
+
+
+@requires_8_devices
 def test_shard_model_tensor_shards_mlp_over_model_axis():
     m = Toy(nnx.Rngs(0))
     mesh = sh.make_mesh(model_axis=2)
