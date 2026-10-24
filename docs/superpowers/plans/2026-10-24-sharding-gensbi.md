@@ -8,7 +8,7 @@
 
 **Tech Stack:** JAX 0.11.1–0.12 (`jax.set_mesh`, `NamedSharding`, Auto mesh axes), Flax NNX ≥ 0.12.10, optax, orbax-checkpoint, grain, pytest + pytest-env + pytest-xdist.
 
-**Spec:** `docs/superpowers/specs/2026-10-24-multi-device-sharding-design.md`. Depends on the HEAL-SWIN plan (`HEAL-SWIN-nnx/docs/superpowers/plans/2026-10-24-sharding-healswin.md`) for the shared `LOGICAL_AXES`/`RULES` contract and for `HealSwinEncoder` annotations.
+**Spec:** `docs/superpowers/specs/2026-10-24-multi-device-sharding-design.md`. Shares the `LOGICAL_AXES`/`RULES` contract with the HEAL-SWIN plan (`HEAL-SWIN-nnx/docs/superpowers/plans/2026-10-24-sharding-healswin.md`). **The two plans are executed in parallel in separate sessions.** Tasks 1-10 here run against the *released* `heal-swin-nnx` (no path override), so HEAL-SWIN-specific tests skip until Task 11; only Task 11 needs the HEAL-SWIN work finished and published.
 
 ## Global Constraints
 
@@ -32,10 +32,10 @@
 
 ---
 
-### Task 1: Branch, local HEAL-SWIN override, 8-device test environment
+### Task 1: Branch and 8-device test environment
 
 **Files:**
-- Modify: `pyproject.toml` (`[tool.pytest.ini_options].env`; new `[tool.uv.sources]`)
+- Modify: `pyproject.toml` (`[tool.pytest.ini_options].env`)
 - Create: `tests/sharding/__init__.py`, `tests/sharding/helpers.py`
 
 **Interfaces:**
@@ -51,17 +51,13 @@
 ```bash
 git checkout -b sharding
 ```
-In `pyproject.toml`:
+In `pyproject.toml`, replace the `XLA_FLAGS` entry of `[tool.pytest.ini_options].env` with:
 ```toml
-# [tool.pytest.ini_options].env — replace the XLA_FLAGS entry with:
     "XLA_FLAGS=--xla_cpu_enable_platform_dependent_math=false --xla_force_host_platform_device_count=8",
-
-# new section (development only; removed in Task 11):
-[tool.uv.sources]
-heal-swin-nnx = { path = "../HEAL-SWIN-nnx", editable = true }
 ```
+Do **not** add a path override for `heal-swin-nnx`: the HEAL-SWIN work proceeds in parallel in another session and its working tree may be half-annotated. The two HEAL-SWIN-specific tests (`test_vocabulary_pinned_to_heal_swin`, `test_healswin_encoder_annotated_via_gensbi`) skip while the installed package has no `sharding` module.
 
-- [ ] **Step 2: Ask the user to run** `uv sync --group test` outside the sandbox (suggest `! uv sync --group test`). Expected: `.venv/bin/python -c "import heal_swin_nnx, inspect; print(heal_swin_nnx.__file__)"` prints a path under `../HEAL-SWIN-nnx/src`.
+- [ ] **Step 2: Nothing to install.** The dependency set is unchanged.
 
 - [ ] **Step 3: Write the helpers module and a device-count test**
 
@@ -77,8 +73,8 @@ def test_eight_cpu_devices_present():
 - [ ] **Step 5: Commit**
 
 ```bash
-git add pyproject.toml uv.lock tests/sharding/__init__.py tests/sharding/helpers.py tests/sharding/test_env.py
-git commit -m "test: 8 simulated CPU devices for the suite; local heal-swin-nnx override for development"
+git add pyproject.toml tests/sharding/__init__.py tests/sharding/helpers.py tests/sharding/test_env.py
+git commit -m "test: run the suite on 8 simulated CPU devices"
 ```
 
 ---
@@ -639,20 +635,27 @@ def test_tensor_rule_indivisible_heads_fall_back(tmp_path):
 
 ---
 
-### Task 11: Docs and release prep
+### Task 11: Docs, HEAL-SWIN release gate, final verification
 
 **Files:**
 - Modify: `docs/basics/training.md` (new section "Multi-device training"), `README.md` (one bullet), `CHANGELOG.md` if present
-- Modify: `pyproject.toml` (remove `[tool.uv.sources]`; `heal-swin-nnx>=<released version>`), `uv.lock`
+- Modify: `pyproject.toml` (`heal-swin-nnx>=<released version>`), `uv.lock`
 
-- [ ] **Step 1: Docs.** In `docs/basics/training.md` add ≤ 40 lines: the four-line usage from spec §4, `mesh: auto` / `sharding_rule:` YAML keys, the batch-size rule, the `replicated` default, FSDP and tensor marked experimental (FSDP memory benefit unmeasured; tensor untuned), "your own `nnx.Module` needs no annotations for data parallel; use `gensbi.sharding.axes` for FSDP", and the one-liner for the test environment. Run `.venv/bin/python -m pytest tests/sharding -q -p no:xdist` → PASS.
-- [ ] **Step 2: Wait for the HEAL-SWIN release** (HEAL-SWIN plan Task 7). Then remove the `[tool.uv.sources]` block and set `heal-swin-nnx>=<that version>`; ask the user to run `uv lock && uv sync --group test` outside the sandbox.
-- [ ] **Step 3: Full suite as CI runs it**: `.venv/bin/python -m pytest -m "not slow and not experimental and not extraslow" -n auto -q`, then `-m slow`, then `-m experimental` → PASS. Confirm `test_vocabulary_pinned_to_heal_swin` and `test_healswin_encoder_annotated_via_gensbi` **run** (not skip) against the released package.
-- [ ] **Step 4: Commit**
+- [ ] **Step 1: Docs.** In `docs/basics/training.md` add ≤ 40 lines: the four-line usage from spec §4, `mesh: auto` / `sharding_rule:` YAML keys, the batch-size rule, the `replicated` default, FSDP and tensor marked experimental (FSDP memory benefit unmeasured; tensor untuned), "your own `nnx.Module` needs no annotations for data parallel; use `gensbi.sharding.axes` for FSDP", and the one-liner for the test environment. Run `.venv/bin/python -m pytest tests/sharding -q -p no:xdist` → PASS. Commit the docs on their own:
 
 ```bash
-git add docs/basics/training.md README.md pyproject.toml uv.lock
-git commit -m "docs: multi-device training; depend on released heal-swin-nnx with sharding annotations"
+git add docs/basics/training.md README.md
+git commit -m "docs: multi-device training with gensbi.sharding"
+```
+
+- [ ] **Step 2: Release gate — ask the user, and stop until they answer.** Use `AskUserQuestion`: "Has the HEAL-SWIN-nnx release with the sharding annotations been uploaded to PyPI, and which version is it?" Options: *Yes, version …* / *Not yet*. On *Not yet*, stop here and report that Tasks 1-10 are complete and only the final verification is pending; do not proceed to Step 3. On *Yes*, record the version.
+- [ ] **Step 3: Pin the release.** Set `heal-swin-nnx>=<that version>` in `pyproject.toml`; ask the user to run `uv lock && uv sync --group test` outside the sandbox (suggest `! uv lock && uv sync --group test`). Verify `.venv/bin/python -c "import heal_swin_nnx.sharding"` succeeds.
+- [ ] **Step 4: Full suite as CI runs it**: `.venv/bin/python -m pytest -m "not slow and not experimental and not extraslow" -n auto -q`, then `-m slow`, then `-m experimental` → PASS. Confirm with `-rs` that `test_vocabulary_pinned_to_heal_swin` and `test_healswin_encoder_annotated_via_gensbi` **ran** (not skipped) against the released package.
+- [ ] **Step 5: Commit**
+
+```bash
+git add pyproject.toml uv.lock
+git commit -m "build: depend on released heal-swin-nnx with sharding annotations"
 ```
 
 Then superpowers:finishing-a-development-branch.
