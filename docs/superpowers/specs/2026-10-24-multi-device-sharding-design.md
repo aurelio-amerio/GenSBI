@@ -139,8 +139,18 @@ samples = pipeline.sample(key, x_o, nsamples=100_000)
   loader.
 * `make_mesh(devices=None, model_axis=1)` returns a 2-D
   `jax.sharding.Mesh` with axes `("data", "model")`, `data = n_devices //
-  model_axis`. `model_axis` stays 1 in this pass; it exists so a tensor
-  rule can be added later without changing meshes or checkpoints.
+  model_axis`, and **Auto** axis types. On the installed JAX,
+  `jax.make_mesh` defaults to Explicit axis types, and Flax's eager
+  sharding is documented to work only in auto mode, so the helper sets
+  `axis_types` explicitly; a user-supplied mesh with Explicit axes is
+  rejected with a clear error. `model_axis` stays 1 in this pass; it
+  exists so a tensor rule can be added later without changing meshes or
+  checkpoints.
+* A user model with **no** annotations works unchanged: verified by
+  constructing a plain `nnx.Module` and its optimizer inside a 2x4 mesh on 8
+  simulated devices and running a jitted train step with the batch split
+  over `data`. Parameters and optimizer state come out replicated, which is
+  plain data parallel.
 
 ## 5. Architecture
 
