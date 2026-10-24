@@ -199,9 +199,17 @@ rule maps `embed` to `fsdp` instead of `data`, needs only a change to
 `make_mesh` and the rule table, with models, checkpoints and the pipeline
 untouched.
 
-The vocabulary and the two rule tables above must be identical in
-`gensbi/sharding.py` and `heal_swin_nnx/sharding.py`. A test in each repo
-pins them.
+The vocabulary and the rule tables above must be identical in
+`gensbi/sharding.py` and `heal_swin_nnx/sharding.py`. Each file imports
+only JAX and Flax; neither imports the other (GenSBI depends on
+`heal-swin-nnx` for the model re-export only, and that stays the only
+coupling). GenSBI's `shard_model` reads plain Flax metadata off each
+variable, so it places a HEAL-SWIN model without knowing where it came
+from. A test in GenSBI pins the two tables against each other (skipped when
+the installed `heal_swin_nnx` has no `sharding` module). For robustness
+against drift, `shard_model` treats a logical name missing from the active
+rule as replicated and warns, instead of failing inside Flax with
+"resource axis not found".
 
 ### 5.2 How annotations are written
 
