@@ -79,23 +79,31 @@ for (annotations and a mesh axis exist) but no tensor rule ships.
   `Linear`, `Conv`, `LayerNorm`, `RMSNorm`, `Embed`, `MultiHeadAttention`;
   `jax.set_mesh` exists (`jax.sharding.use_mesh` does not); `device_put` of
   typed PRNG key arrays onto a `NamedSharding` works; `nnx.clone` preserves
-  `out_sharding` metadata; Flax `OptVariable`s carry the parameter's
-  `out_sharding`, so an `nnx.Optimizer` built on placed parameters inherits
-  their sharding with no extra work.
+  `out_sharding` and `eager_sharding` metadata; an `nnx.Optimizer` built on
+  placed parameters inherits their sharding because optax initialises its
+  state with `zeros_like` on the placed arrays (verified for adam, adamw and
+  the pipeline's `MultiSteps(chain(adaptive_grad_clip, adamw))`, with no
+  mesh context); the moments keep their `data` sharding across `nnx.jit`
+  steps, so no sharding constraint inside the train step is needed.
 * **Flax eager sharding (FLIP 4844).** In Flax 0.12 a variable created with
   `out_sharding` metadata is placed on the mesh at creation, and creation
   **requires** an active mesh context (`jax.set_mesh`) plus, for logical
   names, an active `nnx.logical_axis_rules` context. Without them it raises.
   Unannotated variables are unaffected, which is why stock Flax models never
-  meet this. Since every parameter in both repos will be annotated, every
-  model must be constructed inside such a context. We keep eager sharding
-  **on** (it is Flax's main path and gives born-sharded parameters under
-  FSDP) and guarantee the context ourselves (5.2). We do **not** flip the
-  global `flax_always_shard_variable` flag and do not use per-variable
-  `eager_sharding=False`. Verified: the mesh context does not leak after
-  construction; parameters on a 1x1 default mesh interoperate with numpy
-  batches under `nnx.jit` and can be re-placed onto a real mesh with one
-  `device_put`.
+  meet this. Since every parameter in both repos will be annotated, and
+  models must keep building with no mesh anywhere, every library annotation
+  sets the per-variable opt-out `eager_sharding=False` (the FLIP's documented
+  per-variable escape hatch). Models therefore never touch a mesh; placement
+  happens once, explicitly, in `shard_model` (5.3). We do **not** flip the
+  global `flax_always_shard_variable` flag or use `nnx.use_eager_sharding`,
+  which would silently change Flax semantics for the user's own variables.
+  Verified on both installed Flax versions: with the opt-out, construction,
+  `nnx.Optimizer`, `ModelEMA`, `nnx.eval_shape` and `nnx.get_abstract_model`
+  all work with no mesh; the flag survives `clone`, `split`/`merge`,
+  `OptVariable` creation and orbax restore. The only thing given up is
+  parameters being born sharded, which is irrelevant while models fit on one
+  device (and the future large-model path, `nnx.get_abstract_model` plus a
+  `jax.jit(init, out_shardings=...)`, is verified to work with the opt-out).
 * `jax_threefry_partitionable` is on by default in the installed JAX. Random
   draws inside a jitted step therefore give the same values regardless of
   how the output is sharded. The design relies on this for the
@@ -142,8 +150,8 @@ samples = pipeline.sample(key, x_o, nsamples=100_000)
   model_axis`, and **Auto** axis types. On the installed JAX,
   `jax.make_mesh` defaults to Explicit axis types, and Flax's eager
   sharding is documented to work only in auto mode, so the helper sets
-  `axis_types` explicitly; a user-supplied mesh with Explicit axes is
-  rejected with a clear error. `model_axis` stays 1 in this pass; it
+  `axis_types` explicitly; a user-supplied mesh with Explicit axes gets a
+  warning (construction never depends on the mesh, only `shard_model` does). `model_axis` stays 1 in this pass; it
   exists so a tensor rule can be added later without changing meshes or
   checkpoints.
 * A user model with **no** annotations works unchanged: verified by
@@ -195,45 +203,27 @@ self.condition_embedding = nnx.Param(
     partitioned(nnx.initializers.zeros, (None, None, "embed"))(key, (1, 1, hidden)))
 ```
 
-`axes(*names)` returns `{"out_sharding": names}`; `partitioned(init,
-names)` is `nnx.with_partitioning(init, names)`.
+`axes(*names)` returns `{"out_sharding": names, "eager_sharding": False}`;
+`partitioned(init, names)` is `nnx.with_partitioning(init, names,
+eager_sharding=False)`. **All library annotations go through these two
+helpers**; a raw `out_sharding` written by hand would raise at construction
+without a mesh, so the annotation-coverage test (6.2) also asserts
+`eager_sharding is False` on every annotated variable.
 
-**Which operations need the mesh context.** Verified on the installed
-Flax: constructing an annotated module, creating an `nnx.Optimizer` on it
-(its `OptVariable`s copy the parameter metadata and eager-shard again; the
-EMA is an optimizer subclass), and `nnx.eval_shape` abstract init all
-raise outside a mesh context. `nnx.clone`, `split`/`merge`,
-`state`/`update`, `nnx.jit`, `nnx.value_and_grad` and
-`get_partition_spec` do not. A module **without** annotations is never
-affected by any of this.
-
-**Guaranteeing the mesh context.** Every public `nnx.Module` class that
-creates annotated parameters, top-level models (`Flux1`, `Flux1Joint`,
-`Simformer`, `TarFlow`, `MAFlow`; `HealSwin`, `HealSwinEncoder`,
-`HealConv`, `Swin*`) **and** the reusable building blocks users may
-compose into their own models (embedding layers, attention/MLP blocks,
-conditioners), runs its constructor body under
-`sharding.mesh_context(rule=...)` (a decorator on `__init__` or an
-explicit `with` as the first statement). It behaves as:
-
-* if a mesh is already active (`jax.sharding.get_mesh()` is non-empty) and
-  logical rules are already set, do nothing;
-* otherwise enter `jax.set_mesh(default_mesh())`, a cached 1x1 mesh over
-  the default device with axes `("data","model")`, and
-  `nnx.logical_axis_rules(RULES["replicated"])`.
-
-So `Flux1(params)` on a laptop with no mesh anywhere keeps working, a
-user model that composes our building blocks keeps working, and the
-pipeline, which builds the model, the optimizer and the EMA inside the
-user's mesh and chosen rule (5.4), gets parameters born already sharded.
-Nesting is free because the guard is a no-op when a mesh is active.
+Consequences: models and building blocks never import mesh code and build
+on the default device exactly as today, whether called directly
+(`Flux1(params)` in a notebook), composed into a user's own module, or
+built by the pipeline. `nnx.Optimizer`, `ModelEMA` and `nnx.eval_shape` on
+them work with no mesh. A user with an unrelated active mesh is unaffected
+(placement only happens in `shard_model`, with the pipeline's mesh).
 
 Users who do **not** annotate their own modules are unaffected everywhere:
 construction, optimizer, placement (all parameters resolve to replicated,
-which is data parallel), FSDP (replicated plus one warning). The one
-documented gotcha is for users who bypass the pipeline and build their own
-`nnx.Optimizer` on a GenSBI/HEAL-SWIN model: that must happen inside a
-mesh context, and `with gensbi.sharding.mesh_context():` is the one-liner.
+which is data parallel), FSDP (replicated plus one warning). Users who want
+FSDP on their own layers use the same two helpers.
+
+Cosmetic: `nnx.display` shows `eager_sharding=False` on every library
+parameter because it differs from the global default. Documented, accepted.
 
 Rank of the annotation must equal rank of the array. Non-parameter state
 (`Mask`, `PEMatrix`, `Buffer`, `RopeIds`, `RngKey`, `RngCount`, `BatchStat`)
@@ -249,8 +239,7 @@ Small, pure, no pipeline imports. Public surface:
   Every rule maps **every** logical name explicitly (to `None` when
   unsharded); `get_named_sharding` fails on a logical name the mesh does
   not know, so the `replicated` rule cannot be an empty tuple.
-* `axes(*names)`, `partitioned(init, names)`, `default_mesh()`,
-  `mesh_context(mesh=None, rule="replicated")` (see 5.2).
+* `axes(*names)`, `partitioned(init, names)` (see 5.2).
 * `make_mesh(devices=None, model_axis=1) -> Mesh`.
 * `shard_model(module, mesh, rule="replicated") -> None`. Resolves every
   variable's `PartitionSpec` under the rule, turns it into a
@@ -273,17 +262,20 @@ Small, pure, no pipeline imports. Public surface:
 * `AbstractPipeline.__init__` gains `mesh: Mesh | None = None` and
   `sharding_rule: str = "replicated"`. `training_config` / recipe parsing
   accept the same two keys.
-* The pipeline builds the model (`_make_model`) inside
-  `mesh_context(mesh, rule)`, so parameters are born on the user's mesh
-  under the chosen rule. `ema_model = nnx.clone(model)` keeps that
-  placement. A user-supplied model (built with no mesh, hence on the 1x1
-  default mesh) is re-placed with `shard_model(model, mesh, rule)`, which
-  also serves as the idempotent "fix-up" after buffer writes and imports.
-* `train()`: `optimizer = self._get_optimizer()` runs inside
-  `mesh_context(mesh, rule)` (required: optimizer state eager-shards from
-  the parameter metadata) and so inherits the parameters' sharding; a test
-  asserts it. `ModelEMA` creation is wrapped the same way. The training
-  loop body runs inside the same context. Every `next(iter)` result passes through `shard_batch` before
+* The pipeline builds the model (`_make_model`, or takes the user's) as
+  today, on one device, then calls `shard_model(model, mesh, rule)` once.
+  `ema_model = nnx.clone(model)` keeps that placement (verified; the clone
+  happens after placement). `shard_model` is idempotent and is also the
+  "fix-up" after buffer writes and imports.
+* `train()`: `optimizer = self._get_optimizer()` runs as today and
+  inherits the parameters' placement through optax's `zeros_like` init;
+  the pipeline then calls `shard_model(optimizer, mesh, rule)` once as an
+  idempotent safety net for transforms that allocate state with
+  `jnp.zeros(shape)` instead, and a test asserts equivalence with the
+  parameters' sharding. The same applies to `ModelEMA`. The training loop
+  body runs inside `jax.set_mesh(mesh)` for `with_sharding_constraint`
+  compatibility; correctness does not depend on it (verified with and
+  without). Every `next(iter)` result passes through `shard_batch` before
   `train_step`/`val_step`. The first train and first validation batch pass
   through `check_batch_divisible`. The per-step key is left as is (a scalar
   key is replicated automatically).
@@ -361,15 +353,16 @@ for `tests/sharding/` with its own flags.)
 
 ### 6.2 GenSBI tests (`tests/sharding/`)
 
-1. `make_mesh` shape and axis names; `model_axis` splitting.
-   `mesh_context`: no-op when a mesh and rules are active; installs the
-   default mesh otherwise; nothing leaks after exit; a model built with no
-   mesh has every variable on the default mesh with `P()`; a building block
-   composed into a user module outside any mesh constructs; an unannotated
-   user module passed to a pipeline with a mesh trains and samples.
+1. `make_mesh` shape, axis names and Auto axis types; `model_axis`
+   splitting. No-mesh behaviour: every exported model builds with no mesh,
+   every variable on `SingleDeviceSharding`; `nnx.Optimizer`, `ModelEMA`,
+   `nnx.eval_shape` and `nnx.get_abstract_model` work on it with no mesh; a
+   building block composed into a user module builds; an unannotated user
+   module passed to a pipeline with a mesh trains and samples.
 2. Annotation coverage: for every model class exported from
    `gensbi.models` (built small), every `nnx.Param` has `out_sharding`
-   metadata of matching rank, using only names from `LOGICAL_AXES`.
+   metadata of matching rank, using only names from `LOGICAL_AXES`, and
+   `eager_sharding is False`.
 3. `shard_model` with `replicated`: every variable leaf, including `Mask`,
    `PEMatrix`, `RngKey`, has a fully replicated `NamedSharding` on the mesh.
    With `fsdp`: every annotated `embed` axis divisible by 8 is sharded over
@@ -379,7 +372,10 @@ for `tests/sharding/` with its own flags.)
 5. End to end, for a small Flux1, Simformer and Flux1Joint pipeline each,
    under both rules: train 20 steps with `mesh` and without, same seed; the
    loss sequences agree to fp32 tolerance; parameters agree afterwards;
-   optimizer and EMA state carry the same sharding as the parameters.
+   optimizer and EMA state carry the same sharding as the parameters before
+   and after steps. Sharding comparisons use
+   `NamedSharding.is_equivalent_to(other, ndim)`, never spec equality
+   (`P('data')` and `P('data', None)` are the same sharding).
 6. Sampling: ODE and EDM samplers give the same samples with and without a
    mesh for the same key (tolerance); `nsamples` not divisible by 8 is
    padded and trimmed; SDE sampler runs and has the right shape.
@@ -423,12 +419,14 @@ runs for two steps on a synthetic batch.
 
 * Logical axis names resolved through rules, rather than mesh names written
   directly into layers. Costs nothing now, avoids a second sweep later.
-* Eager sharding stays on; every public annotated module class guarantees
-  a mesh context with a cached 1x1 default mesh when none is active, and the
-  pipeline wraps model, optimizer and EMA creation, instead of per-variable
-  `eager_sharding=False` or flipping Flax's global flag. Parameters built
-  without a user mesh therefore carry a `NamedSharding` on the default mesh
-  rather than a `SingleDeviceSharding`; same layout, different label.
+* Per-variable `eager_sharding=False` on every library annotation, via
+  the two helpers, instead of keeping eager sharding on with a mesh guard
+  in constructors or flipping Flax's global flag. Reason: models stay
+  declarative and mesh-free; no guard on ~69 module classes; users building
+  their own optimizer or holding an unrelated mesh are unaffected; the only
+  loss (born-sharded parameters) is irrelevant while models fit on one
+  device, and the large-model path is verified to work with the opt-out.
+  An independent review reached the same conclusion.
 * `fsdp` shards the `embed` axis only.
 * Indivisible or unannotated arrays under `fsdp` fall back to replication
   with one warning, instead of raising.
@@ -464,3 +462,7 @@ runs for two steps on a synthetic batch.
 * Multi-host.
 * Annotations for experimental models.
 * Multi-GPU peak-memory measurement for FSDP (6.4).
+* Born-sharded / abstract init for models that do not fit on one device:
+  `nnx.get_abstract_model(init_fn, mesh)` under the rule's logical axis
+  rules, then `jax.jit(init_fn, out_shardings=nnx.get_named_sharding(...))`.
+  Verified to work with the existing annotations and the opt-out.
