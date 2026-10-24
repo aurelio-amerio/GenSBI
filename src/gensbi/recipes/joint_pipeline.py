@@ -517,6 +517,8 @@ class JointPipeline(AbstractPipeline):
                     f"model_extras cannot override protected keys: {conflict}"
                 )
             extras.update(model_extras)
+        # Broadcast to every row: replicated over the mesh (no-op without one).
+        extras = self._replicate(extras)
 
         log_prob_fn = self.method.build_log_prob_fn(
             model_wrapped,
@@ -527,8 +529,10 @@ class JointPipeline(AbstractPipeline):
         )
 
         def _log_prob(x_1, model_extras=None, *, key=None):
-            _extras = model_extras if model_extras is not None else extras
-            return log_prob_fn(x_1, _extras, key=key)
+            _extras = self._replicate(model_extras) if model_extras is not None else extras
+            return log_prob_fn(
+                self._place_batch_or_replicate(x_1), _extras, key=self._replicate(key)
+            )
 
         return _log_prob
 

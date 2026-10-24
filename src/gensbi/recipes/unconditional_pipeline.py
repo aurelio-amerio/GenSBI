@@ -255,14 +255,16 @@ class UnconditionalPipeline(AbstractPipeline):
         """
         model_wrapped = self.ema_model_wrapped if use_ema else self.model_wrapped
 
-        model_extras = {"obs_ids": self.obs_ids}
+        model_extras = self._replicate({"obs_ids": self.obs_ids})
 
         log_prob_fn = self.method.build_log_prob_fn(
             model_wrapped, self.path, model_extras, **kwargs,
         )
 
         def _log_prob(x_1, *, key=None):
-            return log_prob_fn(x_1, model_extras, key=key)
+            return log_prob_fn(
+                self._place_batch_or_replicate(x_1), model_extras, key=self._replicate(key)
+            )
 
         return _log_prob
 

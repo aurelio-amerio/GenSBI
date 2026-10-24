@@ -39,6 +39,7 @@ from gensbi.utils.misc import get_colored_value
 from gensbi.utils.serialization import save_safetensors, load_safetensors
 from gensbi.sharding import (
     RULES,
+    batch_size_divisor,
     check_batch_divisible,
     mesh_context,
     pad_for_mesh,
@@ -496,6 +497,21 @@ class AbstractPipeline(abc.ABC):
         if self.mesh is None:
             return tree
         return replicate(tree, self.mesh)
+
+    def _place_batch_or_replicate(self, x):
+        """Place a batch of rows ``x`` on the mesh (no-op without one).
+
+        With a mesh ``x`` is sharded over the batch axes when its leading
+        size is a multiple of the data-parallel size, and replicated
+        otherwise (no padding here). Used for inputs evaluated row by row,
+        such as a flow condition repeated per sample or the points passed
+        to a log-probability function.
+        """
+        if self.mesh is None:
+            return x
+        if jnp.shape(x)[0] % batch_size_divisor(self.mesh):
+            return self._replicate(x)
+        return shard_sample_init(x, self.mesh)
 
     def _trim(self, out, nsamples, axis):
         """Keep the first ``nsamples`` entries of ``out`` along ``axis``.

@@ -14,7 +14,7 @@ from tqdm.auto import tqdm
 
 from gensbi.recipes.pipeline import AbstractPipeline, _chunked_draw, _validate_chunk_size
 from gensbi.recipes.utils import _require_channel, _single_obs
-from gensbi.sharding import batch_size_divisor, pad_for_mesh, shard_sample_init
+from gensbi.sharding import pad_for_mesh, shard_sample_init
 
 # One compiled sampling pass per (flow graph, cond shape/sharding). Both MAF
 # and TarFlow sample under jit; eager sampling is orders of magnitude slower.
@@ -316,19 +316,6 @@ class ConditionalFlowPipeline(AbstractPipeline):
             show_progress_bars=show_progress_bars,
         )
 
-    def _place_cond(self, cond):
-        """Place ``cond`` on the mesh for one jitted sampling pass.
-
-        Without a mesh ``cond`` is returned as is. With a mesh it is sharded
-        over the batch axes when its leading size is a multiple of the
-        data-parallel size, and replicated otherwise (no padding here).
-        """
-        if self.mesh is None:
-            return cond
-        if cond.shape[0] % batch_size_divisor(self.mesh):
-            return self._replicate(cond)
-        return shard_sample_init(cond, self.mesh)
-
     def sample_batched(self, key, x_o, nsamples=10_000, *, use_ema=True,
                        chunk_size=None, show_progress_bars=True, **kwargs):
         """Draw posterior samples for a batch of conditioning observations.
@@ -388,7 +375,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         total = B * nsamples
 
         if chunk_size is None or chunk_size >= total:
-            samples = _jit_flow_sample(flow, key, self._place_cond(cond))  # ONE batched AR pass
+            samples = _jit_flow_sample(flow, key, self._place_batch_or_replicate(cond))  # ONE batched AR pass
         else:
             n_chunks = (total + chunk_size - 1) // chunk_size
             keys = jax.random.split(key, n_chunks)
@@ -398,7 +385,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             chunks = []
             for i in loop:
                 sl = slice(i * chunk_size, min((i + 1) * chunk_size, total))
-                chunk = _jit_flow_sample(flow, keys[i], self._place_cond(cond[sl]))
+                chunk = _jit_flow_sample(flow, keys[i], self._place_batch_or_replicate(cond[sl]))
                 chunks.append(jax.block_until_ready(chunk))
             samples = jnp.concatenate(chunks, axis=0)
 
@@ -435,6 +422,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         def log_prob_fn(x_1):
             obs = self._prep_obs(x_1)
             cond_b = jnp.broadcast_to(cond, (obs.shape[0],) + cond.shape)
+            # Same leading size: both follow the batch placement (no-op without a mesh).
+            obs = self._place_batch_or_replicate(obs)
+            cond_b = self._place_batch_or_replicate(cond_b)
             return flow.log_prob(obs, cond_b)            # (B,)
         return log_prob_fn
 
