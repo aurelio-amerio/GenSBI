@@ -425,16 +425,17 @@ for `tests/sharding/` with its own flags.)
 ### 6.3 Cross-repo sequencing
 
 GenSBI installs `heal-swin-nnx` from PyPI, and `gensbi.models` re-exports
-`HealSwinEncoder`. During development, the GenSBI feature branch overrides
-the dependency with a local path source (`[tool.uv.sources]`) pointing at
-the HEAL-SWIN checkout, so the HEAL-SWIN annotations are visible to GenSBI's
-tests before any release. Before merge: release HEAL-SWIN with the
-annotations, bump GenSBI's `heal-swin-nnx>=` floor to that version, and
-remove the path override. GenSBI's HEAL-SWIN-specific checks (annotation
-coverage of `HealSwinEncoder`, vocabulary pin against
-`heal_swin_nnx.sharding`) skip with a clear reason when the installed
+`HealSwinEncoder`. The two repos are implemented **in parallel, in separate
+sessions**, each from its own plan; the shared contract (5.1) is fully
+written in both plans, so neither needs the other's working tree. GenSBI
+develops against the *released* HEAL-SWIN; its HEAL-SWIN-specific checks
+(annotation coverage of `HealSwinEncoder`, vocabulary pin against
+`heal_swin_nnx.sharding`) skip with a clear reason while the installed
 `heal_swin_nnx` has no `sharding` module, so GenSBI CI is never blocked on
-the other repo.
+the other repo. GenSBI's final task is a release gate: it asks whether the
+annotated HEAL-SWIN has been uploaded to PyPI and which version, bumps the
+`heal-swin-nnx>=` floor to it, and only then runs the final full
+verification in which those two checks must run rather than skip.
 
 ### 6.4 FSDP acceptance
 
