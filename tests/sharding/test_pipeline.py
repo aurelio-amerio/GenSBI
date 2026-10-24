@@ -121,19 +121,29 @@ def test_flux1_fsdp_matches_and_shards_params_opt_and_ema(tmp_path):
     ranks = {"/".join(map(str, k)): v[...].ndim for k, v in nnx.to_flat_state(nnx.state(p.model))}
     sharded = [k for k, v in s.items() if not v.is_equivalent_to(NamedSharding(mesh, P()), ranks[k])]
     assert sharded, "FSDP sharded nothing: hidden size must be divisible by 8"
-    optimizer = p._get_optimizer(); sh.shard_model(optimizer, mesh, "fsdp")
-    mu = {"/".join(map(str, k)): v for k, v in nnx.to_flat_state(nnx.state(optimizer)) if "mu" in map(str, k)}
-    # Match the optimizer's mu twin by full path suffix on a "/" boundary.
-    matched = 0
-    for name in sharded:
-        twins = [v for k, v in mu.items() if k == name or k.endswith("/" + name)]
-        assert len(twins) == 1, (name, len(twins))
-        assert twins[0][...].sharding.is_equivalent_to(s[name], twins[0][...].ndim), name
-        matched += 1
-    assert matched == len(sharded) > 0
+    def _check_opt_twins(optimizer):
+        # mu/nu paths look like `opt_state/1/0/{mu,nu}/<model path>`; match on a "/" boundary.
+        flat = {"/".join(map(str, k)): v for k, v in nnx.to_flat_state(nnx.state(optimizer))}
+        matched = 0
+        for name in sharded:
+            for moment in ("mu", "nu"):
+                twins = [v for k, v in flat.items() if f"/{moment}/" in k and k.endswith("/" + name)]
+                assert len(twins) == 1, (moment, name, len(twins))
+                assert twins[0][...].sharding.is_equivalent_to(s[name], twins[0][...].ndim), (moment, name)
+                matched += 1
+        assert matched == 2 * len(sharded) > 0
+    # (a) a fresh optimizer inherits placement from the (already sharded) model, without shard_model.
+    _check_opt_twins(p._get_optimizer())
+    # (b) the optimizer train() actually builds keeps that placement after steps.
+    built, orig = [], p._get_optimizer
+    def _record():
+        built.append(orig()); return built[-1]
+    p._get_optimizer = _record
     losses, _ = p.train(nnx.Rngs(0), save_model=False)
     np.testing.assert_allclose(np.asarray([float(l) for l in losses]), l_ref, rtol=1e-3, atol=1e-5)
     _assert_params_close(ref.model, p.model, atol=1e-4)  # R6
+    assert len(built) == 1
+    _check_opt_twins(built[0])
     for name, var in sh.sharding_of(p.ema_model).items():
         assert var.is_equivalent_to(s[name], ranks[name]), name  # EMA mirrors the model's placement after training
 
