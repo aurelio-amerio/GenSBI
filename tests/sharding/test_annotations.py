@@ -28,10 +28,9 @@ def test_flux1joint_every_param_annotated():
 
 
 def test_flux1joint_concat_every_param_annotated():
-    import dataclasses
-
-    params = dataclasses.replace(small_flux1joint_params(), id_merge_mode="concat", rngs=nnx.Rngs(0))
-    assert_every_param_annotated(Flux1Joint(params))
+    # Build concat params directly: dataclasses.replace on "sum" params would keep the
+    # zeroed cond/id dims from __post_init__ and give a zero-width id embedding.
+    assert_every_param_annotated(Flux1Joint(small_flux1joint_params(id_merge_mode="concat")))
 
 
 def test_no_mesh_optimizer_ema_eval_shape():

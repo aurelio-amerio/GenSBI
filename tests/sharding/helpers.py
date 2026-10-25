@@ -89,8 +89,8 @@ def small_simformer_params() -> SimformerParams:
     return params
 
 
-def small_flux1joint_params() -> Flux1JointParams:
-    """Tiny Flux1Joint config with residual width 16."""
+def small_flux1joint_params(id_merge_mode: str = "sum") -> Flux1JointParams:
+    """Tiny Flux1Joint config with residual width 16 (32 for ``id_merge_mode="concat"``)."""
     params = Flux1JointParams(
         in_channels=2,
         vec_in_dim=None,
@@ -103,7 +103,7 @@ def small_flux1joint_params() -> Flux1JointParams:
         qkv_bias=True,
         rngs=nnx.Rngs(0),
         dim_joint=dim_joint,
-        id_merge_mode="sum",
+        id_merge_mode=id_merge_mode,
         id_embedding_strategy="absolute",
         guidance_embed=False,
         param_dtype=jnp.float32,
