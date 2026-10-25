@@ -88,6 +88,8 @@ class FieldConditionalPipeline(ConditionalPipeline):
         ch_cond=1,
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         self.method = method
 
@@ -110,6 +112,8 @@ class FieldConditionalPipeline(ConditionalPipeline):
             ch_cond=ch_cond,
             params=params,
             training_config=training_config,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
 
         self.field_shape = tuple(field_shape)

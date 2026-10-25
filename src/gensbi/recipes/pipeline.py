@@ -37,6 +37,18 @@ import flax.traverse_util as tu
 
 from gensbi.utils.misc import get_colored_value
 from gensbi.utils.serialization import save_safetensors, load_safetensors
+from gensbi.sharding import (
+    RULES,
+    batch_size_divisor,
+    check_batch_divisible,
+    mesh_context,
+    pad_for_mesh,
+    replicate,
+    resolve_mesh,
+    shard_batch,
+    shard_model,
+    shard_sample_init,
+)
 
 
 def _warn_if_not_fp32_master_weights(model):
@@ -270,6 +282,15 @@ class AbstractPipeline(abc.ABC):
         Number of channels in the conditional data (if applicable). Default is None.
     training_config : dict, optional
         Training configuration. If None, uses defaults from `get_default_training_config`.
+    mesh : jax.sharding.Mesh or None, optional
+        Device mesh to place the model, optimizer state and batches on. Also
+        accepts ``"auto"`` or a dict of :func:`gensbi.sharding.make_mesh`
+        kwargs. If None, falls back to ``training_config["mesh"]``; if that is
+        absent too, everything stays on a single device as before.
+    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+        Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+        to ``training_config["sharding_rule"]``, then ``"replicated"``.
+        ``"fsdp"`` and ``"tensor"`` are experimental.
 
     """
 
@@ -284,6 +305,8 @@ class AbstractPipeline(abc.ABC):
         ch_cond=None,
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
@@ -317,9 +340,43 @@ class AbstractPipeline(abc.ABC):
 
         os.makedirs(self.training_config["checkpoint_dir"], exist_ok=True)
 
+        # Multi-device placement. mesh=None (and no "mesh" key) keeps the
+        # single-device path untouched: no device_put, no mesh context.
+        self.mesh = resolve_mesh(
+            mesh if mesh is not None else self.training_config.get("mesh")
+        )
+        explicit_rule = sharding_rule or self.training_config.get("sharding_rule")
+        self.sharding_rule = explicit_rule or "replicated"
+        # Validated with or without a mesh, so a typo fails at construction
+        # instead of when a mesh is added later. Touches no arrays.
+        if self.sharding_rule not in RULES:
+            raise ValueError(
+                f"Unknown sharding rule '{self.sharding_rule}'. "
+                f"Available rules: {sorted(RULES)}."
+            )
+        if self.mesh is None and explicit_rule not in (None, "replicated"):
+            warnings.warn(
+                f"sharding_rule '{self.sharding_rule}' has no effect without a mesh; "
+                "pass mesh=... (or set training_config['mesh']) to use it.",
+                UserWarning,
+                stacklevel=2,
+            )
+        if self.mesh is not None and self.sharding_rule != "replicated":
+            # Warned once here; later placements (optimizer, re-sharding after
+            # restores or imports) go through _shard, which stays quiet.
+            warnings.warn(
+                f"sharding rule '{self.sharding_rule}' is experimental and not covered by "
+                "convergence tests; use 'replicated' for production runs.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         self.model = model
         if model is not None:
             _warn_if_not_fp32_master_weights(model)
+            if self.mesh is not None:
+                # Place before cloning so the EMA copy inherits the placement.
+                self._shard(model)
         self.model_wrapped = None  # to be set in subclass
 
         if model is None:
@@ -373,6 +430,118 @@ class AbstractPipeline(abc.ABC):
         Create and return the model to be trained.
         """
         ...  # pragma: no cover
+
+    def _shard(self, node) -> None:
+        """Place ``node`` on the mesh with the pipeline's rule.
+
+        ``shard_model`` warns that non-replicated rules are experimental on
+        every call; the pipeline already warned once at construction, so that
+        warning is silenced here. Fallback warnings still come through.
+        """
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=r"sharding rule '.*' is experimental")
+            shard_model(node, self.mesh, self.sharding_rule)
+
+    def _reshard(self, *nodes) -> None:
+        """Re-place nodes on the mesh (no-op without one).
+
+        Idempotent fix-up for code paths that write fresh, single-device
+        arrays into the model state (buffer writes, imports). With no
+        ``nodes``, re-places both ``model`` and ``ema_model``.
+        """
+        if self.mesh is None:
+            return
+        for node in nodes or (self.model, self.ema_model):
+            if node is not None:
+                self._shard(node)
+
+    def _prepare_batch(self, batch, what: str):
+        """Place a batch on the mesh, sharding its leading axis.
+
+        Parameters
+        ----------
+        batch : pytree
+            Batch as yielded by a data loader.
+        what : str
+            Loader label (``"train"`` or ``"validation"``) used in the
+            divisibility error. Every batch is checked, so a short final
+            batch fails with that error rather than inside ``device_put``.
+
+        Returns
+        -------
+        pytree
+            ``batch`` itself when no mesh is set, otherwise a copy whose
+            array leaves are sharded over the data-parallel mesh axes.
+        """
+        if self.mesh is None:
+            return batch
+        check_batch_divisible(batch, self.mesh, what)
+        return shard_batch(batch, self.mesh)
+
+    def _sharded_init(self, draw, key, nsamples):
+        """Draw a sampler's initial state, padded and placed on the mesh.
+
+        Parameters
+        ----------
+        draw : Callable
+            ``draw(key, n) -> x_init`` with ``n`` rows along axis 0.
+        key : jax.random.PRNGKey
+            Key passed to ``draw`` unchanged.
+        nsamples : int
+            Number of samples requested.
+
+        Returns
+        -------
+        x_init : Array
+            ``draw(key, nsamples)`` when no mesh is set. With a mesh,
+            ``draw(key, n_pad)`` sharded over the data-parallel axes, where
+            ``n_pad`` is ``nsamples`` rounded up to a multiple of the
+            data-parallel size (the extra rows are discarded by
+            :meth:`_trim`).
+        n_pad : int
+            Number of rows actually drawn.
+        """
+        if self.mesh is None:
+            return draw(key, nsamples), nsamples
+        n_pad, _ = pad_for_mesh(nsamples, self.mesh)
+        return shard_sample_init(draw(key, n_pad), self.mesh), n_pad
+
+    def _replicate(self, tree):
+        """Replicate the array leaves of ``tree`` over the mesh (no-op without one).
+
+        Sampler extras (condition, node ids, masks) are not split over the
+        batch; replicating them also moves arrays committed to a single
+        device, which jit would otherwise reject next to mesh-placed inputs.
+        """
+        if self.mesh is None:
+            return tree
+        return replicate(tree, self.mesh)
+
+    def _place_batch_or_replicate(self, x):
+        """Place a batch of rows ``x`` on the mesh (no-op without one).
+
+        With a mesh ``x`` is sharded over the batch axes when its leading
+        size is a multiple of the data-parallel size, and replicated
+        otherwise (no padding here). Used for inputs evaluated row by row,
+        such as a flow condition repeated per sample or the points passed
+        to a log-probability function.
+        """
+        if self.mesh is None:
+            return x
+        if jnp.shape(x)[0] % batch_size_divisor(self.mesh):
+            return self._replicate(x)
+        return shard_sample_init(x, self.mesh)
+
+    def _trim(self, out, nsamples, axis):
+        """Keep the first ``nsamples`` entries of ``out`` along ``axis``.
+
+        ``axis`` is the sample axis (0, or 1 when the sampler returns
+        intermediates, see :func:`_sample_concat_axis`). ``out`` is returned
+        as is when it holds exactly ``nsamples`` entries.
+        """
+        if out.shape[axis] == nsamples:
+            return out
+        return jax.lax.slice_in_dim(out, 0, nsamples, axis=axis)
 
     def _get_ema_optimizer(self):
         """
@@ -702,6 +871,7 @@ class AbstractPipeline(abc.ABC):
         self.ema_model.eval()
 
         # wrap models
+        self._reshard()
         self._wrap_model()
 
         print("Restored model from checkpoint")
@@ -772,6 +942,7 @@ class AbstractPipeline(abc.ABC):
         self.ema_model.eval()
 
         # wrap models
+        self._reshard()
         self._wrap_model()
 
         print(f"Restored model from intermediate checkpoint @ step {step}")
@@ -796,6 +967,7 @@ class AbstractPipeline(abc.ABC):
         """
         model = self.ema_model if ema else self.model
         load_safetensors(model, path, strict=strict)
+        self._reshard(model)
 
     @abc.abstractmethod
     def _wrap_model(self):
@@ -903,6 +1075,12 @@ class AbstractPipeline(abc.ABC):
 
         optimizer = self._get_optimizer()
         ema_optimizer = self._get_ema_optimizer()
+        if self.mesh is not None:
+            # Optimizer state normally inherits the parameters' placement
+            # (optax zeros_like); this catches transforms that allocate with
+            # jnp.zeros(shape) instead.
+            self._shard(optimizer)
+            self._shard(ema_optimizer)
 
         best_state = nnx.state(self.model)
         best_state_ema = nnx.state(self.ema_model)
@@ -913,8 +1091,10 @@ class AbstractPipeline(abc.ABC):
         val_step = self.get_val_step_fn(loss_fn)
 
         rng_val = rngs.val_step()
-        batch_val = next(self.val_dataset_iter)
-        min_val = val_step(self.model, batch_val, rng_val)
+        batch_val = self._prepare_batch(next(self.val_dataset_iter), "validation")
+        # Same mesh context as the loop below, so val_step compiles once.
+        with mesh_context(self.mesh):
+            min_val = val_step(self.model, batch_val, rng_val)
 
         val_error_ratio = self.training_config.get("val_error_ratio", 1.3)
         counter = 0
@@ -998,48 +1178,51 @@ class AbstractPipeline(abc.ABC):
         l_val = min_val  # initialize l_val
 
         try:
-            for j in pbar:
-                if counter > cmax and early_stopping:
-                    print("Early stopping")
-                    self._restore_best_state(best_state, best_state_ema)
-                    break
+            # The loop runs under the mesh (jax.set_mesh) so sharding
+            # constraints inside jitted steps resolve; a no-op without one.
+            with mesh_context(self.mesh):
+                for j in pbar:
+                    if counter > cmax and early_stopping:
+                        print("Early stopping")
+                        self._restore_best_state(best_state, best_state_ema)
+                        break
 
-                batch = next(self.train_dataset_iter)
+                    batch = self._prepare_batch(next(self.train_dataset_iter), "train")
 
-                loss = train_step(self.model, optimizer, batch, rngs.train_step())
-                # update the parameters ema
-                if j % self.training_config["multistep"] == 0:
-                    ema_step(self.ema_model, self.model, ema_optimizer)
+                    loss = train_step(self.model, optimizer, batch, rngs.train_step())
+                    # update the parameters ema
+                    if j % self.training_config["multistep"] == 0:
+                        ema_step(self.ema_model, self.model, ema_optimizer)
 
-                decay = 0.99
+                    decay = 0.99
 
-                if j == 0:
-                    l_train = loss
-                else:
-                    l_train = decay * l_train + (1 - decay) * loss
+                    if j == 0:
+                        l_train = loss
+                    else:
+                        l_train = decay * l_train + (1 - decay) * loss
 
-                if j > 0 and j % val_every == 0:
-                    l_val, ratio, min_val, best_state, best_state_ema, counter = (
-                        self._run_validation(
-                            val_step, batch_val, rng_val, min_val,
-                            best_state, best_state_ema, counter, val_error_ratio,
-                            loss_array, val_loss_array, l_train,
+                    if j > 0 and j % val_every == 0:
+                        l_val, ratio, min_val, best_state, best_state_ema, counter = (
+                            self._run_validation(
+                                val_step, batch_val, rng_val, min_val,
+                                best_state, best_state_ema, counter, val_error_ratio,
+                                loss_array, val_loss_array, l_train,
+                            )
                         )
-                    )
 
-                if save_every and j > 0 and j % save_every == 0:
-                    self._save_intermediate_checkpoint(
-                        intermediate_manager, intermediate_manager_ema, j
-                    )
+                    if save_every and j > 0 and j % save_every == 0:
+                        self._save_intermediate_checkpoint(
+                            intermediate_manager, intermediate_manager_ema, j
+                        )
 
-                # print stats
-                if j > 0 and j % 10 == 0:
-                    pbar.set_postfix(
-                        loss=f"{l_train:.4f}",
-                        ratio=get_colored_value(ratio, thresholds=(1.1, 1.3)),
-                        counter=counter,
-                        val_loss=f"{l_val:.4f}",
-                    )
+                    # print stats
+                    if j > 0 and j % 10 == 0:
+                        pbar.set_postfix(
+                            loss=f"{l_train:.4f}",
+                            ratio=get_colored_value(ratio, thresholds=(1.1, 1.3)),
+                            counter=counter,
+                            val_loss=f"{l_val:.4f}",
+                        )
         finally:
             # Runs on normal completion, early-stopping break, and any
             # exception raised out of the loop, so a long-lived manager is

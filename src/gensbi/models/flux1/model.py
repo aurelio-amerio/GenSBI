@@ -20,6 +20,7 @@ from gensbi.models.flux1.layers import (
 )
 
 from gensbi.models.embedding import FeatureEmbedder
+from gensbi.sharding import axes
 
 
 @dataclass
@@ -278,6 +279,8 @@ class Flux1(nnx.Module):
             rngs=params.rngs,
             dtype=params.dtype,
             param_dtype=params.param_dtype,
+            kernel_metadata=axes("in", "embed"),
+            bias_metadata=axes("embed"),
         )
         self.time_in = MLPEmbedder(
             in_dim=256,
@@ -309,6 +312,8 @@ class Flux1(nnx.Module):
             rngs=params.rngs,
             dtype=params.dtype,
             param_dtype=params.param_dtype,
+            kernel_metadata=axes("in", "embed"),
+            bias_metadata=axes("embed"),
         )
 
         # self.condition_embedding = nnx.Param(

@@ -8,6 +8,8 @@ from flax import nnx
 from jax.typing import DTypeLike
 import jax
 
+from gensbi.sharding import axes
+
 from .math import attention, rope
 
 class Identity(nnx.Module):
@@ -91,6 +93,8 @@ class MLPEmbedder(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("in", "embed"),
+            bias_metadata=axes("embed"),
         )
         self.silu = nnx.silu
         self.out_layer = nnx.Linear(
@@ -100,6 +104,8 @@ class MLPEmbedder(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("embed", None),
+            bias_metadata=axes(None),
         )
 
     def __call__(self, x: Array) -> Array:
@@ -117,10 +123,18 @@ class QKNorm(nnx.Module):
         # fp32 island: normalization stats are always computed/stored in fp32,
         # regardless of the model's compute dtype knob.
         self.query_norm = nnx.RMSNorm(
-            dim, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+            dim,
+            rngs=rngs,
+            dtype=jnp.float32,
+            param_dtype=param_dtype,
+            scale_metadata=axes(None),
         )
         self.key_norm = nnx.RMSNorm(
-            dim, rngs=rngs, dtype=jnp.float32, param_dtype=param_dtype
+            dim,
+            rngs=rngs,
+            dtype=jnp.float32,
+            param_dtype=param_dtype,
+            scale_metadata=axes(None),
         )
 
     def __call__(self, q: Array, k: Array, v: Array) -> tuple[Array, Array]:
@@ -153,6 +167,8 @@ class SelfAttention(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("embed", "heads"),
+            bias_metadata=axes("heads"),
         )
         self.norm = QKNorm(dim=head_dim, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
         self.proj = nnx.Linear(
@@ -162,6 +178,8 @@ class SelfAttention(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("heads", "embed"),
+            bias_metadata=axes("embed"),
         )
 
     def __call__(self, x: Array, pe: Array, mask: Array | None = None) -> Array:
@@ -199,6 +217,8 @@ class Modulation(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("embed", None),
+            bias_metadata=axes(None),
             kernel_init=jax.nn.initializers.zeros,  # this ensures that the initial modulation is neutral
             bias_init=jax.nn.initializers.zeros,  # this ensures that the initial modulation is neutral
         )
@@ -267,6 +287,8 @@ class DoubleStreamBlock(nnx.Module):
                 rngs=rngs,
                 dtype=dtype,
                 param_dtype=param_dtype,
+                kernel_metadata=axes("embed", "mlp"),
+                bias_metadata=axes("mlp"),
             ),
             nnx.gelu,
             nnx.Linear(
@@ -276,6 +298,8 @@ class DoubleStreamBlock(nnx.Module):
                 rngs=rngs,
                 dtype=dtype,
                 param_dtype=param_dtype,
+                kernel_metadata=axes("mlp", "embed"),
+                bias_metadata=axes("embed"),
             ),
         )
 
@@ -318,6 +342,8 @@ class DoubleStreamBlock(nnx.Module):
                 rngs=rngs,
                 dtype=dtype,
                 param_dtype=param_dtype,
+                kernel_metadata=axes("embed", "mlp"),
+                bias_metadata=axes("mlp"),
             ),
             nnx.gelu,
             nnx.Linear(
@@ -327,6 +353,8 @@ class DoubleStreamBlock(nnx.Module):
                 rngs=rngs,
                 dtype=dtype,
                 param_dtype=param_dtype,
+                kernel_metadata=axes("mlp", "embed"),
+                bias_metadata=axes("embed"),
             ),
         )
 
@@ -415,6 +443,8 @@ class SingleStreamBlock(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("embed", "mlp"),
+            bias_metadata=axes("mlp"),
         )
         # proj and mlp_out
         self.linear2 = nnx.Linear(
@@ -423,6 +453,8 @@ class SingleStreamBlock(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("mlp", "embed"),
+            bias_metadata=axes("embed"),
         )
 
         self.norm = QKNorm(dim=head_dim, rngs=rngs, dtype=dtype, param_dtype=param_dtype)
@@ -489,6 +521,8 @@ class LastLayer(nnx.Module):
             rngs=rngs,
             dtype=jnp.float32,
             param_dtype=param_dtype,
+            kernel_metadata=axes("embed", "out"),
+            bias_metadata=axes("out"),
         )
         self.adaLN_modulation = nnx.Sequential(
             nnx.silu,
@@ -499,6 +533,8 @@ class LastLayer(nnx.Module):
                 rngs=rngs,
                 dtype=dtype,
                 param_dtype=param_dtype,
+                kernel_metadata=axes("embed", None),
+                bias_metadata=axes(None),
             ),
         )
 

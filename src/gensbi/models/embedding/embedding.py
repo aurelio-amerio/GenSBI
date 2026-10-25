@@ -5,6 +5,8 @@ import numpy as np
 from jax.typing import DTypeLike
 from jax import Array
 
+from gensbi.sharding import axes
+
 
 class MLPEmbedder(nnx.Module):
     """
@@ -39,7 +41,10 @@ class MLPEmbedder(nnx.Module):
         )
         self.repeats = hidden_dim // in_dim
         self.dtype = dtype
-        self.p_skip = nnx.Param(0.01 * jnp.ones((1, 1, hidden_dim), dtype=param_dtype))
+        self.p_skip = nnx.Param(
+            0.01 * jnp.ones((1, 1, hidden_dim), dtype=param_dtype),
+            **axes(None, None, "embed"),
+        )
         self.in_layer = nnx.Linear(
             in_features=in_dim,
             out_features=hidden_dim,
@@ -47,6 +52,8 @@ class MLPEmbedder(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("in", "embed"),
+            bias_metadata=axes("embed"),
         )
         self.silu = nnx.silu
         self.out_layer = nnx.Linear(
@@ -56,6 +63,8 @@ class MLPEmbedder(nnx.Module):
             rngs=rngs,
             dtype=dtype,
             param_dtype=param_dtype,
+            kernel_metadata=axes("embed", None),
+            bias_metadata=axes(None),
         )
 
     def __call__(self, x: Array) -> Array:
@@ -187,7 +196,8 @@ class GaussianFourierEmbedding(nnx.Module):
         self.dtype = dtype
         half_dim = self.output_dim // 2 + 1
         self.B = nnx.Param(
-            jax.random.normal(rngs.params(), [half_dim, 1], dtype=param_dtype)
+            jax.random.normal(rngs.params(), [half_dim, 1], dtype=param_dtype),
+            **axes(None, None),
         )
         if not learnable:
             self.B = jax.lax.stop_gradient(jnp.asarray(self.B, dtype=param_dtype))
@@ -402,6 +412,7 @@ class Embed(nnx.Module):
     """
 
     def __init__(self, *args, **kwargs):
+        kwargs.setdefault("embedding_metadata", axes("vocab", "embed"))
         self.embed = nnx.Embed(*args, **kwargs)
 
     def __call__(self, ids):

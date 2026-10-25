@@ -197,6 +197,14 @@ class JointPipeline(AbstractPipeline):
         Model parameters (stored but not used directly).
     training_config : dict, optional
         Training configuration.
+    mesh : jax.sharding.Mesh or None, optional
+        Device mesh for multi-device training (also ``"auto"`` or a dict of
+        :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+        ``training_config["mesh"]``; absent too, training stays on one device.
+    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+        Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+        to ``training_config["sharding_rule"]``, then ``"replicated"``.
+        ``"fsdp"`` and ``"tensor"`` are experimental.
 
     Examples
     --------
@@ -222,6 +230,8 @@ class JointPipeline(AbstractPipeline):
         condition_mask_kind="structured",
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         self.method = method
 
@@ -240,6 +250,8 @@ class JointPipeline(AbstractPipeline):
             ch_obs=ch_obs,
             params=params,
             training_config=training_config,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
 
         self.dim_joint = self.dim_obs + self.dim_cond
@@ -365,6 +377,8 @@ class JointPipeline(AbstractPipeline):
                     f"model_extras cannot override protected keys: {conflict}"
                 )
             extras.update(model_extras)
+        # With a mesh, the extras (cond, ids, ...) are replicated over it.
+        extras = self._replicate(extras)
 
         sampler_fn = self.method.build_sampler_fn(
             model_wrapped,
@@ -373,17 +387,29 @@ class JointPipeline(AbstractPipeline):
             **sampler_kwargs,
         )
 
+        axis = _sample_concat_axis(sampler_kwargs)
+
         def sampler(key, nsamples, model_extras=None):
-            _extras = model_extras if model_extras is not None else extras
+            _extras = self._replicate(model_extras) if model_extras is not None else extras
             key, key_init = jax.random.split(key)
-            x_init_joint = self.method.sample_init(key_init, nsamples)
             # Marginalize joint prior to obs dims. This matches
             # JointWrapper.conditioned() which assumes obs = first dim_obs
             # dims, cond = remaining dims.
             # When supporting arbitrary condition masks, update both this
             # and the wrapper.
-            x_init = x_init_joint[:, :self.dim_obs, :]
-            return sampler_fn(key, x_init, _extras)
+            # With a mesh, x_init is padded to the data-parallel size and
+            # sharded over it; the extras (cond, ids) are replicated.
+            x_init, n_pad = self._sharded_init(
+                lambda k, n: self.method.sample_init(k, n)[:, :self.dim_obs, :],
+                key_init, nsamples,
+            )
+            cond_i = _extras.get("cond")
+            if n_pad != nsamples and cond_i is not None and cond_i.shape[0] == nsamples > 1:
+                # x_o with one condition per sample: pad it like x_init by
+                # repeating the last row (the padded outputs are trimmed).
+                cond_i = jnp.concatenate([cond_i, jnp.repeat(cond_i[-1:], n_pad - nsamples, axis=0)])
+                _extras = {**_extras, "cond": self._replicate(cond_i)}
+            return self._trim(sampler_fn(key, x_init, _extras), nsamples, axis)
 
         return sampler
 
@@ -497,6 +523,8 @@ class JointPipeline(AbstractPipeline):
                     f"model_extras cannot override protected keys: {conflict}"
                 )
             extras.update(model_extras)
+        # Broadcast to every row: replicated over the mesh (no-op without one).
+        extras = self._replicate(extras)
 
         log_prob_fn = self.method.build_log_prob_fn(
             model_wrapped,
@@ -507,8 +535,10 @@ class JointPipeline(AbstractPipeline):
         )
 
         def _log_prob(x_1, model_extras=None, *, key=None):
-            _extras = model_extras if model_extras is not None else extras
-            return log_prob_fn(x_1, _extras, key=key)
+            _extras = self._replicate(model_extras) if model_extras is not None else extras
+            return log_prob_fn(
+                self._place_batch_or_replicate(x_1), _extras, key=self._replicate(key)
+            )
 
         return _log_prob
 

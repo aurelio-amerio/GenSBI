@@ -13,6 +13,7 @@ from jax.typing import DTypeLike
 
 from gensbi.models.tarflow.pe import apply_rope, get_positions
 from gensbi.normalizing_flows.bijections.base import Mask
+from gensbi.sharding import axes
 
 INV_SOFTPLUS_1 = 0.541324854612918  # softplus(INV_SOFTPLUS_1) == 1.0 -> identity at zero-init
 
@@ -57,17 +58,29 @@ class AttentionBlock(nnx.Module):
         # fp32 islands: norms stay at float32 regardless of the dtype knob;
         # their output self-heals via promote_dtype when feeding qkv/mlp_in.
         self.norm1 = nnx.LayerNorm(channels, rngs=rngs, param_dtype=param_dtype,
-                                    dtype=jnp.float32)
+                                    dtype=jnp.float32,
+                                    scale_metadata=axes("embed"),
+                                    bias_metadata=axes("embed"))
         self.qkv = nnx.Linear(channels, 3 * channels, rngs=rngs,
-                              param_dtype=param_dtype, dtype=dtype)
+                              param_dtype=param_dtype, dtype=dtype,
+                              kernel_metadata=axes("embed", "heads"),
+                              bias_metadata=axes("heads"))
         self.proj = nnx.Linear(channels, channels, rngs=rngs,
-                               param_dtype=param_dtype, dtype=dtype)
+                               param_dtype=param_dtype, dtype=dtype,
+                               kernel_metadata=axes("heads", "embed"),
+                               bias_metadata=axes("embed"))
         self.norm2 = nnx.LayerNorm(channels, rngs=rngs, param_dtype=param_dtype,
-                                    dtype=jnp.float32)
+                                    dtype=jnp.float32,
+                                    scale_metadata=axes("embed"),
+                                    bias_metadata=axes("embed"))
         self.mlp_in = nnx.Linear(channels, channels * expansion, rngs=rngs,
-                                 param_dtype=param_dtype, dtype=dtype)
+                                 param_dtype=param_dtype, dtype=dtype,
+                                 kernel_metadata=axes("embed", "mlp"),
+                                 bias_metadata=axes("mlp"))
         self.mlp_out = nnx.Linear(channels * expansion, channels, rngs=rngs,
-                                  param_dtype=param_dtype, dtype=dtype)
+                                  param_dtype=param_dtype, dtype=dtype,
+                                  kernel_metadata=axes("mlp", "embed"),
+                                  bias_metadata=axes("embed"))
 
     def _qkv(self, x: Array):
         """Project to unrotated (q, k, v), each of shape ``(B, S, nh, hd)``."""
@@ -241,9 +254,12 @@ class MetaBlock(nnx.Module):
         self.inv_perm = Mask(jnp.argsort(perm))
         self.conditioner = conditioner
         self.proj_in = nnx.Linear(F, channels, rngs=rngs,
-                                  param_dtype=param_dtype, dtype=dtype)
+                                  param_dtype=param_dtype, dtype=dtype,
+                                  kernel_metadata=axes("in", "embed"),
+                                  bias_metadata=axes("embed"))
         self.sos_embed = nnx.Param(
-            (jax.random.normal(rngs.params(), (1, 1, F)) * 1e-2).astype(param_dtype))
+            (jax.random.normal(rngs.params(), (1, 1, F)) * 1e-2).astype(param_dtype),
+            **axes(None, None, "in"))
         if rope is not None:
             if grid is None:
                 raise ValueError("rope requires grid=(h, w)")
@@ -263,13 +279,16 @@ class MetaBlock(nnx.Module):
         else:
             self.freqs_cis = None
             self.pos_embed = nnx.Param(
-                (jax.random.normal(rngs.params(), (T, channels)) * 1e-2).astype(param_dtype))
+                (jax.random.normal(rngs.params(), (T, channels)) * 1e-2).astype(param_dtype),
+                **axes(None, "embed"))
         self.attn_blocks = nnx.List(
             [AttentionBlock(channels, num_heads, expansion, rngs,
                             param_dtype=param_dtype, dtype=dtype)
              for _ in range(num_layers)])
         self.proj_out = nnx.Linear(channels, 2 * F, rngs=rngs,
-                                   param_dtype=param_dtype, dtype=dtype)
+                                   param_dtype=param_dtype, dtype=dtype,
+                                   kernel_metadata=axes("embed", "out"),
+                                   bias_metadata=axes("out"))
         if zero_init:
             self.proj_out.kernel[...] = jnp.zeros_like(self.proj_out.kernel[...])
             self.proj_out.bias[...] = jnp.zeros_like(self.proj_out.bias[...])
