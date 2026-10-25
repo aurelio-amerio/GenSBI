@@ -109,7 +109,14 @@ class Flux1JointParams:
             self.id_embedding_strategy == "absolute"
         ), f"Unknown id embedding strategy {self.id_embedding_strategy}."
 
+        # cond_emb_dim=0 is allowed: unconditional models never use the condition embedding.
+        if self.id_merge_mode == "concat":
+            assert (
+                self.id_emb_dim > 0
+            ), f"id_merge_mode='concat' needs id_emb_dim > 0, got {self.id_emb_dim}."
+
         self.input_token_dim = int(self.val_emb_dim * self.num_heads)
+        # #enhancement: zeroing input fields makes dataclasses.replace unsafe; store derived dims separately.
         if self.id_merge_mode == "sum":
             self.cond_emb_dim = 0
             self.id_emb_dim = 0
