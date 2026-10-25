@@ -16,10 +16,10 @@ Feel free to [open an issue](https://github.com/aurelio-amerio/GenSBI/issues) to
     ```bash
     # using uv (recommended) — installs the package in editable mode together
     # with the development dependency group (lint, test, docs, notebooks)
-    uv sync --extra cuda12 --extra examples
+    uv sync --extra cuda13 --extra examples
 
     # or using pip
-    pip install -e ".[cuda12,examples,test,docs]"
+    pip install -e ".[cuda13,examples,test,docs]"
     ```
 
     ```{note}

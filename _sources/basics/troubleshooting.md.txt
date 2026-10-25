@@ -10,13 +10,13 @@ This page addresses common issues and frequently asked questions when using GenS
 
 **Solution**:
 
-1. Ensure you installed the correct JAX version for your CUDA version. **CUDA 12 is recommended**:
+1. Ensure you installed the correct JAX version for your CUDA version. **CUDA 13 is recommended**:
 
    ```bash
-   pip install gensbi[cuda12]
+   pip install gensbi[cuda13]
    ```
 
-   Note: CUDA 11 is not officially supported. CUDA 13 support will be available in an upcoming release.
+   If your driver does not support CUDA 13, use `gensbi[cuda12]` instead. CUDA 11 is not officially supported.
 
 2. Verify JAX can see your GPU:
 

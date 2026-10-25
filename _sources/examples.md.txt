@@ -198,10 +198,10 @@ Most examples include an "Open in Colab" badge. Click it to run the notebook in 
 
    ```bash
    # using uv (recommended)
-   uv add jupyter "gensbi[cuda12,examples]"
+   uv add jupyter "gensbi[cuda13,examples]"
 
    # or using pip
-   pip install jupyter "gensbi[cuda12,examples]"
+   pip install jupyter "gensbi[cuda13,examples]"
    ```
 
 3. Launch Jupyter:
