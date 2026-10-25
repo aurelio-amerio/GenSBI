@@ -122,9 +122,9 @@ def shard_model(node, mesh, rule: str = "replicated") -> None:
 
     Works in place and is idempotent.  ``node`` is any NNX graph node
     (modules, ``nnx.Optimizer``, EMA containers).  Variables without
-    annotation are replicated; variables with an unknown logical name or a
-    dimension not divisible by the mapped mesh axis fall back to replicated
-    and are reported in a single warning.  ``"replicated"`` ignores annotations
+    annotation are replicated; variables with an unknown logical name, a
+    dimension not divisible by the mapped mesh axis, or a mapped axis missing
+    from ``mesh`` fall back to replicated and are reported in a single warning.  ``"replicated"`` ignores annotations
     (so never warns about them); under other rules unannotated ``nnx.Param`` s
     are replicated and listed in that warning too.
 
@@ -161,6 +161,12 @@ def shard_model(node, mesh, rule: str = "replicated") -> None:
         )
     table = dict(RULES[rule])
     problems: list[str] = []
+    # A user-built mesh may lack an axis the rule maps to (e.g. no "data"):
+    # those logical names are replicated instead of raising KeyError.
+    missing = sorted({a for a in table.values() if a is not None} - set(mesh.axis_names))
+    if missing:
+        problems.append(f"mesh {tuple(mesh.axis_names)} has no axis {missing} used by rule '{rule}'")
+        table = {k: (None if a in missing else a) for k, a in table.items()}
     flat = []
     for path, var in nnx.to_flat_state(nnx.state(node)):
         value = var[...]

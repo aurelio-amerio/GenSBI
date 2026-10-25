@@ -361,14 +361,22 @@ class AbstractPipeline(abc.ABC):
                 UserWarning,
                 stacklevel=2,
             )
-        self._checked_loaders: set[str] = set()
+        if self.mesh is not None and self.sharding_rule != "replicated":
+            # Warned once here; later placements (optimizer, re-sharding after
+            # restores or imports) go through _shard, which stays quiet.
+            warnings.warn(
+                f"sharding rule '{self.sharding_rule}' is experimental and not covered by "
+                "convergence tests; use 'replicated' for production runs.",
+                UserWarning,
+                stacklevel=2,
+            )
 
         self.model = model
         if model is not None:
             _warn_if_not_fp32_master_weights(model)
             if self.mesh is not None:
                 # Place before cloning so the EMA copy inherits the placement.
-                shard_model(model, self.mesh, self.sharding_rule)
+                self._shard(model)
         self.model_wrapped = None  # to be set in subclass
 
         if model is None:
@@ -423,17 +431,29 @@ class AbstractPipeline(abc.ABC):
         """
         ...  # pragma: no cover
 
-    def _reshard(self) -> None:
-        """Re-place ``model`` and ``ema_model`` on the mesh (no-op without one).
+    def _shard(self, node) -> None:
+        """Place ``node`` on the mesh with the pipeline's rule.
+
+        ``shard_model`` warns that non-replicated rules are experimental on
+        every call; the pipeline already warned once at construction, so that
+        warning is silenced here. Fallback warnings still come through.
+        """
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=r"sharding rule '.*' is experimental")
+            shard_model(node, self.mesh, self.sharding_rule)
+
+    def _reshard(self, *nodes) -> None:
+        """Re-place nodes on the mesh (no-op without one).
 
         Idempotent fix-up for code paths that write fresh, single-device
-        arrays into the model state (buffer writes, imports).
+        arrays into the model state (buffer writes, imports). With no
+        ``nodes``, re-places both ``model`` and ``ema_model``.
         """
         if self.mesh is None:
             return
-        for node in (self.model, self.ema_model):
+        for node in nodes or (self.model, self.ema_model):
             if node is not None:
-                shard_model(node, self.mesh, self.sharding_rule)
+                self._shard(node)
 
     def _prepare_batch(self, batch, what: str):
         """Place a batch on the mesh, sharding its leading axis.
@@ -444,7 +464,8 @@ class AbstractPipeline(abc.ABC):
             Batch as yielded by a data loader.
         what : str
             Loader label (``"train"`` or ``"validation"``) used in the
-            divisibility error; the check runs once per label.
+            divisibility error. Every batch is checked, so a short final
+            batch fails with that error rather than inside ``device_put``.
 
         Returns
         -------
@@ -454,9 +475,7 @@ class AbstractPipeline(abc.ABC):
         """
         if self.mesh is None:
             return batch
-        if what not in self._checked_loaders:
-            check_batch_divisible(batch, self.mesh, what)
-            self._checked_loaders.add(what)
+        check_batch_divisible(batch, self.mesh, what)
         return shard_batch(batch, self.mesh)
 
     def _sharded_init(self, draw, key, nsamples):
@@ -948,7 +967,7 @@ class AbstractPipeline(abc.ABC):
         """
         model = self.ema_model if ema else self.model
         load_safetensors(model, path, strict=strict)
-        self._reshard()
+        self._reshard(model)
 
     @abc.abstractmethod
     def _wrap_model(self):
@@ -1060,8 +1079,8 @@ class AbstractPipeline(abc.ABC):
             # Optimizer state normally inherits the parameters' placement
             # (optax zeros_like); this catches transforms that allocate with
             # jnp.zeros(shape) instead.
-            shard_model(optimizer, self.mesh, self.sharding_rule)
-            shard_model(ema_optimizer, self.mesh, self.sharding_rule)
+            self._shard(optimizer)
+            self._shard(ema_optimizer)
 
         best_state = nnx.state(self.model)
         best_state_ema = nnx.state(self.ema_model)

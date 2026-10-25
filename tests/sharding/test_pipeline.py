@@ -189,3 +189,28 @@ def test_one_device_mesh_matches_no_mesh(tmp_path):
     one = sh.make_mesh(devices=jax.devices()[:1])
     p, l, _ = _train(Flux1FlowPipeline, small_flux1_params(), one, "replicated", tmp_path / "b")
     np.testing.assert_allclose(l, l_ref, rtol=1e-5, atol=1e-6)
+
+@requires_8_devices
+def test_every_batch_is_checked_not_only_the_first(tmp_path):
+    # A loader may yield a short final batch; it must fail with the named
+    # error, not inside device_put.
+    p = Flux1FlowPipeline(train_dataset_cond, val_dataset_cond, dim_obs, dim_cond, ch_obs=2, ch_cond=2,
+                          params=small_flux1_params(), training_config=test_training_config(tmp_path, 10), mesh=sh.make_mesh())
+    batch = lambda n: (np.zeros((n, dim_obs, 2), np.float32), np.zeros((n, dim_cond, 2), np.float32))
+    p._prepare_batch(batch(32), "train")
+    with pytest.raises(ValueError, match=r"train batch size 12 is not divisible"):
+        p._prepare_batch(batch(12), "train")
+
+@requires_8_devices
+def test_experimental_rule_warns_once_per_pipeline(tmp_path):
+    import warnings
+    with pytest.warns(UserWarning) as rec:
+        p = Flux1FlowPipeline(train_dataset_cond, val_dataset_cond, dim_obs, dim_cond, ch_obs=2, ch_cond=2,
+                              params=small_flux1_params(), training_config=test_training_config(tmp_path),
+                              mesh=sh.make_mesh(), sharding_rule="fsdp")
+    assert sum("experimental" in str(w.message) for w in rec) == 1
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        p._reshard()
+        p._shard(p.model)
+    assert not any("experimental" in str(w.message) for w in rec)

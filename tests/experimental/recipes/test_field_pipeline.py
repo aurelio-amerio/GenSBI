@@ -86,7 +86,7 @@ def _tiny_fielddit(seed=0):
     ))
 
 
-def _make_pipeline(model_dir, seed=0):
+def _make_pipeline(model_dir, seed=0, **kwargs):
     key = jax.random.PRNGKey(seed)
     obs = jax.random.normal(key, (32, H, W, 1))
     cond = jax.random.normal(jax.random.fold_in(key, 1), (32, COND_DIM, 1))
@@ -104,6 +104,7 @@ def _make_pipeline(model_dir, seed=0):
         method=FlowMatchingMethod(),
         ch_obs=1,
         training_config=training_config,
+        **kwargs,
     )
 
 
@@ -137,3 +138,13 @@ def test_pipeline_samples_field_shaped_output():
         samples = p.sample(jax.random.PRNGKey(0), x_o, nsamples=4, step_size=0.5)
         assert samples.shape == (4, H, W, 1)
         assert jnp.all(jnp.isfinite(samples))
+
+
+def test_pipeline_accepts_mesh():
+    from jax.sharding import NamedSharding
+    from gensbi import sharding as sh
+    mesh = sh.make_mesh()
+    with tempfile.TemporaryDirectory() as model_dir:
+        p = _make_pipeline(model_dir, mesh=mesh)
+        assert p.mesh is mesh and p.sharding_rule == "replicated"
+        assert all(isinstance(s, NamedSharding) for s in sh.sharding_of(p.model).values())

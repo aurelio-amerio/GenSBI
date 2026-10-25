@@ -223,3 +223,12 @@ def test_replicate_places_array_leaves_only():
         assert out[k].sharding.is_equivalent_to(NamedSharding(mesh, P()), out[k].ndim), k
         np.testing.assert_array_equal(np.asarray(out[k]), np.asarray(tree[k]))
     assert out["c"] == 3 and out["d"] is None and out["e"] == "ids"
+
+
+@requires_8_devices
+def test_shard_model_falls_back_when_mesh_lacks_rule_axis():
+    m = Toy(nnx.Rngs(0))
+    mesh = jax.make_mesh((8,), ("batch",), axis_types=(AxisType.Auto,))
+    with pytest.warns(UserWarning, match=r"has no axis \['data'\] used by rule 'fsdp'"):
+        sh.shard_model(m, mesh, "fsdp")
+    assert all(s.is_fully_replicated for s in sh.sharding_of(m).values())

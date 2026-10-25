@@ -163,3 +163,30 @@ def test_flow_committed_condition_samples_with_mesh(tmp_path, jit_calls):
     np.testing.assert_allclose(np.asarray(rb), np.asarray(ra), rtol=1e-4, atol=1e-5)
     assert [c.shape[0] for c in jit_calls] == [9]
     assert jit_calls[0].sharding.is_equivalent_to(NamedSharding(b.mesh, P()), jit_calls[0].ndim)
+
+# Padding nsamples up to the data-parallel size must not change the samples:
+# JAX's partitionable threefry makes the first n rows of an (n_pad, ...) draw
+# equal to an (n, ...) draw.
+@requires_8_devices
+def test_padded_sampling_matches_no_mesh(tmp_path):
+    kw = dict(use_ema=False, show_progress_bars=False)
+    for name, make in [("flux", lambda m, d: _pipe(Flux1FlowPipeline, m, d)), ("maf", lambda m, d: _flow_pipe(_maf, m, d))]:
+        a, b = make(None, tmp_path / f"{name}a"), make(sh.make_mesh(), tmp_path / f"{name}b")
+        sa = a.sample(jax.random.key(1), x_o, nsamples=3, **kw)
+        sb = b.sample(jax.random.key(1), x_o, nsamples=3, **kw)
+        np.testing.assert_allclose(np.asarray(sb), np.asarray(sa), rtol=1e-4, atol=1e-5, err_msg=name)
+
+@requires_8_devices
+def test_joint_per_sample_condition_is_padded_with_mesh(tmp_path):
+    import warnings
+    from gensbi.recipes import SimformerFlowPipeline
+    xb = jax.random.normal(jax.random.key(3), (3, dim_cond, 2))
+    outs = []
+    for name, mesh in [("a", None), ("b", sh.make_mesh())]:
+        p = SimformerFlowPipeline(train_dataset_joint, val_dataset_joint, dim_obs, dim_cond, ch_obs=2,
+                                  params=small_simformer_params(), training_config=test_training_config(tmp_path / name), mesh=mesh)
+        p.ema_model = p.model; p._wrap_model()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # x_o batch > 1 warns by design
+            outs.append(np.asarray(p.sample(jax.random.key(1), xb, nsamples=3, use_ema=False, show_progress_bars=False)))
+    np.testing.assert_allclose(outs[1], outs[0], rtol=1e-4, atol=1e-5)

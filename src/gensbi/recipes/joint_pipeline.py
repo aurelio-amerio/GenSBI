@@ -399,10 +399,16 @@ class JointPipeline(AbstractPipeline):
             # and the wrapper.
             # With a mesh, x_init is padded to the data-parallel size and
             # sharded over it; the extras (cond, ids) are replicated.
-            x_init, _ = self._sharded_init(
+            x_init, n_pad = self._sharded_init(
                 lambda k, n: self.method.sample_init(k, n)[:, :self.dim_obs, :],
                 key_init, nsamples,
             )
+            cond_i = _extras.get("cond")
+            if n_pad != nsamples and cond_i is not None and cond_i.shape[0] == nsamples > 1:
+                # x_o with one condition per sample: pad it like x_init by
+                # repeating the last row (the padded outputs are trimmed).
+                cond_i = jnp.concatenate([cond_i, jnp.repeat(cond_i[-1:], n_pad - nsamples, axis=0)])
+                _extras = {**_extras, "cond": self._replicate(cond_i)}
             return self._trim(sampler_fn(key, x_init, _extras), nsamples, axis)
 
         return sampler
