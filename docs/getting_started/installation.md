@@ -17,9 +17,9 @@ uv pip install gensbi
 For GPU support:
 
 ```bash
-uv add gensbi[cuda12]
+uv add gensbi[cuda13]
 # or
-uv pip install gensbi[cuda12]
+uv pip install gensbi[cuda13]
 ```
 
 ```{tip}
@@ -39,7 +39,7 @@ pip install gensbi
 For GPU support:
 
 ```bash
-pip install gensbi[cuda12]
+pip install gensbi[cuda13]
 ```
 
 If you want to run the [example notebooks](https://github.com/aurelio-amerio/GenSBI-examples),
@@ -56,9 +56,9 @@ pip install gensbi[examples]
 To install all the optional dependencies at once, run:
 
 ```bash
-uv add gensbi[cuda12,examples]
+uv add gensbi[cuda13,examples]
 # or
-pip install gensbi[cuda12,examples]
+pip install gensbi[cuda13,examples]
 ```
 
 ## Requirements

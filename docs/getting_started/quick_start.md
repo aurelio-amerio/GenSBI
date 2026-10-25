@@ -21,9 +21,9 @@ pip install gensbi
 If a GPU is available, it is advisable to install the CUDA version of the package:
 
 ```bash
-uv add gensbi[cuda12]
+uv add gensbi[cuda13]
 # or
-pip install gensbi[cuda12]
+pip install gensbi[cuda13]
 ```
 
 See the [Installation Guide](/getting_started/installation) for more options, including how to install the examples.

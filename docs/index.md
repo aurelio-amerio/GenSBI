@@ -40,17 +40,17 @@ Or using pip:
 pip install gensbi
 ```
 
-### High-Performance Installation (CUDA 12)
+### High-Performance Installation (CUDA 13)
 
-If you have a compatible NVIDIA GPU, install with CUDA 12 support for significantly faster training:
+If you have a compatible NVIDIA GPU, install with CUDA 13 support for significantly faster training:
 
 ```bash
-uv add gensbi[cuda12]
+uv add gensbi[cuda13]
 # or
-pip install gensbi[cuda12]
+pip install gensbi[cuda13]
 ```
 
-To also install the examples, add the `examples` extra (e.g. `gensbi[cuda12,examples]`). For more installation options, see the [Installation Guide](/getting_started/installation).
+To also install the examples, add the `examples` extra (e.g. `gensbi[cuda13,examples]`). For more installation options, see the [Installation Guide](/getting_started/installation).
 
 ## Key Documentation Sections
 

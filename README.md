@@ -38,9 +38,9 @@ uv pip install gensbi
 For GPU support:
 
 ```bash
-uv add gensbi[cuda12]
+uv add gensbi[cuda13]
 # or
-uv pip install gensbi[cuda12]
+uv pip install gensbi[cuda13]
 ```
 
 Or using pip:
