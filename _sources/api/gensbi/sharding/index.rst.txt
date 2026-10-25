@@ -1,0 +1,468 @@
+gensbi.sharding
+===============
+
+.. py:module:: gensbi.sharding
+
+.. autoapi-nested-parse::
+
+   Multi-device sharding helpers for GenSBI.
+
+   Models annotate their variables with *logical* axis names through :func:`axes`
+   (or :func:`partitioned` for explicit initialisers).  Annotations are inert:
+   nothing is placed on a device until :func:`shard_model` maps the logical names
+   onto the axes of a :class:`jax.sharding.Mesh` according to a named rule
+   (``"replicated"``, ``"fsdp"`` or ``"tensor"``).  With no mesh, nothing changes.
+
+   Cross-repo contract
+   -------------------
+   ``LOGICAL_AXES``, ``RULES``, ``MODEL_AXIS`` and the semantics of ``axes``,
+   ``partitioned``, ``make_mesh``, ``batch_axes``, ``batch_size_divisor``,
+   ``shard_model``, ``shard_batch``, ``check_batch_divisible`` and ``sharding_of``
+   are identical to ``heal_swin_nnx/sharding.py``.  Neither package imports the
+   other; a test pins the vocabulary against the installed ``heal_swin_nnx``.
+   Change both files together.
+
+   ..
+       !! processed by numpydoc !!
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   gensbi.sharding.LOGICAL_AXES
+   gensbi.sharding.MODEL_AXIS
+   gensbi.sharding.RULES
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   gensbi.sharding._is_array
+   gensbi.sharding.axes
+   gensbi.sharding.batch_axes
+   gensbi.sharding.batch_size_divisor
+   gensbi.sharding.check_batch_divisible
+   gensbi.sharding.make_mesh
+   gensbi.sharding.mesh_context
+   gensbi.sharding.pad_for_mesh
+   gensbi.sharding.partitioned
+   gensbi.sharding.replicate
+   gensbi.sharding.resolve_mesh
+   gensbi.sharding.shard_batch
+   gensbi.sharding.shard_model
+   gensbi.sharding.shard_sample_init
+   gensbi.sharding.sharding_of
+
+
+Module Contents
+---------------
+
+.. py:function:: _is_array(x)
+
+.. py:function:: axes(*names)
+
+   
+   Variable metadata annotating each array dimension with a logical axis.
+
+   :param \*names: One logical axis name (see ``LOGICAL_AXES``) or ``None`` per array
+                   dimension.
+   :type \*names: str or None
+
+   :returns: Keyword arguments for an ``nnx.Variable`` constructor, or the value of
+             a ``*_metadata`` argument of an NNX layer.  ``eager_sharding=False``
+             keeps construction independent of any mesh.
+   :rtype: dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: batch_axes(mesh)
+
+   
+   Mesh axis names that carry the batch (every axis except ``"model"``).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: batch_size_divisor(mesh)
+
+   
+   Number of data-parallel shards a batch is split into.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: check_batch_divisible(batch, mesh, what)
+
+   
+   Raise ``ValueError`` if the batch cannot be split evenly across the mesh.
+
+   :param batch: Batch whose array leaves share the same leading size.
+   :type batch: pytree
+   :param mesh:
+   :type mesh: jax.sharding.Mesh
+   :param what: Label used in the error message (e.g. ``"train"``).
+   :type what: str
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: make_mesh(devices=None, model_axis = 1)
+
+   
+   Build a ``("data", "model")`` mesh with Auto axis types.
+
+   :param devices: Devices to use; defaults to ``jax.devices()``.
+   :type devices: sequence of jax.Device, optional
+   :param model_axis: Size of the ``"model"`` axis; the ``"data"`` axis gets
+                      ``len(devices) // model_axis``.
+   :type model_axis: int, optional
+
+   :rtype: jax.sharding.Mesh
+
+   :raises ValueError: If ``model_axis`` does not divide the device count.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: mesh_context(mesh)
+
+   
+   Make ``mesh`` the active mesh for the body of a ``with`` block.
+
+   ``jax.set_mesh(mesh)`` is entered when the ``with`` block is entered (not
+   when this function is called) and left on exit.  With ``mesh=None`` this
+   is a no-op context.
+
+   :param mesh: Mesh to activate.
+   :type mesh: jax.sharding.Mesh or None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: pad_for_mesh(n, mesh)
+
+   
+   Round ``n`` up to a multiple of the data-parallel size.
+
+   :returns: ``(padded, n)``.
+   :rtype: tuple of int
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: partitioned(init, names)
+
+   
+   Wrap an initialiser so its variable carries logical axis names.
+
+   :param init: Initialiser to wrap.
+   :type init: callable
+   :param names: Logical axis name per array dimension.
+   :type names: tuple of (str or None)
+
+   :returns: ``nnx.with_partitioning(init, names, eager_sharding=False)``.
+   :rtype: callable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: replicate(tree, mesh)
+
+   
+   Replicate every array leaf of ``tree`` over every device of ``mesh``.
+
+   Used for inputs that must live on the mesh without being split, such as
+   a sampler's condition and node ids.  Arrays committed to a single device
+   are moved; non-array leaves are returned untouched.
+
+   :param tree: Arrays (``jax.Array`` or ``numpy.ndarray``) and arbitrary other leaves.
+   :type tree: pytree
+   :param mesh: Target mesh.
+   :type mesh: jax.sharding.Mesh
+
+   :returns: Same structure, array leaves placed with ``NamedSharding(mesh, P())``.
+   :rtype: pytree
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: resolve_mesh(spec)
+
+   
+   Turn a user-facing mesh spec into a mesh.
+
+   ``None`` -> ``None``; a ``Mesh`` -> itself; ``"auto"`` -> :func:`make_mesh`;
+   a ``dict`` -> ``make_mesh(**spec)``.  Anything else raises ``ValueError``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: shard_batch(batch, mesh)
+
+   
+   Shard the leading axis of every array leaf of ``batch`` over the batch axes.
+
+   Non-array leaves are returned untouched.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: shard_model(node, mesh, rule = 'replicated')
+
+   
+   Place every variable of ``node`` on ``mesh`` according to ``rule``.
+
+   Works in place and is idempotent.  ``node`` is any NNX graph node
+   (modules, ``nnx.Optimizer``, EMA containers).  Variables without
+   annotation are replicated; variables with an unknown logical name, a
+   dimension not divisible by the mapped mesh axis, or a mapped axis missing
+   from ``mesh`` fall back to replicated and are reported in a single warning.  ``"replicated"`` ignores annotations
+   (so never warns about them); under other rules unannotated ``nnx.Param`` s
+   are replicated and listed in that warning too.
+
+   :param node: Object whose state is placed.
+   :type node: nnx graph node
+   :param mesh: Target mesh.
+   :type mesh: jax.sharding.Mesh
+   :param rule: Logical-to-mesh axis rule.  Anything but ``"replicated"`` is
+                experimental and warns on every call.
+   :type rule: {"replicated", "fsdp", "tensor"}, optional
+
+   :raises ValueError: If ``rule`` is not a key of ``RULES``.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: shard_sample_init(x_init, mesh)
+
+   
+   Shard a sampler's initial state (array or pytree) over the batch axes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: sharding_of(node)
+
+   
+   Map ``"a/b/c"`` state paths of ``node`` to the sharding of each leaf.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:data:: LOGICAL_AXES
+   :type:  tuple[str, ...]
+   :value: ('embed', 'mlp', 'heads', 'vocab', 'in', 'out')
+
+
+.. py:data:: MODEL_AXIS
+   :value: 'model'
+
+
+.. py:data:: RULES
+   :type:  dict[str, tuple[tuple[str, str | None], ...]]
+

@@ -781,6 +781,7 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.embedding</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureEmbedder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">axes</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
@@ -919,7 +920,14 @@ window.runMermaid = runMermaid;</script>
             <span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span> <span class="o">==</span> <span class="s2">"absolute"</span>
         <span class="p">),</span> <span class="sa">f</span><span class="s2">"Unknown id embedding strategy </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="si">}</span><span class="s2">."</span>
 
+        <span class="c1"># cond_emb_dim=0 is allowed: unconditional models never use the condition embedding.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">"concat"</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">id_emb_dim</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="p">),</span> <span class="sa">f</span><span class="s2">"id_merge_mode='concat' needs id_emb_dim &gt; 0, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id_emb_dim</span><span class="si">}</span><span class="s2">."</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">input_token_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_emb_dim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_heads</span><span class="p">)</span>
+        <span class="c1"># #enhancement: zeroing input fields makes dataclasses.replace unsafe; store derived dims separately.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">"sum"</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cond_emb_dim</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">id_emb_dim</span> <span class="o">=</span> <span class="mi">0</span>
@@ -1004,6 +1012,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"in"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Flux1Joint.time_in">
@@ -1034,14 +1044,16 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">"sum"</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
                 <span class="mf">0.01</span>
-                <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+                <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">),</span>
+                <span class="o">**</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">params</span><span class="o">.</span><span class="n">id_merge_mode</span> <span class="o">==</span> <span class="s2">"concat"</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
                 <span class="mf">0.01</span>
                 <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span>
                     <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">condition_token_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span>
-                <span class="p">)</span>
+                <span class="p">),</span>
+                <span class="o">**</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown combining strategy: </span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">id_merge_mode</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>

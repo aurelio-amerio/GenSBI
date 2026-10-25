@@ -796,6 +796,18 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_colored_value</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.serialization</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_safetensors</span><span class="p">,</span> <span class="n">load_safetensors</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RULES</span><span class="p">,</span>
+    <span class="n">batch_size_divisor</span><span class="p">,</span>
+    <span class="n">check_batch_divisible</span><span class="p">,</span>
+    <span class="n">mesh_context</span><span class="p">,</span>
+    <span class="n">pad_for_mesh</span><span class="p">,</span>
+    <span class="n">replicate</span><span class="p">,</span>
+    <span class="n">resolve_mesh</span><span class="p">,</span>
+    <span class="n">shard_batch</span><span class="p">,</span>
+    <span class="n">shard_model</span><span class="p">,</span>
+    <span class="n">shard_sample_init</span><span class="p">,</span>
+<span class="p">)</span>
 
 
 <div class="viewcode-block" id="_warn_if_not_fp32_master_weights">
@@ -1055,6 +1067,15 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Number of channels in the conditional data (if applicable). Default is None.</span>
 <span class="sd">    training_config : dict, optional</span>
 <span class="sd">        Training configuration. If None, uses defaults from `get_default_training_config`.</span>
+<span class="sd">    mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">        Device mesh to place the model, optimizer state and batches on. Also</span>
+<span class="sd">        accepts ``"auto"`` or a dict of :func:`gensbi.sharding.make_mesh`</span>
+<span class="sd">        kwargs. If None, falls back to ``training_config["mesh"]``; if that is</span>
+<span class="sd">        absent too, everything stays on a single device as before.</span>
+<span class="sd">    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">        Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">        to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">        ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 
 <span class="sd">    """</span>
 
@@ -1069,6 +1090,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ch_cond</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="AbstractPipeline.train_dataset">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.train_dataset">[docs]</a>
@@ -1132,12 +1155,52 @@ window.runMermaid = runMermaid;</script>
 
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"checkpoint_dir"</span><span class="p">],</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
+        <span class="c1"># Multi-device placement. mesh=None (and no "mesh" key) keeps the</span>
+        <span class="c1"># single-device path untouched: no device_put, no mesh context.</span>
+<div class="viewcode-block" id="AbstractPipeline.mesh">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.mesh">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">resolve_mesh</span><span class="p">(</span>
+            <span class="n">mesh</span> <span class="k">if</span> <span class="n">mesh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"mesh"</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+        <span class="n">explicit_rule</span> <span class="o">=</span> <span class="n">sharding_rule</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sharding_rule"</span><span class="p">)</span>
+<div class="viewcode-block" id="AbstractPipeline.sharding_rule">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.sharding_rule">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sharding_rule</span> <span class="o">=</span> <span class="n">explicit_rule</span> <span class="ow">or</span> <span class="s2">"replicated"</span></div>
+
+        <span class="c1"># Validated with or without a mesh, so a typo fails at construction</span>
+        <span class="c1"># instead of when a mesh is added later. Touches no arrays.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sharding_rule</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">RULES</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unknown sharding rule '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sharding_rule</span><span class="si">}</span><span class="s2">'. "</span>
+                <span class="sa">f</span><span class="s2">"Available rules: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">RULES</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">explicit_rule</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"replicated"</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"sharding_rule '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sharding_rule</span><span class="si">}</span><span class="s2">' has no effect without a mesh; "</span>
+                <span class="s2">"pass mesh=... (or set training_config['mesh']) to use it."</span><span class="p">,</span>
+                <span class="ne">UserWarning</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">sharding_rule</span> <span class="o">!=</span> <span class="s2">"replicated"</span><span class="p">:</span>
+            <span class="c1"># Warned once here; later placements (optimizer, re-sharding after</span>
+            <span class="c1"># restores or imports) go through _shard, which stays quiet.</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"sharding rule '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sharding_rule</span><span class="si">}</span><span class="s2">' is experimental and not covered by "</span>
+                <span class="s2">"convergence tests; use 'replicated' for production runs."</span><span class="p">,</span>
+                <span class="ne">UserWarning</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+
 <div class="viewcode-block" id="AbstractPipeline.model">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.model">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span></div>
 
         <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">_warn_if_not_fp32_master_weights</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Place before cloning so the EMA copy inherits the placement.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_shard</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 <div class="viewcode-block" id="AbstractPipeline.model_wrapped">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.model_wrapped">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_wrapped</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># to be set in subclass</span></div>
@@ -1211,6 +1274,139 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Create and return the model to be trained.</span>
 <span class="sd">        """</span>
         <span class="o">...</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline._shard">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._shard">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_shard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Place ``node`` on the mesh with the pipeline's rule.</span>
+
+<span class="sd">        ``shard_model`` warns that non-replicated rules are experimental on</span>
+<span class="sd">        every call; the pipeline already warned once at construction, so that</span>
+<span class="sd">        warning is silenced here. Fallback warnings still come through.</span>
+<span class="sd">        """</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="sa">r</span><span class="s2">"sharding rule '.*' is experimental"</span><span class="p">)</span>
+            <span class="n">shard_model</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sharding_rule</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline._reshard">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._reshard">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reshard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">nodes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Re-place nodes on the mesh (no-op without one).</span>
+
+<span class="sd">        Idempotent fix-up for code paths that write fresh, single-device</span>
+<span class="sd">        arrays into the model state (buffer writes, imports). With no</span>
+<span class="sd">        ``nodes``, re-places both ``model`` and ``ema_model``.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_shard</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline._prepare_batch">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._prepare_batch">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">what</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Place a batch on the mesh, sharding its leading axis.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        batch : pytree</span>
+<span class="sd">            Batch as yielded by a data loader.</span>
+<span class="sd">        what : str</span>
+<span class="sd">            Loader label (``"train"`` or ``"validation"``) used in the</span>
+<span class="sd">            divisibility error. Every batch is checked, so a short final</span>
+<span class="sd">            batch fails with that error rather than inside ``device_put``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pytree</span>
+<span class="sd">            ``batch`` itself when no mesh is set, otherwise a copy whose</span>
+<span class="sd">            array leaves are sharded over the data-parallel mesh axes.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">batch</span>
+        <span class="n">check_batch_divisible</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> <span class="n">what</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">shard_batch</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline._sharded_init">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._sharded_init">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sharded_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">draw</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Draw a sampler's initial state, padded and placed on the mesh.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        draw : Callable</span>
+<span class="sd">            ``draw(key, n) -&gt; x_init`` with ``n`` rows along axis 0.</span>
+<span class="sd">        key : jax.random.PRNGKey</span>
+<span class="sd">            Key passed to ``draw`` unchanged.</span>
+<span class="sd">        nsamples : int</span>
+<span class="sd">            Number of samples requested.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        x_init : Array</span>
+<span class="sd">            ``draw(key, nsamples)`` when no mesh is set. With a mesh,</span>
+<span class="sd">            ``draw(key, n_pad)`` sharded over the data-parallel axes, where</span>
+<span class="sd">            ``n_pad`` is ``nsamples`` rounded up to a multiple of the</span>
+<span class="sd">            data-parallel size (the extra rows are discarded by</span>
+<span class="sd">            :meth:`_trim`).</span>
+<span class="sd">        n_pad : int</span>
+<span class="sd">            Number of rows actually drawn.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">draw</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">),</span> <span class="n">nsamples</span>
+        <span class="n">n_pad</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">pad_for_mesh</span><span class="p">(</span><span class="n">nsamples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">shard_sample_init</span><span class="p">(</span><span class="n">draw</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">n_pad</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">),</span> <span class="n">n_pad</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline._replicate">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._replicate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_replicate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Replicate the array leaves of ``tree`` over the mesh (no-op without one).</span>
+
+<span class="sd">        Sampler extras (condition, node ids, masks) are not split over the</span>
+<span class="sd">        batch; replicating them also moves arrays committed to a single</span>
+<span class="sd">        device, which jit would otherwise reject next to mesh-placed inputs.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tree</span>
+        <span class="k">return</span> <span class="n">replicate</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline._place_batch_or_replicate">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._place_batch_or_replicate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_place_batch_or_replicate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Place a batch of rows ``x`` on the mesh (no-op without one).</span>
+
+<span class="sd">        With a mesh ``x`` is sharded over the batch axes when its leading</span>
+<span class="sd">        size is a multiple of the data-parallel size, and replicated</span>
+<span class="sd">        otherwise (no padding here). Used for inputs evaluated row by row,</span>
+<span class="sd">        such as a flow condition repeated per sample or the points passed</span>
+<span class="sd">        to a log-probability function.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>
+        <span class="k">if</span> <span class="n">jnp</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="n">batch_size_divisor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">shard_sample_init</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AbstractPipeline._trim">
+<a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline._trim">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_trim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Keep the first ``nsamples`` entries of ``out`` along ``axis``.</span>
+
+<span class="sd">        ``axis`` is the sample axis (0, or 1 when the sampler returns</span>
+<span class="sd">        intermediates, see :func:`_sample_concat_axis`). ``out`` is returned</span>
+<span class="sd">        as is when it holds exactly ``nsamples`` entries.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">==</span> <span class="n">nsamples</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">out</span>
+        <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">slice_in_dim</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="AbstractPipeline._get_ema_optimizer">
@@ -1573,6 +1769,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
 
         <span class="c1"># wrap models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reshard</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">"Restored model from checkpoint"</span><span class="p">)</span>
@@ -1646,6 +1843,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
 
         <span class="c1"># wrap models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reshard</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Restored model from intermediate checkpoint @ step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -1675,7 +1873,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        :func:`gensbi.utils.serialization.load_safetensors`.</span>
 <span class="sd">        """</span>
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="k">if</span> <span class="n">ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
-        <span class="n">load_safetensors</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">)</span></div>
+        <span class="n">load_safetensors</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reshard</span><span class="p">(</span><span class="n">model</span><span class="p">)</span></div>
 
 
     <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
@@ -1795,6 +1994,12 @@ window.runMermaid = runMermaid;</script>
 
         <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_optimizer</span><span class="p">()</span>
         <span class="n">ema_optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_ema_optimizer</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Optimizer state normally inherits the parameters' placement</span>
+            <span class="c1"># (optax zeros_like); this catches transforms that allocate with</span>
+            <span class="c1"># jnp.zeros(shape) instead.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_shard</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_shard</span><span class="p">(</span><span class="n">ema_optimizer</span><span class="p">)</span>
 
         <span class="n">best_state</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
         <span class="n">best_state_ema</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">)</span>
@@ -1805,8 +2010,10 @@ window.runMermaid = runMermaid;</script>
         <span class="n">val_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_val_step_fn</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)</span>
 
         <span class="n">rng_val</span> <span class="o">=</span> <span class="n">rngs</span><span class="o">.</span><span class="n">val_step</span><span class="p">()</span>
-        <span class="n">batch_val</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_iter</span><span class="p">)</span>
-        <span class="n">min_val</span> <span class="o">=</span> <span class="n">val_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">batch_val</span><span class="p">,</span> <span class="n">rng_val</span><span class="p">)</span>
+        <span class="n">batch_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_batch</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_iter</span><span class="p">),</span> <span class="s2">"validation"</span><span class="p">)</span>
+        <span class="c1"># Same mesh context as the loop below, so val_step compiles once.</span>
+        <span class="k">with</span> <span class="n">mesh_context</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">):</span>
+            <span class="n">min_val</span> <span class="o">=</span> <span class="n">val_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">batch_val</span><span class="p">,</span> <span class="n">rng_val</span><span class="p">)</span>
 
         <span class="n">val_error_ratio</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"val_error_ratio"</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">)</span>
         <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
@@ -1890,48 +2097,51 @@ window.runMermaid = runMermaid;</script>
         <span class="n">l_val</span> <span class="o">=</span> <span class="n">min_val</span>  <span class="c1"># initialize l_val</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">counter</span> <span class="o">&gt;</span> <span class="n">cmax</span> <span class="ow">and</span> <span class="n">early_stopping</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="s2">"Early stopping"</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_restore_best_state</span><span class="p">(</span><span class="n">best_state</span><span class="p">,</span> <span class="n">best_state_ema</span><span class="p">)</span>
-                    <span class="k">break</span>
+            <span class="c1"># The loop runs under the mesh (jax.set_mesh) so sharding</span>
+            <span class="c1"># constraints inside jitted steps resolve; a no-op without one.</span>
+            <span class="k">with</span> <span class="n">mesh_context</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">counter</span> <span class="o">&gt;</span> <span class="n">cmax</span> <span class="ow">and</span> <span class="n">early_stopping</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">"Early stopping"</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_restore_best_state</span><span class="p">(</span><span class="n">best_state</span><span class="p">,</span> <span class="n">best_state_ema</span><span class="p">)</span>
+                        <span class="k">break</span>
 
-                <span class="n">batch</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset_iter</span><span class="p">)</span>
+                    <span class="n">batch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_batch</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset_iter</span><span class="p">),</span> <span class="s2">"train"</span><span class="p">)</span>
 
-                <span class="n">loss</span> <span class="o">=</span> <span class="n">train_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">rngs</span><span class="o">.</span><span class="n">train_step</span><span class="p">())</span>
-                <span class="c1"># update the parameters ema</span>
-                <span class="k">if</span> <span class="n">j</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"multistep"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">ema_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">ema_optimizer</span><span class="p">)</span>
+                    <span class="n">loss</span> <span class="o">=</span> <span class="n">train_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">rngs</span><span class="o">.</span><span class="n">train_step</span><span class="p">())</span>
+                    <span class="c1"># update the parameters ema</span>
+                    <span class="k">if</span> <span class="n">j</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_config</span><span class="p">[</span><span class="s2">"multistep"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">ema_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">ema_optimizer</span><span class="p">)</span>
 
-                <span class="n">decay</span> <span class="o">=</span> <span class="mf">0.99</span>
+                    <span class="n">decay</span> <span class="o">=</span> <span class="mf">0.99</span>
 
-                <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">l_train</span> <span class="o">=</span> <span class="n">loss</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">l_train</span> <span class="o">=</span> <span class="n">decay</span> <span class="o">*</span> <span class="n">l_train</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay</span><span class="p">)</span> <span class="o">*</span> <span class="n">loss</span>
+                    <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">l_train</span> <span class="o">=</span> <span class="n">loss</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">l_train</span> <span class="o">=</span> <span class="n">decay</span> <span class="o">*</span> <span class="n">l_train</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">decay</span><span class="p">)</span> <span class="o">*</span> <span class="n">loss</span>
 
-                <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="n">val_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">l_val</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">min_val</span><span class="p">,</span> <span class="n">best_state</span><span class="p">,</span> <span class="n">best_state_ema</span><span class="p">,</span> <span class="n">counter</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_run_validation</span><span class="p">(</span>
-                            <span class="n">val_step</span><span class="p">,</span> <span class="n">batch_val</span><span class="p">,</span> <span class="n">rng_val</span><span class="p">,</span> <span class="n">min_val</span><span class="p">,</span>
-                            <span class="n">best_state</span><span class="p">,</span> <span class="n">best_state_ema</span><span class="p">,</span> <span class="n">counter</span><span class="p">,</span> <span class="n">val_error_ratio</span><span class="p">,</span>
-                            <span class="n">loss_array</span><span class="p">,</span> <span class="n">val_loss_array</span><span class="p">,</span> <span class="n">l_train</span><span class="p">,</span>
+                    <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="n">val_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">l_val</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">min_val</span><span class="p">,</span> <span class="n">best_state</span><span class="p">,</span> <span class="n">best_state_ema</span><span class="p">,</span> <span class="n">counter</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_run_validation</span><span class="p">(</span>
+                                <span class="n">val_step</span><span class="p">,</span> <span class="n">batch_val</span><span class="p">,</span> <span class="n">rng_val</span><span class="p">,</span> <span class="n">min_val</span><span class="p">,</span>
+                                <span class="n">best_state</span><span class="p">,</span> <span class="n">best_state_ema</span><span class="p">,</span> <span class="n">counter</span><span class="p">,</span> <span class="n">val_error_ratio</span><span class="p">,</span>
+                                <span class="n">loss_array</span><span class="p">,</span> <span class="n">val_loss_array</span><span class="p">,</span> <span class="n">l_train</span><span class="p">,</span>
+                            <span class="p">)</span>
                         <span class="p">)</span>
-                    <span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">save_every</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="n">save_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_save_intermediate_checkpoint</span><span class="p">(</span>
-                        <span class="n">intermediate_manager</span><span class="p">,</span> <span class="n">intermediate_manager_ema</span><span class="p">,</span> <span class="n">j</span>
-                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">save_every</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="n">save_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_save_intermediate_checkpoint</span><span class="p">(</span>
+                            <span class="n">intermediate_manager</span><span class="p">,</span> <span class="n">intermediate_manager_ema</span><span class="p">,</span> <span class="n">j</span>
+                        <span class="p">)</span>
 
-                <span class="c1"># print stats</span>
-                <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span>
-                        <span class="n">loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">l_train</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                        <span class="n">ratio</span><span class="o">=</span><span class="n">get_colored_value</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">thresholds</span><span class="o">=</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">)),</span>
-                        <span class="n">counter</span><span class="o">=</span><span class="n">counter</span><span class="p">,</span>
-                        <span class="n">val_loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">l_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="p">)</span>
+                    <span class="c1"># print stats</span>
+                    <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">pbar</span><span class="o">.</span><span class="n">set_postfix</span><span class="p">(</span>
+                            <span class="n">loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">l_train</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                            <span class="n">ratio</span><span class="o">=</span><span class="n">get_colored_value</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">thresholds</span><span class="o">=</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">)),</span>
+                            <span class="n">counter</span><span class="o">=</span><span class="n">counter</span><span class="p">,</span>
+                            <span class="n">val_loss</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">l_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                        <span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="c1"># Runs on normal completion, early-stopping break, and any</span>
             <span class="c1"># exception raised out of the loop, so a long-lived manager is</span>

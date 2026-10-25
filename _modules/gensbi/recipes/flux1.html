@@ -911,6 +911,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ch_cond</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Flow pipeline for training and using a Flux1 model for simulation-based inference.</span>
@@ -933,6 +935,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Parameters for the Flux1 model. If None, default parameters are used.</span>
 <span class="sd">        training_config : dict, optional</span>
 <span class="sd">            Configuration for training. If None, default configuration is used.</span>
+<span class="sd">        mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">            Device mesh for multi-device training (also ``"auto"`` or a dict of</span>
+<span class="sd">            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to</span>
+<span class="sd">            ``training_config["mesh"]``; absent too, training stays on one device.</span>
+<span class="sd">        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">            Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">            to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">            ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -976,6 +986,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">,</span>
+            <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="n">sharding_rule</span><span class="o">=</span><span class="n">sharding_rule</span><span class="p">,</span>
         <span class="p">)</span>
 <div class="viewcode-block" id="Flux1FlowPipeline.ema_model">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1FlowPipeline.ema_model">[docs]</a>
@@ -1066,6 +1078,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ch_cond</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Diffusion pipeline for training and using a Flux1 model for simulation-based inference.</span>
@@ -1088,6 +1102,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Parameters for the Flux1 model. If None, default parameters are used.</span>
 <span class="sd">        training_config : dict, optional</span>
 <span class="sd">            Configuration for training. If None, default configuration is used.</span>
+<span class="sd">        mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">            Device mesh for multi-device training (also ``"auto"`` or a dict of</span>
+<span class="sd">            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to</span>
+<span class="sd">            ``training_config["mesh"]``; absent too, training stays on one device.</span>
+<span class="sd">        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">            Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">            to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">            ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -1131,6 +1153,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">,</span>
+            <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="n">sharding_rule</span><span class="o">=</span><span class="n">sharding_rule</span><span class="p">,</span>
         <span class="p">)</span>
 <div class="viewcode-block" id="Flux1DiffusionPipeline.ema_model">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1DiffusionPipeline.ema_model">[docs]</a>
@@ -1224,6 +1248,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">sde_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VP"</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Score matching pipeline for training and using a Flux1 model for simulation-based inference.</span>
@@ -1248,6 +1274,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Parameters for the Flux1 model. If None, default parameters are used.</span>
 <span class="sd">        training_config : dict, optional</span>
 <span class="sd">            Configuration for training. If None, default configuration is used.</span>
+<span class="sd">        mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">            Device mesh for multi-device training (also ``"auto"`` or a dict of</span>
+<span class="sd">            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to</span>
+<span class="sd">            ``training_config["mesh"]``; absent too, training stays on one device.</span>
+<span class="sd">        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">            Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">            to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">            ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 <span class="sd">        """</span>
 
         <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1274,6 +1308,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">id_embedding_strategy</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">id_embedding_strategy</span><span class="p">,</span>
+            <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="n">sharding_rule</span><span class="o">=</span><span class="n">sharding_rule</span><span class="p">,</span>
         <span class="p">)</span>
 <div class="viewcode-block" id="Flux1SMPipeline.ema_model">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/flux1/index.html#gensbi.recipes.flux1.Flux1SMPipeline.ema_model">[docs]</a>

@@ -964,6 +964,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Model parameters (stored but not used directly).</span>
 <span class="sd">    training_config : dict, optional</span>
 <span class="sd">        Training configuration.</span>
+<span class="sd">    mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">        Device mesh for multi-device training (also ``"auto"`` or a dict of</span>
+<span class="sd">        :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to</span>
+<span class="sd">        ``training_config["mesh"]``; absent too, training stays on one device.</span>
+<span class="sd">    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">        Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">        to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">        ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -989,6 +997,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">condition_mask_kind</span><span class="o">=</span><span class="s2">"structured"</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="JointPipeline.method">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/joint_pipeline/index.html#gensbi.recipes.JointPipeline.method">[docs]</a>
@@ -1010,6 +1020,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">ch_obs</span><span class="o">=</span><span class="n">ch_obs</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
+            <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="n">sharding_rule</span><span class="o">=</span><span class="n">sharding_rule</span><span class="p">,</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="JointPipeline.dim_joint">
@@ -1164,6 +1176,8 @@ window.runMermaid = runMermaid;</script>
                     <span class="sa">f</span><span class="s2">"model_extras cannot override protected keys: </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
             <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span>
+        <span class="c1"># With a mesh, the extras (cond, ids, ...) are replicated over it.</span>
+        <span class="n">extras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">extras</span><span class="p">)</span>
 
         <span class="n">sampler_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">build_sampler_fn</span><span class="p">(</span>
             <span class="n">model_wrapped</span><span class="p">,</span>
@@ -1172,17 +1186,29 @@ window.runMermaid = runMermaid;</script>
             <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">_sample_concat_axis</span><span class="p">(</span><span class="n">sampler_kwargs</span><span class="p">)</span>
+
         <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-            <span class="n">_extras</span> <span class="o">=</span> <span class="n">model_extras</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
+            <span class="n">_extras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
             <span class="n">key</span><span class="p">,</span> <span class="n">key_init</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="n">x_init_joint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">sample_init</span><span class="p">(</span><span class="n">key_init</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">)</span>
             <span class="c1"># Marginalize joint prior to obs dims. This matches</span>
             <span class="c1"># JointWrapper.conditioned() which assumes obs = first dim_obs</span>
             <span class="c1"># dims, cond = remaining dims.</span>
             <span class="c1"># When supporting arbitrary condition masks, update both this</span>
             <span class="c1"># and the wrapper.</span>
-            <span class="n">x_init</span> <span class="o">=</span> <span class="n">x_init_joint</span><span class="p">[:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="p">:]</span>
-            <span class="k">return</span> <span class="n">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">_extras</span><span class="p">)</span>
+            <span class="c1"># With a mesh, x_init is padded to the data-parallel size and</span>
+            <span class="c1"># sharded over it; the extras (cond, ids) are replicated.</span>
+            <span class="n">x_init</span><span class="p">,</span> <span class="n">n_pad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sharded_init</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">sample_init</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">)[:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_obs</span><span class="p">,</span> <span class="p">:],</span>
+                <span class="n">key_init</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">cond_i</span> <span class="o">=</span> <span class="n">_extras</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cond"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">n_pad</span> <span class="o">!=</span> <span class="n">nsamples</span> <span class="ow">and</span> <span class="n">cond_i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">cond_i</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">nsamples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># x_o with one condition per sample: pad it like x_init by</span>
+                <span class="c1"># repeating the last row (the padded outputs are trimmed).</span>
+                <span class="n">cond_i</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">cond_i</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">cond_i</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="n">n_pad</span> <span class="o">-</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)])</span>
+                <span class="n">_extras</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">_extras</span><span class="p">,</span> <span class="s2">"cond"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">cond_i</span><span class="p">)}</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trim</span><span class="p">(</span><span class="n">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">_extras</span><span class="p">),</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sampler</span></div>
 
@@ -1302,6 +1328,8 @@ window.runMermaid = runMermaid;</script>
                     <span class="sa">f</span><span class="s2">"model_extras cannot override protected keys: </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
             <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span>
+        <span class="c1"># Broadcast to every row: replicated over the mesh (no-op without one).</span>
+        <span class="n">extras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">extras</span><span class="p">)</span>
 
         <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">build_log_prob_fn</span><span class="p">(</span>
             <span class="n">model_wrapped</span><span class="p">,</span>
@@ -1312,8 +1340,10 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_log_prob</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-            <span class="n">_extras</span> <span class="o">=</span> <span class="n">model_extras</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
-            <span class="k">return</span> <span class="n">log_prob_fn</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">_extras</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">_extras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
+            <span class="k">return</span> <span class="n">log_prob_fn</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_place_batch_or_replicate</span><span class="p">(</span><span class="n">x_1</span><span class="p">),</span> <span class="n">_extras</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">_log_prob</span></div>
 

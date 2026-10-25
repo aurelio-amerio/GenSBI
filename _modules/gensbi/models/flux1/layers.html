@@ -767,6 +767,8 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">axes</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">attention</span><span class="p">,</span> <span class="n">rope</span>
 
 <div class="viewcode-block" id="Identity">
@@ -878,6 +880,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"in"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="MLPEmbedder.silu">
@@ -893,6 +897,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -919,13 +925,21 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="QKNorm.query_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.QKNorm.query_norm">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">query_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">RMSNorm</span><span class="p">(</span>
-            <span class="n">dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">dim</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">scale_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="QKNorm.key_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/flux1/layers/index.html#gensbi.models.flux1.layers.QKNorm.key_norm">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">key_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">RMSNorm</span><span class="p">(</span>
-            <span class="n">dim</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">dim</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">scale_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -970,6 +984,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"heads"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"heads"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="SelfAttention.norm">
@@ -985,6 +1001,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"heads"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -1049,6 +1067,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
             <span class="n">kernel_init</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">zeros</span><span class="p">,</span>  <span class="c1"># this ensures that the initial modulation is neutral</span>
             <span class="n">bias_init</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">initializers</span><span class="o">.</span><span class="n">zeros</span><span class="p">,</span>  <span class="c1"># this ensures that the initial modulation is neutral</span>
         <span class="p">)</span></div>
@@ -1147,6 +1167,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"mlp"</span><span class="p">),</span>
+                <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">),</span>
             <span class="p">),</span>
             <span class="n">nnx</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
             <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
@@ -1156,6 +1178,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+                <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
 
@@ -1213,6 +1237,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"mlp"</span><span class="p">),</span>
+                <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">),</span>
             <span class="p">),</span>
             <span class="n">nnx</span><span class="o">.</span><span class="n">gelu</span><span class="p">,</span>
             <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
@@ -1222,6 +1248,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+                <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
 
@@ -1331,6 +1359,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"mlp"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
         <span class="c1"># proj and mlp_out</span>
@@ -1342,6 +1372,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -1435,6 +1467,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"out"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="LastLayer.adaLN_modulation">
@@ -1448,6 +1482,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
 

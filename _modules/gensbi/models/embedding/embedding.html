@@ -764,6 +764,8 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">axes</span>
+
 
 <div class="viewcode-block" id="MLPEmbedder">
 <a class="viewcode-back" href="../../../../api/gensbi/models/embedding/index.html#gensbi.models.embedding.embedding.MLPEmbedder">[docs]</a>
@@ -808,7 +810,10 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="MLPEmbedder.p_skip">
 <a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.MLPEmbedder.p_skip">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">p_skip</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span><span class="mf">0.01</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">))</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_skip</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
+            <span class="mf">0.01</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="MLPEmbedder.in_layer">
 <a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.MLPEmbedder.in_layer">[docs]</a>
@@ -819,6 +824,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"in"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="MLPEmbedder.silu">
@@ -834,6 +841,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -995,7 +1004,8 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="GaussianFourierEmbedding.B">
 <a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.GaussianFourierEmbedding.B">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">[</span><span class="n">half_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span>
+            <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">[</span><span class="n">half_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
         <span class="p">)</span></div>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">learnable</span><span class="p">:</span>
@@ -1247,6 +1257,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"embedding_metadata"</span><span class="p">,</span> <span class="n">axes</span><span class="p">(</span><span class="s2">"vocab"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">))</span>
 <div class="viewcode-block" id="Embed.embed">
 <a class="viewcode-back" href="../../../../api/gensbi/models/embedding/embedding/index.html#gensbi.models.embedding.embedding.Embed.embed">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Embed</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>

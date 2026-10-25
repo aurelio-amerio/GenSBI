@@ -70,7 +70,7 @@ Classes
 Package Contents
 ----------------
 
-.. py:class:: ConditionalFlowPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None, structured_obs=False, structured_cond=False)
+.. py:class:: ConditionalFlowPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None, structured_obs=False, structured_cond=False, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -110,6 +110,14 @@ Package Contents
                            structured shape (the model owns it) instead of the tabular
                            ``(B, dim, 1)`` layout. Default ``False``.
    :type structured_cond: bool, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Notes
 
@@ -120,6 +128,10 @@ Package Contents
    structured. A bare ``(B, dim)`` tensor is rejected — add ``[..., None]``
    for ``C = 1``. A batch axis > 1 raises ``ValueError`` — pass a batch to
    :meth:`sample_batched` instead.
+
+   The flow must be an ``nnx.Module``: sampling always runs under
+   ``nnx.jit`` (with or without a mesh), since eager autoregressive
+   sampling is orders of magnitude slower.
 
 
 
@@ -608,7 +620,7 @@ Package Contents
 
 
 
-.. py:class:: ConditionalPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), size=2, params=None, training_config=None)
+.. py:class:: ConditionalPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), size=2, params=None, training_config=None, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -658,6 +670,14 @@ Package Contents
    :param training_config: Training configuration. If ``None``, uses defaults augmented
                            by ``method.get_extra_training_config()``.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -971,7 +991,7 @@ Package Contents
    .. py:attribute:: path
 
 
-.. py:class:: Flux1DiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None)
+.. py:class:: Flux1DiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalPipeline`
 
@@ -1021,6 +1041,14 @@ Package Contents
    :param training_config: Training configuration. If ``None``, uses defaults augmented
                            by ``method.get_extra_training_config()``.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -1132,7 +1160,7 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: Flux1FlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None)
+.. py:class:: Flux1FlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, params=None, training_config=None, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalPipeline`
 
@@ -1182,6 +1210,14 @@ Package Contents
    :param training_config: Training configuration. If ``None``, uses defaults augmented
                            by ``method.get_extra_training_config()``.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -1293,7 +1329,7 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: Flux1JointDiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, condition_mask_kind='structured')
+.. py:class:: Flux1JointDiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, condition_mask_kind='structured', mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
@@ -1328,6 +1364,14 @@ Package Contents
    :type params: optional
    :param training_config: Training configuration.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -1447,7 +1491,7 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: Flux1JointFlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, condition_mask_kind='structured')
+.. py:class:: Flux1JointFlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, condition_mask_kind='structured', mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
@@ -1482,6 +1526,14 @@ Package Contents
    :type params: optional
    :param training_config: Training configuration.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -1601,7 +1653,7 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: Flux1JointSMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, sde_type = 'VP', params=None, training_config=None, condition_mask_kind='structured')
+.. py:class:: Flux1JointSMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, sde_type = 'VP', params=None, training_config=None, condition_mask_kind='structured', mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
@@ -1636,6 +1688,14 @@ Package Contents
    :type params: optional
    :param training_config: Training configuration.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -1756,7 +1816,7 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: Flux1SMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, sde_type = 'VP', params=None, training_config=None)
+.. py:class:: Flux1SMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=1, sde_type = 'VP', params=None, training_config=None, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.conditional_pipeline.ConditionalPipeline`
 
@@ -1806,6 +1866,14 @@ Package Contents
    :param training_config: Training configuration. If ``None``, uses defaults augmented
                            by ``method.get_extra_training_config()``.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -2106,7 +2174,7 @@ Package Contents
       :type:  str
 
 
-.. py:class:: JointPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, condition_mask_kind='structured', params=None, training_config=None)
+.. py:class:: JointPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, condition_mask_kind='structured', params=None, training_config=None, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -2141,6 +2209,14 @@ Package Contents
    :type params: optional
    :param training_config: Training configuration.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -2472,7 +2548,7 @@ Package Contents
    .. py:attribute:: path
 
 
-.. py:class:: SimformerDiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
+.. py:class:: SimformerDiffusionPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured', mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
@@ -2507,6 +2583,14 @@ Package Contents
    :type params: optional
    :param training_config: Training configuration.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -2674,7 +2758,7 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: SimformerFlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
+.. py:class:: SimformerFlowPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, params=None, training_config=None, edge_mask=None, condition_mask_kind='structured', mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
@@ -2709,6 +2793,14 @@ Package Contents
    :type params: optional
    :param training_config: Training configuration.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -2876,7 +2968,7 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: SimformerSMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, sde_type = 'VP', params=None, training_config=None, edge_mask=None, condition_mask_kind='structured')
+.. py:class:: SimformerSMPipeline(train_dataset, val_dataset, dim_obs, dim_cond, ch_obs = 1, sde_type = 'VP', params=None, training_config=None, edge_mask=None, condition_mask_kind='structured', mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.joint_pipeline.JointPipeline`
 
@@ -2911,6 +3003,14 @@ Package Contents
    :type params: optional
    :param training_config: Training configuration.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 
@@ -3079,7 +3179,7 @@ Package Contents
    .. py:attribute:: ema_model
 
 
-.. py:class:: UnconditionalPipeline(model, train_dataset, val_dataset, dim_obs, method, ch_obs=1, params=None, training_config=None)
+.. py:class:: UnconditionalPipeline(model, train_dataset, val_dataset, dim_obs, method, ch_obs=1, params=None, training_config=None, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -3108,6 +3208,14 @@ Package Contents
    :type params: optional
    :param training_config: Training configuration.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 

@@ -777,6 +777,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.core.patching</span><span class="w"> </span><span class="kn">import</span> <span class="n">patchify_2d</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">axes</span>
 
 
 <div class="viewcode-block" id="AdditiveBiasConditioner">
@@ -824,9 +825,13 @@ window.runMermaid = runMermaid;</script>
 
         <span class="k">if</span> <span class="n">cond_dim</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">cond_dim</span> <span class="o">*</span> <span class="n">cond_channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
-                                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+                                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                                 <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"in"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+                                 <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">l2</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
-                                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+                                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                                 <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                                 <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span>
 
 <div class="viewcode-block" id="AdditiveBiasConditioner.embed">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.AdditiveBiasConditioner.embed">[docs]</a>
@@ -918,13 +923,16 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="VectorConditioner.proj">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.proj">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">cond_channels</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
-                               <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
+                               <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                               <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"in"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+                               <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="VectorConditioner.pos">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.VectorConditioner.pos">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
             <span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">cond_dim</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span>
-             <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">param_dtype</span><span class="p">))</span></div>
+             <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">param_dtype</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="VectorConditioner.embed">
@@ -1013,13 +1021,16 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="ImageConditioner.proj">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.proj">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">proj</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_f</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
-                               <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
+                               <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                               <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"in"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+                               <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="ImageConditioner.pos">
 <a class="viewcode-back" href="../../../../api/gensbi/models/tarflow/conditioners/index.html#gensbi.models.tarflow.conditioners.ImageConditioner.pos">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">pos</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
             <span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">params</span><span class="p">(),</span> <span class="p">(</span><span class="n">num_tokens</span><span class="p">,</span> <span class="n">channels</span><span class="p">))</span> <span class="o">*</span> <span class="mf">1e-2</span>
-             <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">param_dtype</span><span class="p">))</span></div>
+             <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">param_dtype</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">))</span></div>
 
 
 <div class="viewcode-block" id="ImageConditioner.embed">

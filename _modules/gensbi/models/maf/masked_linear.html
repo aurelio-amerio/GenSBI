@@ -765,6 +765,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.normalizing_flows.bijections.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mask</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">axes</span>
 
 
 <div class="viewcode-block" id="MaskedLinear">
@@ -786,11 +787,16 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Compute dtype: the kernel/bias/activations are cast to this dtype</span>
 <span class="sd">        before the matmul. Defaults to float32, matching ``param_dtype``, so</span>
 <span class="sd">        with default arguments this is a no-op cast (bit-identical).</span>
+<span class="sd">    kernel_axes, bias_axes : tuple or None, optional</span>
+<span class="sd">        Logical sharding axes (see :func:`gensbi.sharding.axes`) for the kernel</span>
+<span class="sd">        and bias. ``None`` (default) leaves the parameter unannotated.</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">rngs</span><span class="p">,</span>
                  <span class="n">param_dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
-                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
+                 <span class="n">dtype</span><span class="p">:</span> <span class="n">DTypeLike</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+                 <span class="n">kernel_axes</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">bias_axes</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <div class="viewcode-block" id="MaskedLinear.dtype">
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/masked_linear/index.html#gensbi.models.maf.masked_linear.MaskedLinear.dtype">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span></div>
@@ -800,6 +806,10 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
             <span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="p">,</span> <span class="n">use_bias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="o">**</span><span class="p">({}</span> <span class="k">if</span> <span class="n">kernel_axes</span> <span class="ow">is</span> <span class="kc">None</span>
+               <span class="k">else</span> <span class="p">{</span><span class="s2">"kernel_metadata"</span><span class="p">:</span> <span class="n">axes</span><span class="p">(</span><span class="o">*</span><span class="n">kernel_axes</span><span class="p">)}),</span>
+            <span class="o">**</span><span class="p">({}</span> <span class="k">if</span> <span class="n">bias_axes</span> <span class="ow">is</span> <span class="kc">None</span>
+               <span class="k">else</span> <span class="p">{</span><span class="s2">"bias_metadata"</span><span class="p">:</span> <span class="n">axes</span><span class="p">(</span><span class="o">*</span><span class="n">bias_axes</span><span class="p">)}),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="MaskedLinear.mask">

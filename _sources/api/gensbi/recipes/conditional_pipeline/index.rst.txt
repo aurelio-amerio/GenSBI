@@ -22,7 +22,7 @@ Classes
 Module Contents
 ---------------
 
-.. py:class:: ConditionalPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), size=2, params=None, training_config=None)
+.. py:class:: ConditionalPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, method, ch_obs=1, ch_cond=1, id_embedding_strategy=('absolute', 'absolute'), size=2, params=None, training_config=None, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`gensbi.recipes.pipeline.AbstractPipeline`
 
@@ -72,6 +72,14 @@ Module Contents
    :param training_config: Training configuration. If ``None``, uses defaults augmented
                            by ``method.get_extra_training_config()``.
    :type training_config: dict, optional
+   :param mesh: Device mesh for multi-device training (also ``"auto"`` or a dict of
+                :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+                ``training_config["mesh"]``; absent too, training stays on one device.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
    .. rubric:: Examples
 

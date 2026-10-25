@@ -43,7 +43,7 @@ Functions
 Module Contents
 ---------------
 
-.. py:class:: AbstractPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=None, params=None, training_config=None)
+.. py:class:: AbstractPipeline(model, train_dataset, val_dataset, dim_obs, dim_cond, ch_obs=1, ch_cond=None, params=None, training_config=None, mesh=None, sharding_rule=None)
 
    Bases: :py:obj:`abc.ABC`
 
@@ -72,6 +72,15 @@ Module Contents
    :type ch_cond: int, optional
    :param training_config: Training configuration. If None, uses defaults from `get_default_training_config`.
    :type training_config: dict, optional
+   :param mesh: Device mesh to place the model, optimizer state and batches on. Also
+                accepts ``"auto"`` or a dict of :func:`gensbi.sharding.make_mesh`
+                kwargs. If None, falls back to ``training_config["mesh"]``; if that is
+                absent too, everything stays on a single device as before.
+   :type mesh: jax.sharding.Mesh or None, optional
+   :param sharding_rule: Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+                         to ``training_config["sharding_rule"]``, then ``"replicated"``.
+                         ``"fsdp"`` and ``"tensor"`` are experimental.
+   :type sharding_rule: {"replicated", "fsdp", "tensor"} or None, optional
 
 
 
@@ -149,6 +158,123 @@ Module Contents
       
       Create and return the model to be trained.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _place_batch_or_replicate(x)
+
+      
+      Place a batch of rows ``x`` on the mesh (no-op without one).
+
+      With a mesh ``x`` is sharded over the batch axes when its leading
+      size is a multiple of the data-parallel size, and replicated
+      otherwise (no padding here). Used for inputs evaluated row by row,
+      such as a flow condition repeated per sample or the points passed
+      to a log-probability function.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _prepare_batch(batch, what)
+
+      
+      Place a batch on the mesh, sharding its leading axis.
+
+      :param batch: Batch as yielded by a data loader.
+      :type batch: pytree
+      :param what: Loader label (``"train"`` or ``"validation"``) used in the
+                   divisibility error. Every batch is checked, so a short final
+                   batch fails with that error rather than inside ``device_put``.
+      :type what: str
+
+      :returns: ``batch`` itself when no mesh is set, otherwise a copy whose
+                array leaves are sharded over the data-parallel mesh axes.
+      :rtype: pytree
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _replicate(tree)
+
+      
+      Replicate the array leaves of ``tree`` over the mesh (no-op without one).
+
+      Sampler extras (condition, node ids, masks) are not split over the
+      batch; replicating them also moves arrays committed to a single
+      device, which jit would otherwise reject next to mesh-placed inputs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _reshard(*nodes)
+
+      
+      Re-place nodes on the mesh (no-op without one).
+
+      Idempotent fix-up for code paths that write fresh, single-device
+      arrays into the model state (buffer writes, imports). With no
+      ``nodes``, re-places both ``model`` and ``ema_model``.
 
 
 
@@ -271,6 +397,97 @@ Module Contents
       dirs up front specifically to keep this from happening; this is a
       belt-and-braces check so a `False` return is never reported as a
       success.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _shard(node)
+
+      
+      Place ``node`` on the mesh with the pipeline's rule.
+
+      ``shard_model`` warns that non-replicated rules are experimental on
+      every call; the pipeline already warned once at construction, so that
+      warning is silenced here. Fallback warnings still come through.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _sharded_init(draw, key, nsamples)
+
+      
+      Draw a sampler's initial state, padded and placed on the mesh.
+
+      :param draw: ``draw(key, n) -> x_init`` with ``n`` rows along axis 0.
+      :type draw: Callable
+      :param key: Key passed to ``draw`` unchanged.
+      :type key: jax.random.PRNGKey
+      :param nsamples: Number of samples requested.
+      :type nsamples: int
+
+      :returns: * **x_init** (*Array*) -- ``draw(key, nsamples)`` when no mesh is set. With a mesh,
+                  ``draw(key, n_pad)`` sharded over the data-parallel axes, where
+                  ``n_pad`` is ``nsamples`` rounded up to a multiple of the
+                  data-parallel size (the extra rows are discarded by
+                  :meth:`_trim`).
+                * **n_pad** (*int*) -- Number of rows actually drawn.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _trim(out, nsamples, axis)
+
+      
+      Keep the first ``nsamples`` entries of ``out`` along ``axis``.
+
+      ``axis`` is the sample axis (0, or 1 when the sampler returns
+      intermediates, see :func:`_sample_concat_axis`). ``out`` is returned
+      as is when it holds exactly ``nsamples`` entries.
 
 
 
@@ -874,6 +1091,11 @@ Module Contents
 
 
 
+   .. py:attribute:: mesh
+      :value: None
+
+
+
    .. py:attribute:: model
 
 
@@ -895,6 +1117,9 @@ Module Contents
    .. py:attribute:: path
       :value: None
 
+
+
+   .. py:attribute:: sharding_rule
 
 
    .. py:attribute:: train_dataset

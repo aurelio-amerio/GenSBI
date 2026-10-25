@@ -899,6 +899,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">edge_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">condition_mask_kind</span><span class="o">=</span><span class="s2">"structured"</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Flow pipeline for training and using a Simformer model for simulation-based inference.</span>
@@ -923,6 +925,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Edge mask for the Simformer model. If None, no mask is applied.</span>
 <span class="sd">        condition_mask_kind : str, optional</span>
 <span class="sd">            Kind of condition mask to use. One of ["structured", "posterior"].</span>
+<span class="sd">        mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">            Device mesh for multi-device training (also ``"auto"`` or a dict of</span>
+<span class="sd">            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to</span>
+<span class="sd">            ``training_config["mesh"]``; absent too, training stays on one device.</span>
+<span class="sd">        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">            Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">            to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">            ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -969,6 +979,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">condition_mask_kind</span><span class="o">=</span><span class="n">condition_mask_kind</span><span class="p">,</span>
+            <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="n">sharding_rule</span><span class="o">=</span><span class="n">sharding_rule</span><span class="p">,</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="SimformerFlowPipeline.ema_model">
@@ -1086,6 +1098,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">edge_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">condition_mask_kind</span><span class="o">=</span><span class="s2">"structured"</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Score matching pipeline for training and using a Simformer model for simulation-based inference.</span>
@@ -1112,6 +1126,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Edge mask for the Simformer model. If None, no mask is applied.</span>
 <span class="sd">        condition_mask_kind : str, optional</span>
 <span class="sd">            Kind of condition mask to use. One of ["structured", "posterior"].</span>
+<span class="sd">        mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">            Device mesh for multi-device training (also ``"auto"`` or a dict of</span>
+<span class="sd">            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to</span>
+<span class="sd">            ``training_config["mesh"]``; absent too, training stays on one device.</span>
+<span class="sd">        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">            Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">            to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">            ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 <span class="sd">        """</span>
 
 <div class="viewcode-block" id="SimformerSMPipeline.dim_joint">
@@ -1141,6 +1163,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">condition_mask_kind</span><span class="o">=</span><span class="n">condition_mask_kind</span><span class="p">,</span>
+            <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="n">sharding_rule</span><span class="o">=</span><span class="n">sharding_rule</span><span class="p">,</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="SimformerSMPipeline.ema_model">
@@ -1263,6 +1287,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">edge_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">condition_mask_kind</span><span class="o">=</span><span class="s2">"structured"</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Diffusion pipeline for training and using a Simformer model for simulation-based inference.</span>
@@ -1285,6 +1311,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Edge mask for the Simformer model. If None, no mask is applied.</span>
 <span class="sd">        condition_mask_kind : str, optional</span>
 <span class="sd">            Kind of condition mask to use. One of ["structured", "posterior"].</span>
+<span class="sd">        mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">            Device mesh for multi-device training (also ``"auto"`` or a dict of</span>
+<span class="sd">            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to</span>
+<span class="sd">            ``training_config["mesh"]``; absent too, training stays on one device.</span>
+<span class="sd">        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">            Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">            to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">            ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -1331,6 +1365,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
             <span class="n">condition_mask_kind</span><span class="o">=</span><span class="n">condition_mask_kind</span><span class="p">,</span>
+            <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="n">sharding_rule</span><span class="o">=</span><span class="n">sharding_rule</span><span class="p">,</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="SimformerDiffusionPipeline.ema_model">

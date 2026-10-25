@@ -557,6 +557,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../utils/index.html">gensbi.recipes.utils</a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../sharding/index.html">gensbi.sharding</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../solver/index.html">gensbi.solver</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../utils/index.html">gensbi.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../utils/math/index.html">gensbi.utils.math</a></li>
@@ -686,7 +687,7 @@ See <cite>JointPipeline</cite> and <cite>ConditionalPipeline</cite> for concrete
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.recipes.pipeline.</span></span><span class="sig-name descname"><span class="pre">AbstractPipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_cond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_obs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gensbi.recipes.pipeline.</span></span><span class="sig-name descname"><span class="pre">AbstractPipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim_cond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_obs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ch_cond</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sharding_rule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract base class for GenSBI training pipelines.</p>
 <p>This class provides a template for implementing training and evaluation pipelines for conditional generative models.
@@ -703,6 +704,13 @@ Subclasses should implement model creation, default parameter setup, loss functi
 <li><p><strong>ch_obs</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels in the observation data. Default is 1.</p></li>
 <li><p><strong>ch_cond</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of channels in the conditional data (if applicable). Default is None.</p></li>
 <li><p><strong>training_config</strong> (<em>dict</em><em>, </em><em>optional</em>) – Training configuration. If None, uses defaults from <cite>get_default_training_config</cite>.</p></li>
+<li><p><strong>mesh</strong> (<em>jax.sharding.Mesh</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Device mesh to place the model, optimizer state and batches on. Also
+accepts <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> or a dict of <a class="reference internal" href="../../sharding/index.html#gensbi.sharding.make_mesh" title="gensbi.sharding.make_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">gensbi.sharding.make_mesh()</span></code></a>
+kwargs. If None, falls back to <code class="docutils literal notranslate"><span class="pre">training_config[&quot;mesh&quot;]</span></code>; if that is
+absent too, everything stays on a single device as before.</p></li>
+<li><p><strong>sharding_rule</strong> (<em>{&quot;replicated&quot;</em><em>, </em><em>&quot;fsdp&quot;</em><em>, </em><em>&quot;tensor&quot;}</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+to <code class="docutils literal notranslate"><span class="pre">training_config[&quot;sharding_rule&quot;]</span></code>, then <code class="docutils literal notranslate"><span class="pre">&quot;replicated&quot;</span></code>.
+<code class="docutils literal notranslate"><span class="pre">&quot;fsdp&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;tensor&quot;</span></code> are experimental.</p></li>
 </ul>
 </dd>
 </dl>
@@ -732,6 +740,63 @@ Subclasses should implement model creation, default parameter setup, loss functi
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._make_model">
 <span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">_make_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._make_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._make_model" title="Link to this definition">#</a></dt>
 <dd><p>Create and return the model to be trained.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._place_batch_or_replicate">
+<span class="sig-name descname"><span class="pre">_place_batch_or_replicate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._place_batch_or_replicate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._place_batch_or_replicate" title="Link to this definition">#</a></dt>
+<dd><p>Place a batch of rows <code class="docutils literal notranslate"><span class="pre">x</span></code> on the mesh (no-op without one).</p>
+<p>With a mesh <code class="docutils literal notranslate"><span class="pre">x</span></code> is sharded over the batch axes when its leading
+size is a multiple of the data-parallel size, and replicated
+otherwise (no padding here). Used for inputs evaluated row by row,
+such as a flow condition repeated per sample or the points passed
+to a log-probability function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._prepare_batch">
+<span class="sig-name descname"><span class="pre">_prepare_batch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._prepare_batch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._prepare_batch" title="Link to this definition">#</a></dt>
+<dd><p>Place a batch on the mesh, sharding its leading axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>pytree</em>) – Batch as yielded by a data loader.</p></li>
+<li><p><strong>what</strong> (<em>str</em>) – Loader label (<code class="docutils literal notranslate"><span class="pre">&quot;train&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;validation&quot;</span></code>) used in the
+divisibility error. Every batch is checked, so a short final
+batch fails with that error rather than inside <code class="docutils literal notranslate"><span class="pre">device_put</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">batch</span></code> itself when no mesh is set, otherwise a copy whose
+array leaves are sharded over the data-parallel mesh axes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pytree</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._replicate">
+<span class="sig-name descname"><span class="pre">_replicate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._replicate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._replicate" title="Link to this definition">#</a></dt>
+<dd><p>Replicate the array leaves of <code class="docutils literal notranslate"><span class="pre">tree</span></code> over the mesh (no-op without one).</p>
+<p>Sampler extras (condition, node ids, masks) are not split over the
+batch; replicating them also moves arrays committed to a single
+device, which jit would otherwise reject next to mesh-placed inputs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._reshard">
+<span class="sig-name descname"><span class="pre">_reshard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._reshard"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._reshard" title="Link to this definition">#</a></dt>
+<dd><p>Re-place nodes on the mesh (no-op without one).</p>
+<p>Idempotent fix-up for code paths that write fresh, single-device
+arrays into the model state (buffer writes, imports). With no
+<code class="docutils literal notranslate"><span class="pre">nodes</span></code>, re-places both <code class="docutils literal notranslate"><span class="pre">model</span></code> and <code class="docutils literal notranslate"><span class="pre">ema_model</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -802,6 +867,55 @@ higher than the new run’s steps. <code class="docutils literal notranslate"><s
 dirs up front specifically to keep this from happening; this is a
 belt-and-braces check so a <cite>False</cite> return is never reported as a
 success.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._shard">
+<span class="sig-name descname"><span class="pre">_shard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._shard"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._shard" title="Link to this definition">#</a></dt>
+<dd><p>Place <code class="docutils literal notranslate"><span class="pre">node</span></code> on the mesh with the pipeline’s rule.</p>
+<p><code class="docutils literal notranslate"><span class="pre">shard_model</span></code> warns that non-replicated rules are experimental on
+every call; the pipeline already warned once at construction, so that
+warning is silenced here. Fallback warnings still come through.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._sharded_init">
+<span class="sig-name descname"><span class="pre">_sharded_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">draw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._sharded_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._sharded_init" title="Link to this definition">#</a></dt>
+<dd><p>Draw a sampler’s initial state, padded and placed on the mesh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>draw</strong> (<em>Callable</em>) – <code class="docutils literal notranslate"><span class="pre">draw(key,</span> <span class="pre">n)</span> <span class="pre">-&gt;</span> <span class="pre">x_init</span></code> with <code class="docutils literal notranslate"><span class="pre">n</span></code> rows along axis 0.</p></li>
+<li><p><strong>key</strong> (<em>jax.random.PRNGKey</em>) – Key passed to <code class="docutils literal notranslate"><span class="pre">draw</span></code> unchanged.</p></li>
+<li><p><strong>nsamples</strong> (<em>int</em>) – Number of samples requested.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x_init</strong> (<em>Array</em>) – <code class="docutils literal notranslate"><span class="pre">draw(key,</span> <span class="pre">nsamples)</span></code> when no mesh is set. With a mesh,
+<code class="docutils literal notranslate"><span class="pre">draw(key,</span> <span class="pre">n_pad)</span></code> sharded over the data-parallel axes, where
+<code class="docutils literal notranslate"><span class="pre">n_pad</span></code> is <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> rounded up to a multiple of the
+data-parallel size (the extra rows are discarded by
+<a class="reference internal" href="#gensbi.recipes.pipeline.AbstractPipeline._trim" title="gensbi.recipes.pipeline.AbstractPipeline._trim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">_trim()</span></code></a>).</p></li>
+<li><p><strong>n_pad</strong> (<em>int</em>) – Number of rows actually drawn.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline._trim">
+<span class="sig-name descname"><span class="pre">_trim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsamples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline._trim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline._trim" title="Link to this definition">#</a></dt>
+<dd><p>Keep the first <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> entries of <code class="docutils literal notranslate"><span class="pre">out</span></code> along <code class="docutils literal notranslate"><span class="pre">axis</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">axis</span></code> is the sample axis (0, or 1 when the sampler returns
+intermediates, see <a class="reference internal" href="#gensbi.recipes.pipeline._sample_concat_axis" title="gensbi.recipes.pipeline._sample_concat_axis"><code class="xref py py-func docutils literal notranslate"><span class="pre">_sample_concat_axis()</span></code></a>). <code class="docutils literal notranslate"><span class="pre">out</span></code> is returned
+as is when it holds exactly <code class="docutils literal notranslate"><span class="pre">nsamples</span></code> entries.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1123,6 +1237,11 @@ call — identical to the historical behavior.</p></li>
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.mesh">
+<span class="sig-name descname"><span class="pre">mesh</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.mesh" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.model">
 <span class="sig-name descname"><span class="pre">model</span></span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.model" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
@@ -1145,6 +1264,11 @@ call — identical to the historical behavior.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.path">
 <span class="sig-name descname"><span class="pre">path</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.path" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.sharding_rule">
+<span class="sig-name descname"><span class="pre">sharding_rule</span></span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.sharding_rule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.sharding_rule" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1374,9 +1498,16 @@ AdamW moment accumulation and make optax.ema unable to integrate
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._get_ema_optimizer"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._get_ema_optimizer()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._get_optimizer"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._get_optimizer()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._make_model"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._make_model()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._place_batch_or_replicate"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._place_batch_or_replicate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._prepare_batch"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._prepare_batch()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._replicate"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._replicate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._reshard"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._reshard()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._restore_best_state"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._restore_best_state()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._run_validation"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._run_validation()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._save_intermediate_checkpoint"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._save_intermediate_checkpoint()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._shard"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._shard()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._sharded_init"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._sharded_init()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._trim"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._trim()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline._wrap_model"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline._wrap_model()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.export_safetensors"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.export_safetensors()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.get_default_params"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.get_default_params()</span></code></a></li>
@@ -1402,11 +1533,13 @@ AdamW moment accumulation and make optax.ema unable to integrate
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.dim_obs"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.dim_obs</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.ema_model_wrapped"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.ema_model_wrapped</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.loss_fn"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.loss_fn</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.mesh"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.mesh</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.model"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.model</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.model_wrapped"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.model_wrapped</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.p0_dist_model"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.p0_dist_model</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.params"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.params</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.path"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.path</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.sharding_rule"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.sharding_rule</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.train_dataset"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.train_dataset</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.train_dataset_iter"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.train_dataset_iter</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.recipes.pipeline.AbstractPipeline.training_config"><code class="docutils literal notranslate"><span class="pre">AbstractPipeline.training_config</span></code></a></li>

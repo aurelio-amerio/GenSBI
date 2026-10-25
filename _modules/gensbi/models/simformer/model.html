@@ -773,6 +773,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.transformer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transformer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models.embedding</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianFourierEmbedding</span><span class="p">,</span> <span class="n">MLPEmbedder</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">axes</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.model_wrapping</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelWrapper</span><span class="p">,</span> <span class="n">_expand_dims</span><span class="p">,</span> <span class="n">_expand_time</span>
 
 
@@ -963,12 +964,14 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">embedding_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"vocab"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Simformer.condition_embedding">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/model/index.html#gensbi.models.Simformer.condition_embedding">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">condition_embedding</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">(</span>
-            <span class="mf">0.01</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">cond_emb_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">)</span>
+            <span class="mf">0.01</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">cond_emb_dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -1007,6 +1010,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"out"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
         <span class="k">return</span>

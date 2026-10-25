@@ -875,13 +875,16 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.input_layer">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_layer</span> <span class="o">=</span> <span class="n">MaskedLinear</span><span class="p">(</span><span class="n">dim</span> <span class="o">+</span> <span class="n">cond_dim</span><span class="p">,</span> <span class="n">nn_width</span><span class="p">,</span> <span class="n">in_mask</span><span class="p">,</span>
                                         <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
-                                        <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
+                                        <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                                        <span class="n">kernel_axes</span><span class="o">=</span><span class="p">(</span><span class="s2">"in"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+                                        <span class="n">bias_axes</span><span class="o">=</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,))</span></div>
 
 <div class="viewcode-block" id="MADE.hidden_layers">
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.hidden_layers">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_layers</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">List</span><span class="p">([</span>
             <span class="n">MaskedLinear</span><span class="p">(</span><span class="n">nn_width</span><span class="p">,</span> <span class="n">nn_width</span><span class="p">,</span> <span class="n">hidden_mask</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
-                         <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+                         <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                         <span class="n">kernel_axes</span><span class="o">=</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">bias_axes</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,))</span>
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nn_depth</span><span class="p">)</span>
         <span class="p">])</span></div>
 
@@ -889,7 +892,9 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../../api/gensbi/models/maf/made/index.html#gensbi.models.maf.made.MADE.output_layer">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> <span class="n">MaskedLinear</span><span class="p">(</span><span class="n">nn_width</span><span class="p">,</span> <span class="n">dim</span> <span class="o">*</span> <span class="n">num_params</span><span class="p">,</span> <span class="n">out_mask</span><span class="p">,</span>
                                          <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
-                                         <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span></div>
+                                         <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                                         <span class="n">kernel_axes</span><span class="o">=</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">),</span>
+                                         <span class="n">bias_axes</span><span class="o">=</span><span class="p">(</span><span class="s2">"out"</span><span class="p">,))</span></div>
 
         <span class="k">if</span> <span class="n">zero_init</span><span class="p">:</span>
             <span class="c1"># Identity warm-start: zero output params -&gt; affine is identity.</span>

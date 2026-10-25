@@ -862,6 +862,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    training_config : dict, optional</span>
 <span class="sd">        Training configuration. If ``None``, uses defaults augmented</span>
 <span class="sd">        by ``method.get_extra_training_config()``.</span>
+<span class="sd">    mesh : jax.sharding.Mesh or None, optional</span>
+<span class="sd">        Device mesh for multi-device training (also ``"auto"`` or a dict of</span>
+<span class="sd">        :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to</span>
+<span class="sd">        ``training_config["mesh"]``; absent too, training stays on one device.</span>
+<span class="sd">    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional</span>
+<span class="sd">        Logical-to-mesh axis rule used when a mesh is set. If None, falls back</span>
+<span class="sd">        to ``training_config["sharding_rule"]``, then ``"replicated"``.</span>
+<span class="sd">        ``"fsdp"`` and ``"tensor"`` are experimental.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -889,6 +897,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">training_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mesh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sharding_rule</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <div class="viewcode-block" id="ConditionalPipeline.method">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/conditional_pipeline/index.html#gensbi.recipes.conditional_pipeline.ConditionalPipeline.method">[docs]</a>
@@ -913,6 +923,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">ch_cond</span><span class="o">=</span><span class="n">ch_cond</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
             <span class="n">training_config</span><span class="o">=</span><span class="n">training_config</span><span class="p">,</span>
+            <span class="n">mesh</span><span class="o">=</span><span class="n">mesh</span><span class="p">,</span>
+            <span class="n">sharding_rule</span><span class="o">=</span><span class="n">sharding_rule</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">obs_size</span><span class="p">,</span> <span class="n">cond_size</span> <span class="o">=</span> <span class="n">_normalize_patch_size</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
@@ -1027,18 +1039,24 @@ window.runMermaid = runMermaid;</script>
                     <span class="sa">f</span><span class="s2">"model_extras cannot override protected keys: </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
             <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span>
+        <span class="c1"># With a mesh, the extras (cond, ids, ...) are replicated over it.</span>
+        <span class="n">extras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">extras</span><span class="p">)</span>
 
         <span class="n">sampler_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">build_sampler_fn</span><span class="p">(</span>
             <span class="n">model_wrapped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="o">**</span><span class="n">sampler_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">_sample_concat_axis</span><span class="p">(</span><span class="n">sampler_kwargs</span><span class="p">)</span>
+
         <span class="k">def</span><span class="w"> </span><span class="nf">sampler</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-            <span class="n">_extras</span> <span class="o">=</span> <span class="n">model_extras</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
+            <span class="n">_extras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
             <span class="n">key</span><span class="p">,</span> <span class="n">key_init</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="n">x_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">sample_init</span><span class="p">(</span>
-                <span class="n">key_init</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span>
+            <span class="c1"># With a mesh, x_init is padded to the data-parallel size and</span>
+            <span class="c1"># sharded over it; the extras (cond, ids) are replicated.</span>
+            <span class="n">x_init</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sharded_init</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">sample_init</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">key_init</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="n">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">_extras</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trim</span><span class="p">(</span><span class="n">sampler_fn</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_init</span><span class="p">,</span> <span class="n">_extras</span><span class="p">),</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">sampler</span></div>
 
@@ -1124,14 +1142,18 @@ window.runMermaid = runMermaid;</script>
                     <span class="sa">f</span><span class="s2">"model_extras cannot override protected keys: </span><span class="si">{</span><span class="n">conflict</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
             <span class="n">extras</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span>
+        <span class="c1"># Broadcast to every row: replicated over the mesh (no-op without one).</span>
+        <span class="n">extras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">extras</span><span class="p">)</span>
 
         <span class="n">log_prob_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">build_log_prob_fn</span><span class="p">(</span>
             <span class="n">model_wrapped</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">extras</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_log_prob</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-            <span class="n">_extras</span> <span class="o">=</span> <span class="n">model_extras</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
-            <span class="k">return</span> <span class="n">log_prob_fn</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">_extras</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">_extras</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">model_extras</span><span class="p">)</span> <span class="k">if</span> <span class="n">model_extras</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">extras</span>
+            <span class="k">return</span> <span class="n">log_prob_fn</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_place_batch_or_replicate</span><span class="p">(</span><span class="n">x_1</span><span class="p">),</span> <span class="n">_extras</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_replicate</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">_log_prob</span></div>
 

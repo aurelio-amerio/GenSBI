@@ -765,6 +765,8 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jaxtyping</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">PyTree</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DTypeLike</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.sharding</span><span class="w"> </span><span class="kn">import</span> <span class="n">axes</span>
+
 
 <span class="c1"># layer = nnx.MultiHeadAttention(</span>
 <span class="c1">#     num_heads=8, in_features=5, qkv_features=16, decode=False, rngs=nnx.Rngs(0)</span>
@@ -827,7 +829,12 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="AttentionBlock.layer_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.AttentionBlock.layer_norm">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span>
-            <span class="n">din</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">din</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">scale_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="AttentionBlock.attn">
@@ -840,6 +847,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
             <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
             <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"heads"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"heads"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">out_kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"heads"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">out_bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -902,7 +913,12 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="DenseBlock.layer_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.layer_norm">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span>
-            <span class="n">din</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">din</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">scale_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
         <span class="n">hidden_blocks</span> <span class="o">=</span> <span class="p">[]</span>
@@ -913,6 +929,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">,</span> <span class="s2">"mlp"</span><span class="p">),</span>
+                <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="p">)</span>
 
@@ -926,11 +944,21 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
                     <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
                     <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                    <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                    <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
                 <span class="p">)</span>
             <span class="p">)</span>
 
         <span class="n">hidden_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_features</span><span class="p">,</span> <span class="n">din</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">)</span>
+            <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+                <span class="n">n_features</span><span class="p">,</span>
+                <span class="n">din</span><span class="p">,</span>
+                <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+                <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+                <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"mlp"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+                <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
+            <span class="p">)</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="DenseBlock.hidden_blocks">
@@ -945,7 +973,13 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="DenseBlock.context_block">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.DenseBlock.context_block">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">context_block</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
-            <span class="n">dcontext</span><span class="p">,</span> <span class="n">din</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">dcontext</span><span class="p">,</span>
+            <span class="n">din</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">kernel_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"in"</span><span class="p">,</span> <span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
         <span class="k">return</span>
@@ -1058,7 +1092,12 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Transformer.layer_norm">
 <a class="viewcode-back" href="../../../../api/gensbi/models/simformer/transformer/index.html#gensbi.models.simformer.transformer.Transformer.layer_norm">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span>
-            <span class="n">din</span><span class="p">,</span> <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span>
+            <span class="n">din</span><span class="p">,</span>
+            <span class="n">rngs</span><span class="o">=</span><span class="n">rngs</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+            <span class="n">param_dtype</span><span class="o">=</span><span class="n">param_dtype</span><span class="p">,</span>
+            <span class="n">scale_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
+            <span class="n">bias_metadata</span><span class="o">=</span><span class="n">axes</span><span class="p">(</span><span class="s2">"embed"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
