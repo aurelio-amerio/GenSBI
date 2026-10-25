@@ -269,6 +269,35 @@ For example, if your GPU fits a batch of 128:
 - Set `training_config["multistep"] = 8`.
 - **Effective Batch Size** = $128 \times 8 = 1024$.
 
+## Multi-device Training
+
+GenSBI can train and sample on several devices (GPUs, TPUs, or simulated CPU devices) by passing a mesh to the pipeline. With `mesh=None` (the default) nothing changes.
+
+```python
+from gensbi.sharding import make_mesh
+
+mesh = make_mesh()                      # all local devices on the 'data' axis
+pipeline = Flux1FlowPipeline(train_ds, val_ds, dim_obs, dim_cond,
+                             mesh=mesh)  # sharding_rule defaults to "replicated"
+pipeline.train(rngs)
+samples = pipeline.sample(key, x_o, nsamples=100_000)
+```
+
+- **Config keys:** `mesh` and `sharding_rule` can also be set in `training_config`, or in a YAML recipe under the `training:` section:
+
+  ```yaml
+  training:
+    mesh: auto
+    sharding_rule: replicated
+  ```
+
+  `mesh` also accepts a dict of `make_mesh` keyword arguments. From Python that can include `devices` (a list of `jax.Device`); YAML cannot express devices, so there the dict form is only useful for `model_axis` (e.g. `mesh: {model_axis: 2}`).
+- **Batch size:** the batch size of both the training and validation loaders must be divisible by the number of data-parallel devices. Otherwise a `ValueError` names the offending loader.
+- **Sampling:** `nsamples` is padded to a multiple of the device count and trimmed afterwards, so it has no constraint. The condition `x_o` may live on any device; it is replicated over the mesh.
+- **Rules:** `"replicated"` (default) is plain data parallelism. An unknown rule raises `ValueError`; a non-default rule without a mesh has no effect and warns. `"fsdp"` shards parameters and optimizer state over the mesh; it is *experimental* and its memory benefit is not yet measured. `"tensor"` is *experimental* and untuned. Both emit a warning.
+- **Custom models:** your own `nnx.Module` needs no annotations for data parallelism. For FSDP, annotate parameters with `gensbi.sharding.axes`; unannotated parameters stay replicated and a single warning lists them.
+- **Testing without hardware:** simulate 8 CPU devices with `XLA_FLAGS=--xla_force_host_platform_device_count=8` (already set for the test suite).
+
 ## Advanced Customization
 
 If the options provided by `training_config` aren’t enough, you can subclass the pipeline to modify internal logic.

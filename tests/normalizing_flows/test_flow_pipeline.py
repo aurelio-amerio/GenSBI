@@ -244,9 +244,11 @@ def test_sample_batched_shape(tmp_path):
     assert s0.shape == (16, DIM_OBS, 1)
 
 
-class _EchoFlow:
+class _EchoFlow(nnx.Module):
     """Stub flow whose sample() echoes its condition — makes the
-    condition->column routing of sample_batched exactly checkable."""
+    condition->column routing of sample_batched exactly checkable.
+    An ``nnx.Module`` (like every real flow) so the pipeline's
+    ``nnx.jit``-compiled sampling pass can trace it."""
     def sample(self, key, cond):
         return cond
 

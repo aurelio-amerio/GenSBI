@@ -28,7 +28,7 @@ dependencies = [
     "blackjax>=1.7.1",
     "safetensors[jax]>=0.8.0",
     "healpy>=1.19.0",
-    "heal-swin-nnx>=0.1.1",
+    "heal-swin-nnx>=0.2.0",
 ]
 
 [project.urls]
@@ -85,6 +85,13 @@ dev = [
     {include-group = "notebooks"},
 ]
 
+cuda13full = [
+    {include-group = "lint"},
+    {include-group = "test"},
+    {include-group = "docs"},
+    {include-group = "notebooks"},
+    "gensbi[cuda13,examples]",
+]
 
 [build-system]
 requires = ["uv_build>=0.10.7,<0.11.0"]
@@ -98,7 +105,7 @@ env = [
     # on AMD Zen 4/5 with AVX-512, ~2x less accurate for narrow dots; google/XNNPACK#11736).
     # Request CPU-consistent arithmetic so numerics-sensitive gates give the same result on
     # every CI runner. Accepted by jax >= 0.11.1.
-    "XLA_FLAGS=--xla_cpu_enable_platform_dependent_math=false",
+    "XLA_FLAGS=--xla_cpu_enable_platform_dependent_math=false --xla_force_host_platform_device_count=8",
 ]
 testpaths = [
     "tests",

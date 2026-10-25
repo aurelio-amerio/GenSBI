@@ -9,10 +9,16 @@ import warnings
 
 import jax
 import jax.numpy as jnp
+from flax import nnx
 from tqdm.auto import tqdm
 
 from gensbi.recipes.pipeline import AbstractPipeline, _chunked_draw, _validate_chunk_size
 from gensbi.recipes.utils import _require_channel, _single_obs
+from gensbi.sharding import pad_for_mesh, shard_sample_init
+
+# One compiled sampling pass per (flow graph, cond shape/sharding). Both MAF
+# and TarFlow sample under jit; eager sampling is orders of magnitude slower.
+_jit_flow_sample = nnx.jit(lambda flow, key, cond: flow.sample(key, cond=cond))
 
 
 def _warn_unused_kwargs(kwargs):
@@ -53,6 +59,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
         If ``True``, the modeled variable / condition keeps its native
         structured shape (the model owns it) instead of the tabular
         ``(B, dim, 1)`` layout. Default ``False``.
+    mesh : jax.sharding.Mesh or None, optional
+        Device mesh for multi-device training (also ``"auto"`` or a dict of
+        :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+        ``training_config["mesh"]``; absent too, training stays on one device.
+    sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+        Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+        to ``training_config["sharding_rule"]``, then ``"replicated"``.
+        ``"fsdp"`` and ``"tensor"`` are experimental.
 
     Notes
     -----
@@ -63,15 +77,21 @@ class ConditionalFlowPipeline(AbstractPipeline):
     structured. A bare ``(B, dim)`` tensor is rejected — add ``[..., None]``
     for ``C = 1``. A batch axis > 1 raises ``ValueError`` — pass a batch to
     :meth:`sample_batched` instead.
+
+    The flow must be an ``nnx.Module``: sampling always runs under
+    ``nnx.jit`` (with or without a mesh), since eager autoregressive
+    sampling is orders of magnitude slower.
     """
 
     def __init__(self, model, train_dataset, val_dataset, dim_obs, dim_cond,
                  ch_obs=1, ch_cond=1, params=None, training_config=None,
-                 structured_obs=False, structured_cond=False):
+                 structured_obs=False, structured_cond=False,
+                 mesh=None, sharding_rule=None):
         super().__init__(
             model, train_dataset, val_dataset, dim_obs, dim_cond,
             ch_obs=ch_obs, ch_cond=ch_cond, params=params,
-            training_config=training_config)
+            training_config=training_config,
+            mesh=mesh, sharding_rule=sharding_rule)
         self._standardized = False
         self.structured_obs = structured_obs
         self.structured_cond = structured_cond
@@ -179,6 +199,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         std = jnp.where(std < 1e-6, 1.0, std)     # guard zero-variance dims
         self.model.set_standardization(mean, std)
         self.ema_model.set_standardization(mean, std)
+        self._reshard()
         self._standardized = True
 
     def train(self, rngs, nsteps=None, save_model=True):
@@ -242,8 +263,14 @@ class ConditionalFlowPipeline(AbstractPipeline):
         cond = _single_obs(x_o, channel=mode)[0]  # (cond_dim, C_cond) or structured per-obs shape
 
         def sampler(key, nsamples):
-            cond_b = jnp.broadcast_to(cond, (nsamples,) + cond.shape)
-            return flow.sample(key, cond=cond_b)         # model owns (nsamples, dim, C)
+            # With a mesh, pad to the data-parallel size and shard the
+            # broadcast condition over it; the output follows, then is trimmed.
+            n_pad = nsamples if self.mesh is None else pad_for_mesh(nsamples, self.mesh)[0]
+            cond_b = jnp.broadcast_to(cond, (n_pad,) + cond.shape)
+            if self.mesh is not None:
+                cond_b = shard_sample_init(cond_b, self.mesh)
+            # model owns (nsamples, dim, C)
+            return self._trim(_jit_flow_sample(flow, key, cond_b), nsamples, 0)
         return sampler
 
     def sample(self, key, x_o, nsamples=10_000, use_ema=True,
@@ -348,7 +375,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
         total = B * nsamples
 
         if chunk_size is None or chunk_size >= total:
-            samples = flow.sample(key, cond=cond)  # ONE batched AR pass
+            samples = _jit_flow_sample(flow, key, self._place_batch_or_replicate(cond))  # ONE batched AR pass
         else:
             n_chunks = (total + chunk_size - 1) // chunk_size
             keys = jax.random.split(key, n_chunks)
@@ -358,7 +385,7 @@ class ConditionalFlowPipeline(AbstractPipeline):
             chunks = []
             for i in loop:
                 sl = slice(i * chunk_size, min((i + 1) * chunk_size, total))
-                chunk = flow.sample(keys[i], cond=cond[sl])
+                chunk = _jit_flow_sample(flow, keys[i], self._place_batch_or_replicate(cond[sl]))
                 chunks.append(jax.block_until_ready(chunk))
             samples = jnp.concatenate(chunks, axis=0)
 
@@ -395,6 +422,9 @@ class ConditionalFlowPipeline(AbstractPipeline):
         def log_prob_fn(x_1):
             obs = self._prep_obs(x_1)
             cond_b = jnp.broadcast_to(cond, (obs.shape[0],) + cond.shape)
+            # Same leading size: both follow the batch placement (no-op without a mesh).
+            obs = self._place_batch_or_replicate(obs)
+            cond_b = self._place_batch_or_replicate(cond_b)
             return flow.log_prob(obs, cond_b)            # (B,)
         return log_prob_fn
 

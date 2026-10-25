@@ -18,6 +18,7 @@ from jax import Array
 from jax.typing import DTypeLike
 
 from gensbi.models.core.patching import patchify_2d
+from gensbi.sharding import axes
 
 
 class AdditiveBiasConditioner(nnx.Module):
@@ -57,9 +58,13 @@ class AdditiveBiasConditioner(nnx.Module):
         self.cond_channels = cond_channels
         if cond_dim > 0:
             self.l1 = nnx.Linear(cond_dim * cond_channels, channels, rngs=rngs,
-                                 param_dtype=param_dtype, dtype=dtype)
+                                 param_dtype=param_dtype, dtype=dtype,
+                                 kernel_metadata=axes("in", "embed"),
+                                 bias_metadata=axes("embed"))
             self.l2 = nnx.Linear(channels, channels, rngs=rngs,
-                                 param_dtype=param_dtype, dtype=dtype)
+                                 param_dtype=param_dtype, dtype=dtype,
+                                 kernel_metadata=axes("embed", None),
+                                 bias_metadata=axes(None))
 
     def embed(self, cond: Array | None):
         """Embed the condition into a per-token additive bias.
@@ -131,10 +136,13 @@ class VectorConditioner(nnx.Module):
         self.channels = channels
         self.M = cond_dim
         self.proj = nnx.Linear(cond_channels, channels, rngs=rngs,
-                               param_dtype=param_dtype, dtype=dtype)
+                               param_dtype=param_dtype, dtype=dtype,
+                               kernel_metadata=axes("in", "embed"),
+                               bias_metadata=axes("embed"))
         self.pos = nnx.Param(
             (jax.random.normal(rngs.params(), (cond_dim, channels)) * 1e-2
-             ).astype(param_dtype))
+             ).astype(param_dtype),
+            **axes(None, "embed"))
 
     def embed(self, cond: Array | None):
         """Embed the condition into per-coordinate prefix tokens.
@@ -205,10 +213,13 @@ class ImageConditioner(nnx.Module):
         self.M = num_tokens
         in_f = cond_channels * patch_size * patch_size
         self.proj = nnx.Linear(in_f, channels, rngs=rngs,
-                               param_dtype=param_dtype, dtype=dtype)
+                               param_dtype=param_dtype, dtype=dtype,
+                               kernel_metadata=axes("in", "embed"),
+                               bias_metadata=axes("embed"))
         self.pos = nnx.Param(
             (jax.random.normal(rngs.params(), (num_tokens, channels)) * 1e-2
-             ).astype(param_dtype))
+             ).astype(param_dtype),
+            **axes(None, "embed"))
 
     def embed(self, cond: Array | None):
         """Patchify an image condition and embed it as prefix tokens.

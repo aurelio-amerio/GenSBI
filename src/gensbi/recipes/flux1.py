@@ -141,6 +141,8 @@ class Flux1FlowPipeline(ConditionalPipeline):
         ch_cond=1,
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         """
         Flow pipeline for training and using a Flux1 model for simulation-based inference.
@@ -163,6 +165,14 @@ class Flux1FlowPipeline(ConditionalPipeline):
             Parameters for the Flux1 model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
+        mesh : jax.sharding.Mesh or None, optional
+            Device mesh for multi-device training (also ``"auto"`` or a dict of
+            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+            ``training_config["mesh"]``; absent too, training stays on one device.
+        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+            Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+            to ``training_config["sharding_rule"]``, then ``"replicated"``.
+            ``"fsdp"`` and ``"tensor"`` are experimental.
 
         Examples
         --------
@@ -206,6 +216,8 @@ class Flux1FlowPipeline(ConditionalPipeline):
             params=params,
             training_config=training_config,
             id_embedding_strategy=params.id_embedding_strategy,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
         self.ema_model = nnx.clone(self.model)
 
@@ -281,6 +293,8 @@ class Flux1DiffusionPipeline(ConditionalPipeline):
         ch_cond=1,
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         """
         Diffusion pipeline for training and using a Flux1 model for simulation-based inference.
@@ -303,6 +317,14 @@ class Flux1DiffusionPipeline(ConditionalPipeline):
             Parameters for the Flux1 model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
+        mesh : jax.sharding.Mesh or None, optional
+            Device mesh for multi-device training (also ``"auto"`` or a dict of
+            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+            ``training_config["mesh"]``; absent too, training stays on one device.
+        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+            Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+            to ``training_config["sharding_rule"]``, then ``"replicated"``.
+            ``"fsdp"`` and ``"tensor"`` are experimental.
 
         Examples
         --------
@@ -346,6 +368,8 @@ class Flux1DiffusionPipeline(ConditionalPipeline):
             params=params,
             training_config=training_config,
             id_embedding_strategy=params.id_embedding_strategy,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
         self.ema_model = nnx.clone(self.model)
 
@@ -424,6 +448,8 @@ class Flux1SMPipeline(ConditionalPipeline):
         sde_type: str = "VP",
         params=None,
         training_config=None,
+        mesh=None,
+        sharding_rule=None,
     ):
         """
         Score matching pipeline for training and using a Flux1 model for simulation-based inference.
@@ -448,6 +474,14 @@ class Flux1SMPipeline(ConditionalPipeline):
             Parameters for the Flux1 model. If None, default parameters are used.
         training_config : dict, optional
             Configuration for training. If None, default configuration is used.
+        mesh : jax.sharding.Mesh or None, optional
+            Device mesh for multi-device training (also ``"auto"`` or a dict of
+            :func:`gensbi.sharding.make_mesh` kwargs). If None, falls back to
+            ``training_config["mesh"]``; absent too, training stays on one device.
+        sharding_rule : {"replicated", "fsdp", "tensor"} or None, optional
+            Logical-to-mesh axis rule used when a mesh is set. If None, falls back
+            to ``training_config["sharding_rule"]``, then ``"replicated"``.
+            ``"fsdp"`` and ``"tensor"`` are experimental.
         """
 
         if params is not None:
@@ -474,6 +508,8 @@ class Flux1SMPipeline(ConditionalPipeline):
             params=params,
             training_config=training_config,
             id_embedding_strategy=params.id_embedding_strategy,
+            mesh=mesh,
+            sharding_rule=sharding_rule,
         )
         self.ema_model = nnx.clone(self.model)
 

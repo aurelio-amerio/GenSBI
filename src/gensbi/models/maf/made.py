@@ -97,15 +97,20 @@ class MADE(nnx.Module):
 
         self.input_layer = MaskedLinear(dim + cond_dim, nn_width, in_mask,
                                         rngs=rngs, param_dtype=param_dtype,
-                                        dtype=dtype)
+                                        dtype=dtype,
+                                        kernel_axes=("in", "embed"),
+                                        bias_axes=("embed",))
         self.hidden_layers = nnx.List([
             MaskedLinear(nn_width, nn_width, hidden_mask, rngs=rngs,
-                         param_dtype=param_dtype, dtype=dtype)
+                         param_dtype=param_dtype, dtype=dtype,
+                         kernel_axes=("embed", None), bias_axes=(None,))
             for _ in range(nn_depth)
         ])
         self.output_layer = MaskedLinear(nn_width, dim * num_params, out_mask,
                                          rngs=rngs, param_dtype=param_dtype,
-                                         dtype=dtype)
+                                         dtype=dtype,
+                                         kernel_axes=("embed", "out"),
+                                         bias_axes=("out",))
         if zero_init:
             # Identity warm-start: zero output params -> affine is identity.
             self.output_layer.linear.kernel[...] = jnp.zeros_like(

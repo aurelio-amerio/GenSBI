@@ -22,6 +22,7 @@ The companion paper with a review of methodologies and functionalities is availa
 - **Built on JAX and Flax NNX**: Leverages the power of JAX for automatic differentiation, vectorization, and seamless execution on CPUs, GPUs, and TPUs.
 - **High-Level Recipes API**: A simplified interface for common workflows, allowing you to train models and run inference with just a few lines of code.
 - **Powerful Transformer Models**: Includes implementations of recent, high-performing models like **Flux1**, **Flux1Join**, and **Simformer** for handling complex, high-dimensional data.
+- **Multi-Device Training and Sampling**: Pass a `mesh` to any pipeline (`from gensbi.sharding import make_mesh`) for data-parallel training and sampling across GPUs/TPUs, with experimental FSDP and tensor-parallel rules.
 - **Modular and Extensible**: A clean, well-structured codebase that is easy to understand, modify, and extend for your own research.
 
 ## Installation
