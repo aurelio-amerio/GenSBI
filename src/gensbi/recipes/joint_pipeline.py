@@ -443,7 +443,9 @@ class JointPipeline(AbstractPipeline):
             Samples of shape ``(nsamples, dim_obs, ch_obs)``.
         """
 
-        x_o_shape = x_o.shape[0] if hasattr(x_o, "shape") else len(x_o)
+        # Warn on the canonical (batch, dim, ch) shape: a bare 1-D
+        # observation ``(dim_cond,)`` is a single condition, not a batch.
+        x_o_shape = _expand_dims(jnp.asarray(x_o)).shape[0]
         if x_o_shape > 1:
             warnings.warn(
                 f"x_o has batch dimension {x_o_shape} > 1. "

@@ -216,7 +216,7 @@ class FlowMatchingMethod(GenerativeMethod):
 
     def build_sampler_fn(self, model_wrapped, path, model_extras,
                          step_size=0.01, method="Euler", time_grid=None,
-                         solver=None, **kwargs):
+                         solver=None):
         """Build a sampler closure for flow matching.
 
         Supports ODE solvers (deterministic) and SDE solvers (stochastic;
@@ -276,7 +276,7 @@ class FlowMatchingMethod(GenerativeMethod):
     def build_log_prob_fn(self, model_wrapped, path, model_extras,
                           step_size=0.01, method="Dopri5", atol=1e-5,
                           rtol=1e-5, time_grid=None, solver=None,
-                          exact_divergence=True, log_prior=None, **kwargs):
+                          exact_divergence=True, log_prior=None):
         """Build a log-probability closure for flow matching.
 
         Uses the continuous change-of-variables formula via ``ODESolver``.

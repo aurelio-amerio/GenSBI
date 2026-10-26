@@ -197,7 +197,6 @@ class ScoreMatchingMethod(GenerativeMethod):
         method="Euler",
         return_intermediates=False,
         solver=None,
-        **kwargs,
     ):
         """Build a sampler closure for score matching.
 
@@ -287,7 +286,6 @@ class ScoreMatchingMethod(GenerativeMethod):
         solver=None,
         exact_divergence=True,
         log_prior=None,
-        **kwargs,
     ):
         """Build a log-probability closure for the score matching probability flow ODE.
 

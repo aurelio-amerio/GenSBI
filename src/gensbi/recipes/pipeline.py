@@ -1356,7 +1356,11 @@ class AbstractPipeline(abc.ABC):
         args : tuple
             Additional positional arguments for the sampler.
         kwargs : dict
-            Additional keyword arguments for the sampler.
+            Additional keyword arguments for the sampler. ``model_extras``
+            (a dict of extra keyword arguments for the model, e.g.
+            ``{"encoder_key": key}``) is forwarded to the model for every
+            condition; it cannot override ``cond``, ``obs_ids`` or
+            ``cond_ids``.
 
         Returns
         -------
@@ -1365,11 +1369,17 @@ class AbstractPipeline(abc.ABC):
         """
         _validate_chunk_size(chunk_size)
 
+        # The caller's model extras (e.g. an ``encoder_key`` for a model that
+        # embeds its condition with a VAE) are validated by ``get_sampler``
+        # and merged into the per-condition extras below.
+        user_extras = kwargs.pop("model_extras", None) or {}
+
         # Build the sampler once using the first condition for shape.
         # The sampler's JIT compilation traces model_extras by shape/dtype,
         # so calling it with different cond values (same shape) reuses the
         # compiled function — no recompilation per condition.
-        sampler = self.get_sampler(x_o[0:1], *args, **kwargs)
+        sampler = self.get_sampler(x_o[0:1], *args, model_extras=user_extras,
+                                   **kwargs)
 
         B = x_o.shape[0]
         keys_per_cond = jax.random.split(key, B)
@@ -1392,6 +1402,7 @@ class AbstractPipeline(abc.ABC):
                 "cond": cond_i,
                 "obs_ids": self.obs_ids,
                 "cond_ids": self.cond_ids,
+                **user_extras,
             }
             samples_i = _chunked_draw(
                 sampler,

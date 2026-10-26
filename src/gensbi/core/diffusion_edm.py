@@ -167,7 +167,7 @@ class DiffusionEDMMethod(GenerativeMethod):
                          nsteps=18, method="Heun",
                          return_intermediates=False,
                          solver=None, solver_scheduler=None,
-                         solver_params=None, **kwargs):
+                         solver_params=None):
         """Build a sampler closure for EDM diffusion.
 
         Supports ``EDMSolver`` with EDM, VP, and VE schedulers.

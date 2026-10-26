@@ -162,7 +162,9 @@ class GenerativeMethod(ABC):
             Mode-specific extras (``cond``, ``obs_ids``, ``cond_ids``, etc.).
         **kwargs
             Method-specific sampler arguments (``step_size``, ``nsteps``,
-            ``time_grid``, ``solver``, etc.).
+            ``time_grid``, ``solver``, etc.). Concrete methods enumerate
+            the arguments they support explicitly; an unknown keyword
+            raises ``TypeError`` rather than being ignored.
 
         Returns
         -------
