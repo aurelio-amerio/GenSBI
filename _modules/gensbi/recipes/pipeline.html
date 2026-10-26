@@ -2290,7 +2290,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        args : tuple</span>
 <span class="sd">            Additional positional arguments for the sampler.</span>
 <span class="sd">        kwargs : dict</span>
-<span class="sd">            Additional keyword arguments for the sampler.</span>
+<span class="sd">            Additional keyword arguments for the sampler. ``model_extras``</span>
+<span class="sd">            (a dict of extra keyword arguments for the model, e.g.</span>
+<span class="sd">            ``{"encoder_key": key}``) is forwarded to the model for every</span>
+<span class="sd">            condition; it cannot override ``cond``, ``obs_ids`` or</span>
+<span class="sd">            ``cond_ids``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -2299,11 +2303,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        """</span>
         <span class="n">_validate_chunk_size</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
 
+        <span class="c1"># The caller's model extras (e.g. an ``encoder_key`` for a model that</span>
+        <span class="c1"># embeds its condition with a VAE) are validated by ``get_sampler``</span>
+        <span class="c1"># and merged into the per-condition extras below.</span>
+        <span class="n">user_extras</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"model_extras"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+
         <span class="c1"># Build the sampler once using the first condition for shape.</span>
         <span class="c1"># The sampler's JIT compilation traces model_extras by shape/dtype,</span>
         <span class="c1"># so calling it with different cond values (same shape) reuses the</span>
         <span class="c1"># compiled function — no recompilation per condition.</span>
-        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sampler</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">model_extras</span><span class="o">=</span><span class="n">user_extras</span><span class="p">,</span>
+                                   <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="n">B</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">keys_per_cond</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
@@ -2326,6 +2336,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"cond"</span><span class="p">:</span> <span class="n">cond_i</span><span class="p">,</span>
                 <span class="s2">"obs_ids"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_ids</span><span class="p">,</span>
                 <span class="s2">"cond_ids"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_ids</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">user_extras</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="n">samples_i</span> <span class="o">=</span> <span class="n">_chunked_draw</span><span class="p">(</span>
                 <span class="n">sampler</span><span class="p">,</span>

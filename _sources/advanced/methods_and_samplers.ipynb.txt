@@ -7,6 +7,8 @@
    "source": [
     "# Methods and Samplers in GenSBI\n",
     "\n",
+    "[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/methods_and_samplers/methods_and_samplers.ipynb)\n",
+    "\n",
     "GenSBI supports three generative methods for simulation-based inference:\n",
     "\n",
     "1. **Flow Matching** — learns a velocity field and integrates an ODE from noise to data.\n",
@@ -542,7 +544,11 @@
    },
    "outputs": [],
    "source": [
-    "logp_fm = pipeline_fm.log_prob(x_1, x_o, use_ema=True)"
+    "# evaluate the log_prob in chunks, to limit GPU memory usage\n",
+    "chunk_size = 10_000\n",
+    "logp_fm = jnp.concatenate(\n",
+    "    [pipeline_fm.log_prob(x_1[i : i + chunk_size], x_o, use_ema=True) for i in range(0, x_1.shape[0], chunk_size)]\n",
+    ")"
    ]
   },
   {
@@ -715,7 +721,7 @@
    },
    "outputs": [],
    "source": [
-    "# The EDMSolver implements the stochastic denoising sampler from Karras et al., 2022. Defaults to algorithm 1 (deterministic)\n",
+    "# The EDMSolver implements the stochastic denoising sampler from Karras et al., 2022. Defaults to algorithm 1 (deterministic).\n",
     "# It progressively denoises samples following a noise schedule from high to low sigma.\n",
     "samples_edm = pipeline_edm.sample(rngs.sample(), x_o, nsamples=100_000)\n",
     "samples_edm = unnormalize(samples_edm, means[:dim_obs], stds[:dim_obs])"

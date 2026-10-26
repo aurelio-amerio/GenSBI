@@ -719,6 +719,7 @@
 <p class="admonition-title">Tip</p>
 <p>This is exactly how <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code> works internally: it compiles the sampler once using the first condition, then loops over all conditions, passing different <code class="docutils literal notranslate"><span class="pre">model_extras</span></code> for each.</p>
 </div>
+<p>Extras other than the protected <code class="docutils literal notranslate"><span class="pre">cond</span></code>/<code class="docutils literal notranslate"><span class="pre">obs_ids</span></code>/<code class="docutils literal notranslate"><span class="pre">cond_ids</span></code> are for the model itself (for example an <code class="docutils literal notranslate"><span class="pre">encoder_key</span></code> for a model that embeds its condition with a VAE). Pass them as <code class="docutils literal notranslate"><span class="pre">model_extras={...}</span></code> to <code class="docutils literal notranslate"><span class="pre">sample</span></code>, <code class="docutils literal notranslate"><span class="pre">sample_batched</span></code> or <code class="docutils literal notranslate"><span class="pre">get_sampler</span></code>; they are forwarded to the model for every condition. Any other unknown keyword argument raises a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>, so a typo or a method-specific argument (such as <code class="docutils literal notranslate"><span class="pre">time_grid</span></code>, which only flow matching accepts) is never silently ignored.</p>
 </section>
 </section>
 <section id="batched-inference">
@@ -729,8 +730,8 @@
 
 <span class="c1"># Generate samples</span>
 <span class="n">posterior_samples</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span>
-    <span class="n">key</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">),</span>
-    <span class="n">condition</span><span class="o">=</span><span class="n">xs</span><span class="p">,</span> 
+    <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">),</span>
+    <span class="n">xs</span><span class="p">,</span>
     <span class="n">nsamples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">chunk_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="c1"># draw at most 20 samples per device call</span>
 <span class="p">)</span>

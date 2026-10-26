@@ -1245,7 +1245,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            Samples of shape ``(nsamples, dim_obs, ch_obs)``.</span>
 <span class="sd">        """</span>
 
-        <span class="n">x_o_shape</span> <span class="o">=</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="s2">"shape"</span><span class="p">)</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
+        <span class="c1"># Warn on the canonical (batch, dim, ch) shape: a bare 1-D</span>
+        <span class="c1"># observation ``(dim_cond,)`` is a single condition, not a batch.</span>
+        <span class="n">x_o_shape</span> <span class="o">=</span> <span class="n">_expand_dims</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_o</span><span class="p">))</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">x_o_shape</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"x_o has batch dimension </span><span class="si">{</span><span class="n">x_o_shape</span><span class="si">}</span><span class="s2"> &gt; 1. "</span>

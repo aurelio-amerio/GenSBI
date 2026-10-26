@@ -87,6 +87,8 @@ samples_2 = sampler(
 This is exactly how `sample_batched` works internally: it compiles the sampler once using the first condition, then loops over all conditions, passing different `model_extras` for each.
 ```
 
+Extras other than the protected `cond`/`obs_ids`/`cond_ids` are for the model itself (for example an `encoder_key` for a model that embeds its condition with a VAE). Pass them as `model_extras={...}` to `sample`, `sample_batched` or `get_sampler`; they are forwarded to the model for every condition. Any other unknown keyword argument raises a `TypeError`, so a typo or a method-specific argument (such as `time_grid`, which only flow matching accepts) is never silently ignored.
+
 ## Batched Inference
 To perform inference efficiently on a batch of different observations (e.g., $N$ diverse inputs), use the `sample_batched` method. This handles internal batching and chunking to manage memory usage.
 
@@ -96,8 +98,8 @@ xs = ...
 
 # Generate samples
 posterior_samples = pipeline.sample_batched(
-    key=jax.random.PRNGKey(42),
-    condition=xs, 
+    jax.random.PRNGKey(42),
+    xs,
     nsamples=1000,
     chunk_size=20, # draw at most 20 samples per device call
 )
