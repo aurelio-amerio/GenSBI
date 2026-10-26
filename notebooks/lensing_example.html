@@ -364,8 +364,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/my_first_model.html">My First Model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion (EDM) 2D Unconditional Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Score Matching 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional.html">Flow Matching 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
 </ul>
@@ -481,7 +481,7 @@
 <section id="data-dimensions">
 <h3>Data Dimensions<a class="headerlink" href="#data-dimensions" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p><strong>Observation (<span class="math notranslate nohighlight">\(\theta\)</span>)</strong>: The target of inference. It has <strong>2 features</strong> (parameters) and <strong>1 channel</strong>.</p></li>
+<li><p><strong>Observation (<span class="math notranslate nohighlight">\(\\theta\)</span>)</strong>: The target of inference. It has <strong>2 features</strong> (parameters) and <strong>1 channel</strong>.</p></li>
 <li><p><strong>Conditioning (<span class="math notranslate nohighlight">\(x\)</span>)</strong>: Lensing images. <strong>32x32 pixels</strong> with <strong>1 channel</strong>.</p></li>
 </ul>
 </section>
@@ -513,7 +513,7 @@
 <p>First, we set up the environment and import necessary libraries.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if running on Colab and install dependencies if needed</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if running on Colab and install dependencies if needed</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">google.colab</span>
     <span class="n">colab</span> <span class="o">=</span> <span class="kc">True</span>
@@ -522,16 +522,16 @@
 
 <span class="k">if</span> <span class="n">colab</span><span class="p">:</span>
     <span class="c1"># Install required packages and clone the repository</span>
-    <span class="err">!</span><span class="n">uv</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">quiet</span> <span class="s2">"gensbi[cuda13,examples]"</span> <span class="s2">"sbibm-jax[loader]"</span>
-    <span class="err">!</span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">aurelio</span><span class="o">-</span><span class="n">amerio</span><span class="o">/</span><span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span>
-    <span class="o">%</span><span class="n">cd</span> <span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">sbi</span><span class="o">-</span><span class="n">benchmarks</span><span class="o">/</span><span class="n">lensing</span>
+    <span class="o">!</span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--quiet<span class="w"> </span><span class="s2">"gensbi[cuda13,examples]"</span><span class="w"> </span><span class="s2">"sbibm-jax[loader]"</span>
+    <span class="o">!</span>git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>https://github.com/aurelio-amerio/GenSBI-examples
+    <span class="o">%</span><span class="k">cd</span> GenSBI-examples/examples/sbi-benchmarks/lensing
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"JAX_PLATFORMS"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
     <span class="c1"># os.environ["JAX_PLATFORMS"] = "cpu"</span>
@@ -586,7 +586,7 @@
 <h2>2. Helper Functions and Classes<a class="headerlink" href="#helper-functions-and-classes" title="Link to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">):</span>
     <span class="n">mean</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
     <span class="n">std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">std</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">batch</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
@@ -618,9 +618,6 @@
         <span class="n">guidance</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">encoder_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="c1"># `encoder_key` seeds the stochastic VAE encoder. During training the VAE</span>
-        <span class="c1"># draws from its own RNG state; at inference the key must be passed</span>
-        <span class="c1"># explicitly through `model_extras={"encoder_key": key}`.</span>
 
         <span class="c1"># first we encode the conditioning data</span>
         <span class="n">cond_latent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vae</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">encoder_key</span><span class="p">)</span>
@@ -647,7 +644,7 @@
 <p>We load the Lensing dataset.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dim_obs</span> <span class="o">=</span> <span class="mi">2</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dim_obs</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">ch_obs</span> <span class="o">=</span> <span class="mi">1</span>
 
 <span class="n">task</span> <span class="o">=</span> <span class="n">TaskDataset</span><span class="p">(</span><span class="s2">"toy_lensing"</span><span class="p">)</span>
@@ -667,7 +664,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot a sample</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot a sample</span>
 <span class="n">x_o</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">"xs"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
 <span class="n">x_o</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">),</span> <span class="n">xs_mean</span><span class="p">,</span> <span class="n">xs_std</span><span class="p">)</span>
 
@@ -678,9 +675,9 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
-<span class="c1"># plt.savefig("imgs/lensing.png", bbox_inches="tight", dpi=300) # uncomment to save the figure</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">"img/lensing.png"</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">"tight"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -691,7 +688,7 @@
 <h2>4. Model Initialization<a class="headerlink" href="#model-initialization" title="Link to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">params_dict</span> <span class="o">=</span> <span class="n">parse_autoencoder_params</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">params_dict</span> <span class="o">=</span> <span class="n">parse_autoencoder_params</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
 
 <span class="n">ae_params</span> <span class="o">=</span> <span class="n">AutoEncoderParams</span><span class="p">(</span>
     <span class="n">rngs</span><span class="o">=</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
@@ -745,7 +742,7 @@
 <h2>5. Pipeline Setup and Restoration<a class="headerlink" href="#pipeline-setup-and-restoration" title="Link to this heading">#</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">training_config</span> <span class="o">=</span> <span class="n">parse_training_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">training_config</span> <span class="o">=</span> <span class="n">parse_training_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
 
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
@@ -823,15 +820,11 @@
 <p>We generate samples and visualize the posterior for a test observation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x_o</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">"xs"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">x_o</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">"xs"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
 <span class="n">x_o</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x_o</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">),</span> <span class="n">xs_mean</span><span class="p">,</span> <span class="n">xs_std</span><span class="p">)</span>
 <span class="n">x_o</span> <span class="o">=</span> <span class="n">x_o</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
 
 <span class="n">theta_true</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">"thetas"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># already unnormalized</span>
-
-<span class="c1"># The VAE encoder is stochastic: pass a fixed key so the condition is encoded the</span>
-<span class="c1"># same way for every draw. The pipeline forwards `model_extras` to the model.</span>
-<span class="n">encoder_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1234</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Sampling 100,000 samples..."</span><span class="p">)</span>
 <span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline_latent</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span>
@@ -839,7 +832,7 @@
     <span class="n">x_o</span><span class="p">,</span>
     <span class="mi">100_000</span><span class="p">,</span>
     <span class="n">chunk_size</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
-    <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">"encoder_key"</span><span class="p">:</span> <span class="n">encoder_key</span><span class="p">},</span>
+    <span class="n">encoder_key</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1234</span><span class="p">),</span>
 <span class="p">)</span>
 
 <span class="n">res</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># shape (num_samples, 1, 2, 1) -&gt; (num_samples, 2)</span>
@@ -858,7 +851,7 @@
 <section id="diagnostics">
 <h2>7. Diagnostics<a class="headerlink" href="#diagnostics" title="Link to this heading">#</a></h2>
 <p>You should run several diagnostics to validate the quality of the posterior estimation.
-We leave as an exercise the implementation of these diagnostics (or take a look at the training script: <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/lensing/train-lensing.py"><code class="docutils literal notranslate"><span class="pre">train-lensing.py</span></code></a>).</p>
+We leave as an excercise the implementation of these diagnostics (or take a look at the training script: <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/lensing/train-lensing.py"><code class="docutils literal notranslate"><span class="pre">train-lensing.py</span></code></a>).</p>
 <p>Below are the results of the diagnostics for the lensing example.</p>
 <blockquote>
 <div><p><strong>Note:</strong> <br>
@@ -875,9 +868,9 @@ Running these tests is slow, and requires a GPU.</p>
 <section id="conclusions">
 <h3>Conclusions<a class="headerlink" href="#conclusions" title="Link to this heading">#</a></h3>
 <p>The SBC test tells us that the posterior for the first dimension is reasonable, while the second dimension is slightly skewed. <br>
-The marginal coverage test tells us that the posterior for the first dimension is slightly underconfident while the second dimension is slightly overconfident. <br>
+The marginal coverage test tells us that the the posterior for the first dimension is slightly underconfident while the second dimension is slightly overconfident. <br>
 The TARP test tells us that the posterior is overall well-calibrated, but the model is slightly overconfident in the region around the peak of the distribution (<span class="math notranslate nohighlight">\(\alpha\)</span>&lt;0.6). <br>
-The L-C2ST test tells us that a local classifier cannot distinguish samples drawn from the true joint distributions, and samples drawn from the model, meaning that we can’t reject the hypothesis that the model is well calibrated. <br></p>
+The L-C2ST test tells us that a local classifier cannot distinguish samples drawan from the true joint distributions, and samples drawn from the model, meaning that we can’t reject the hypothesis that the model is well calibrated. <br></p>
 <p>Final remark: The model in this example has been trained in a “fast” configuration, as an example, and can be further refined by optimizing the model parameters and training configuration.</p>
 </section>
 </section>

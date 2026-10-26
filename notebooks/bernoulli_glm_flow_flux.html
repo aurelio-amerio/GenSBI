@@ -362,8 +362,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/my_first_model.html">My First Model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion (EDM) 2D Unconditional Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Score Matching 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional.html">Flow Matching 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
 </ul>
@@ -489,7 +489,7 @@
 <td><p>Train or restore model, manage checkpoints</p></td>
 </tr>
 <tr class="row-even"><td><p>5. <a class="reference internal" href="#evaluation-visualization"><span class="xref myst">Evaluation &amp; Visualization</span></a></p></td>
-<td><p>Sample the posterior and compare it with the reference samples</p></td>
+<td><p>Visualize loss, sample posterior, compute log prob</p></td>
 </tr>
 <tr class="row-odd"><td><p>6. <a class="reference internal" href="#posterior-calibration-checks"><span class="xref myst">Posterior Calibration Checks</span></a></p></td>
 <td><p>Marginal coverage, TARP, SBC, L-C2ST</p></td>
@@ -594,7 +594,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot the reference posterior</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot the 2D posterior </span>
 <span class="n">plot_marginals</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reference_samples</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"seaborn"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -628,7 +628,7 @@
 <section id="model-configuration-definition">
 <h2>3. Model Configuration &amp; Definition<a class="headerlink" href="#model-configuration-definition" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
-<p>In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1 model.</p>
+<p>In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1 model. Edge masks and marginalization functions are used for flexible inference and posterior estimation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1FlowPipeline</span>
@@ -694,14 +694,14 @@
 <section id="evaluation-visualization">
 <h2>5. Evaluation &amp; Visualization<a class="headerlink" href="#evaluation-visualization" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
-<p>In this section, we evaluate the trained model by sampling from the posterior, and comparing results to reference data.</p>
+<p>In this section, we evaluate the trained Simformer model by sampling from the posterior, and comparing results to reference data.</p>
 <section id="section-5-1-posterior-sampling">
 <h3>Section 5.1: Posterior Sampling<a class="headerlink" href="#section-5-1-posterior-sampling" title="Link to this heading">#</a></h3>
 <hr class="docutils" />
 <p>In this section, we sample from the posterior distribution using the trained model and visualize the results. Posterior samples are generated for a selected observation and compared to reference samples to assess model accuracy.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># we want to do conditional inference. We need an observation for which we want to compute the posterior</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># we want to do conditional inference. We need an observation for which we want to ocmpute the posterior</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_samples</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">observation</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
     <span class="n">true_param</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">get_true_parameters</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
@@ -728,7 +728,7 @@
 <section id="section-5-2-visualize-posterior-samples">
 <h3>Section 5.2: Visualize Posterior Samples<a class="headerlink" href="#section-5-2-visualize-posterior-samples" title="Link to this heading">#</a></h3>
 <hr class="docutils" />
-<p>In this section, we plot the posterior samples as 1D and 2D marginal histograms to visualize the learned distribution and compare it to the ground truth.</p>
+<p>In this section, we plot the posterior samples as a 2D histogram to visualize the learned distribution and compare it to the ground truth.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span><span class="p">,</span> <span class="n">plot_2d_dist_contour</span>
@@ -741,7 +741,7 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plot_marginals</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"seaborn"</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
-<span class="c1"># alternatively use "corner" to plot containment levels too</span>
+<span class="c1"># alternatively use "corner" to plot containment levels too</span>
 <span class="c1"># plot_marginals(samples[-1,...,0], backend="corner", gridsize=20)</span>
 <span class="c1"># plt.show()</span>
 </pre></div>
@@ -752,7 +752,7 @@
 </section>
 <section id="posterior-calibration-checks">
 <h2>6. Posterior Calibration Checks<a class="headerlink" href="#posterior-calibration-checks" title="Link to this heading">#</a></h2>
-<p>We report here the results of the posterior calibration tests. As an exercise, you can implement the tests as in the Two Moons example and compare the results.</p>
+<p>We report here the results of the posterior calibration tests. As an excercise, you can implement the tests as in the Two Moons example and compare the results.</p>
 <p><strong>Average C2ST</strong>: 0.5594 ± 0.0143</p>
 <p><strong>Marginal Coverage:</strong> <br><br>
 <img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/bernoulli_glm/flow_flux/imgs/marginal_coverage_1.png" width=800></p>

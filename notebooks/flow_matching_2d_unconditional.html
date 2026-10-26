@@ -60,7 +60,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Flow Matching 2D Unconditional Example" href="flow_matching_2d_unconditional_flux1joint.html" />
-    <link rel="prev" title="Score Matching 2D Unconditional Example" href="diffusion_SM_2d_unconditional.html" />
+    <link rel="prev" title="Diffusion 2D Unconditional Example" href="diffusion_SM_2d_unconditional.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
@@ -362,8 +362,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/my_first_model.html">My First Model</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion (EDM) 2D Unconditional Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Score Matching 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Flow Matching 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
 </ul>
@@ -468,7 +468,7 @@
 <p>In this section, we set up the notebook environment, import required libraries, and configure JAX for CPU or GPU usage.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span> <span class="c1">#check if we are using colab, if so install all the required software</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span> <span class="c1">#check if we are using colab, if so install all the required software</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">google.colab</span>
     <span class="n">colab</span><span class="o">=</span><span class="kc">True</span>
 <span class="k">except</span><span class="p">:</span>
@@ -479,17 +479,23 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">colab</span><span class="p">:</span> <span class="c1"># you may have to restart the runtime after installing the packages</span>
-    <span class="err">!</span><span class="n">uv</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">quiet</span> <span class="s2">"gensbi[cuda13,examples]"</span>
-    <span class="err">!</span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">aurelio</span><span class="o">-</span><span class="n">amerio</span><span class="o">/</span><span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span>
-    <span class="o">%</span><span class="n">cd</span> <span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">NDE</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">colab</span><span class="p">:</span> <span class="c1"># you may have to restart the runtime after installing the packages</span>
+    <span class="o">!</span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--quiet<span class="w"> </span><span class="s2">"gensbi[cuda13,examples]"</span>
+    <span class="o">!</span>git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>https://github.com/aurelio-amerio/GenSBI-examples
+    <span class="o">%</span><span class="k">cd</span> GenSBI-examples/examples/NDE
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>fatal: destination path 'GenSBI-examples' already exists and is not an empty directory.
+/content/GenSBI-examples/examples/NDE
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set training and model restoration flags</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set training and model restoration flags</span>
 <span class="n">overwrite_model</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="n">restore_model</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Use pretrained model if available</span>
 <span class="n">train_model</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Set to True to train from scratch</span>
@@ -501,7 +507,7 @@
 <h3>Library Imports and JAX Backend Selection<a class="headerlink" href="#library-imports-and-jax-backend-selection" title="Link to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import libraries and set JAX backend</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import libraries and set JAX backend</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'JAX_PLATFORMS'</span><span class="p">]</span><span class="o">=</span><span class="s2">"cuda"</span> <span class="c1"># select cpu instead if no gpu is available</span>
 <span class="c1"># os.environ['JAX_PLATFORMS']="cpu"</span>
@@ -521,7 +527,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the checkpoint directory for saving/restoring models</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the checkpoint directory for saving/restoring models</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">orbax.checkpoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ocp</span>
 <span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span><span class="si">}</span><span class="s2">/checkpoints/flow_matching_2d_example"</span>
 
@@ -541,7 +547,7 @@
 <p>We generate a synthetic 2D dataset using JAX. This section defines the data generation functions and visualizes the data distribution.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define a function to generate 2D box data using JAX</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define a function to generate 2D box data using JAX</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">random</span>
@@ -577,7 +583,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># # Infinite data generator for training batches</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># # Infinite data generator for training batches</span>
 <span class="c1"># @partial(jax.jit, static_argnums=[1])  # type: ignore</span>
 <span class="c1"># def inf_train_gen(key, batch_size: int = 200):</span>
 <span class="c1">#     x = make_boxes_jax(key, batch_size)</span>
@@ -623,7 +629,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize the generated data distribution</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize the generated data distribution</span>
 <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
 <span class="n">H</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">hist2d</span><span class="p">(</span><span class="n">samples</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">samples</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="mi">300</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">((</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
@@ -641,10 +647,13 @@
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<img alt="../_images/085eda430bfde8937de01092d1b2945d96e8ab9392697a2ecf16eedeb3242d40.png" src="../_images/085eda430bfde8937de01092d1b2945d96e8ab9392697a2ecf16eedeb3242d40.png" />
+</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">CondOTScheduler</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path.scheduler</span><span class="w"> </span><span class="kn">import</span> <span class="n">CondOTScheduler</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.flow_matching.path</span><span class="w"> </span><span class="kn">import</span> <span class="n">AffineProbPath</span>
 
 
@@ -656,7 +665,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">nsamples</span> <span class="o">=</span> <span class="mi">500_000</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nsamples</span> <span class="o">=</span> <span class="mi">500_000</span>
 
 <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 <span class="n">x_0</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">nsamples</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
@@ -676,7 +685,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
 
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>
 
@@ -701,14 +710,17 @@
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<img alt="../_images/eacf2d2b5a839e1a1096df58ce9dea5b96140b41ad76b5359de07a596c7650d8.png" src="../_images/eacf2d2b5a839e1a1096df58ce9dea5b96140b41ad76b5359de07a596c7650d8.png" />
 </div>
-<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/flow_matching_unconditional_forward.png" width=600></section>
+</div>
+</section>
 <section id="model-and-loss-definition">
 <h2>3. Model and Loss Definition<a class="headerlink" href="#model-and-loss-definition" title="Link to this heading">#</a></h2>
 <p>We define the velocity field model (an MLP), the loss function, and the optimizer for training the flow-matching model.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import flow matching components and utilities</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import flow matching components and utilities</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnconditionalPipeline</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span>
 </pre></div>
@@ -717,7 +729,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define the MLP velocity field model</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define the MLP velocity field model</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MLP</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">rngs</span><span class="p">:</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">):</span>
 
@@ -763,7 +775,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize the velocity field model</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize the velocity field model</span>
 <span class="n">hidden_dim</span> <span class="o">=</span> <span class="mi">512</span>
 
 <span class="c1"># velocity field model init</span>
@@ -786,18 +798,36 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Restore the model from checkpoint if requested</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Restore the model from checkpoint if requested</span>
 <span class="k">if</span> <span class="n">restore_model</span><span class="p">:</span>
     <span class="n">pipeline</span><span class="o">.</span><span class="n">restore_model</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
+WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/NDE/checkpoints/flow_matching_2d_example
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting save_interval_steps=0.
+WARNING:absl:CheckpointManagerOptions.read_only=True, setting create=False.
+WARNING:absl:Given directory is read only=/content/GenSBI-examples/examples/NDE/checkpoints/flow_matching_2d_example/ema
+</pre></div>
+</div>
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Restored model from checkpoint
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model_params</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_params</span> <span class="o">=</span> <span class="n">nnx</span><span class="o">.</span><span class="n">state</span><span class="p">(</span><span class="n">pipeline</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">nnx</span><span class="o">.</span><span class="n">Param</span><span class="p">)</span>
 <span class="n">total_params</span>  <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_leaves</span><span class="p">(</span><span class="n">model_params</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total model parameters: </span><span class="si">{</span><span class="n">total_params</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Total model parameters: 791042
 </pre></div>
 </div>
 </div>
@@ -808,7 +838,7 @@
 <p>This section defines the training and validation steps, and runs the training loop if enabled. Early stopping and learning rate scheduling are used for efficient training.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">train_model</span><span class="p">:</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">train_model</span><span class="p">:</span>
     <span class="c1"># Train the model</span>
     <span class="n">pipeline</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 </pre></div>
@@ -823,7 +853,7 @@
 <h3>sample the model<a class="headerlink" href="#sample-the-model" title="Link to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 <span class="n">nplots</span><span class="o">=</span><span class="mi">6</span>
 <span class="n">T</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">nplots</span><span class="p">)</span>  <span class="c1"># sample times</span>
 <span class="n">sol</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">500_000</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">T</span><span class="p">)</span>
@@ -833,7 +863,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
 
 <span class="n">sns</span><span class="o">.</span><span class="n">set_style</span><span class="p">(</span><span class="s2">"darkgrid"</span><span class="p">)</span>
 </pre></div>
@@ -842,7 +872,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize the sampled trajectories at different time steps</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize the sampled trajectories at different time steps</span>
 <span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>  <span class="c1"># convert to numpy array</span>
 <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>  <span class="c1"># convert to numpy array</span>
 
@@ -869,15 +899,18 @@
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<img alt="../_images/6460ff66260e1640de5d90e66dc8a0b15e0db73768871a7a4e347a541b63e6bf.png" src="../_images/6460ff66260e1640de5d90e66dc8a0b15e0db73768871a7a4e347a541b63e6bf.png" />
 </div>
-<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/flow_matching_unconditional.png" width=600></section>
+</div>
+</section>
 </section>
 <section id="marginal-and-trajectory-visualization">
 <h2>6. Marginal and Trajectory Visualization<a class="headerlink" href="#marginal-and-trajectory-visualization" title="Link to this heading">#</a></h2>
 <p>We visualize the marginal distributions and sample trajectories from the model.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import plotting utility for marginals</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import plotting utility for marginals</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span>
 </pre></div>
 </div>
@@ -885,16 +918,19 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot the marginal distribution of the final samples</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot the marginal distribution of the final samples</span>
 <span class="n">plot_marginals</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">plot_levels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gridsize</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"seaborn"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<img alt="../_images/8244a433c529f0cbd0028e96daf3efc98a99f566d5133b35b864211eb5cc0aa7.png" src="../_images/8244a433c529f0cbd0028e96daf3efc98a99f566d5133b35b864211eb5cc0aa7.png" />
+</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sample and visualize trajectories with finer time resolution</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sample and visualize trajectories with finer time resolution</span>
 <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">1000</span>
 <span class="n">T</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>  <span class="c1"># sample times</span>
 
@@ -905,7 +941,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import plotting utility for trajectories</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import plotting utility for trajectories</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_trajectories</span>
 </pre></div>
 </div>
@@ -913,7 +949,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot sampled trajectories</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot sampled trajectories</span>
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_trajectories</span><span class="p">(</span><span class="n">sol</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
@@ -924,8 +960,11 @@
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<img alt="../_images/191e3dfdf1dc66570df2466e9352495cb7665476b9fefce59ad4c07744c06dd0.png" src="../_images/191e3dfdf1dc66570df2466e9352495cb7665476b9fefce59ad4c07744c06dd0.png" />
 </div>
-<img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/NDE/flow_matching_unconditional_trajectories.png" width=600></section>
+</div>
+</section>
 </section>
 
 
@@ -944,7 +983,7 @@
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Score Matching 2D Unconditional Example</p>
+        <p class="prev-next-title">Diffusion 2D Unconditional Example</p>
       </div>
     </a>
     <a class="right-next"

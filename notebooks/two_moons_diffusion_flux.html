@@ -364,8 +364,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/my_first_model.html">My First Model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion (EDM) 2D Unconditional Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Score Matching 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional.html">Flow Matching 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
 </ul>
@@ -463,7 +463,6 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="two-moons-flux1-score-matching-example">
 <h1>Two Moons Flux1 Score Matching Example<a class="headerlink" href="#two-moons-flux1-score-matching-example" title="Link to this heading">#</a></h1>
-<p><a class="reference external" href="https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/diffusion_flux/two_moons_diffusion_flux.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
 <hr class="docutils" />
 <p>This notebook demonstrates conditional Score Matching on the Two Moons task using JAX and Flax.</p>
 <p><strong>About Simulation-Based Inference (SBI):</strong> SBI refers to a class of methods for inferring parameters of complex models when the likelihood function is intractable, but simulation is possible. SBI algorithms learn to approximate the posterior distribution over parameters given observed data, enabling inference in scientific and engineering domains where traditional methods fail.</p>
@@ -493,7 +492,7 @@ This notebook trains and evaluates a Flux1 Score Matching model on the Two Moons
 <td><p>Train or restore model, manage checkpoints</p></td>
 </tr>
 <tr class="row-even"><td><p>5. <a class="reference internal" href="#evaluation-visualization"><span class="xref myst">Evaluation &amp; Visualization</span></a></p></td>
-<td><p>Sample the posterior and compare it with the reference samples</p></td>
+<td><p>Visualize loss, sample posterior, compute log prob</p></td>
 </tr>
 <tr class="row-odd"><td><p>6. <a class="reference internal" href="#posterior-calibration-checks"><span class="xref myst">Posterior Calibration Checks</span></a></p></td>
 <td><p>Marginal coverage, TARP, SBC, L-C2ST</p></td>
@@ -632,7 +631,7 @@ This notebook trains and evaluates a Flux1 Score Matching model on the Two Moons
 <section id="model-configuration-definition">
 <h2>3. Model Configuration &amp; Definition<a class="headerlink" href="#model-configuration-definition" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
-<p>In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1 model.</p>
+<p>In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1 model. Edge masks and marginalization functions are used for flexible inference and posterior estimation.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1DiffusionPipeline</span>
@@ -698,14 +697,14 @@ This notebook trains and evaluates a Flux1 Score Matching model on the Two Moons
 <section id="evaluation-visualization">
 <h2>5. Evaluation &amp; Visualization<a class="headerlink" href="#evaluation-visualization" title="Link to this heading">#</a></h2>
 <hr class="docutils" />
-<p>In this section, we evaluate the trained model by sampling from the posterior, and comparing results to reference data.</p>
+<p>In this section, we evaluate the trained Simformer model by sampling from the posterior, and comparing results to reference data. We also compute and visualize the unnormalized log probability over a grid to assess model calibration and density estimation. These analyses provide insight into model performance and reliability.</p>
 <section id="section-5-1-posterior-sampling">
 <h3>Section 5.1: Posterior Sampling<a class="headerlink" href="#section-5-1-posterior-sampling" title="Link to this heading">#</a></h3>
 <hr class="docutils" />
 <p>In this section, we sample from the posterior distribution using the trained model and visualize the results. Posterior samples are generated for a selected observation and compared to reference samples to assess model accuracy.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># we want to do conditional inference. We need an observation for which we want to compute the posterior</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># we want to do conditional inference. We need an observation for which we want to ocmpute the posterior</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_samples</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">observation</span><span class="p">,</span> <span class="n">reference_samples</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get_reference</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
     <span class="n">true_param</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">get_true_parameters</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
@@ -713,7 +712,9 @@ This notebook trains and evaluates a Flux1 Score Matching model on the Two Moons
     <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 
-    <span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">observation</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">return_intermediates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">time_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">observation</span><span class="p">,</span> <span class="n">nsamples</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="n">use_ema</span><span class="p">,</span> <span class="n">time_grid</span><span class="o">=</span><span class="n">time_grid</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">true_param</span><span class="p">,</span> <span class="n">reference_samples</span>
 </pre></div>
 </div>
@@ -728,7 +729,7 @@ This notebook trains and evaluates a Flux1 Score Matching model on the Two Moons
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span> <span class="c1"># (100, 10000, 2, 1)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span> <span class="c1"># (100, 10000, 2)</span>
 </pre></div>
 </div>
 </div>
@@ -737,7 +738,7 @@ This notebook trains and evaluates a Flux1 Score Matching model on the Two Moons
 <section id="section-5-2-visualize-posterior-samples">
 <h3>Section 5.2: Visualize Posterior Samples<a class="headerlink" href="#section-5-2-visualize-posterior-samples" title="Link to this heading">#</a></h3>
 <hr class="docutils" />
-<p>In this section, we plot the posterior samples as 1D and 2D marginal histograms to visualize the learned distribution and compare it to the ground truth.</p>
+<p>In this section, we plot the posterior samples as a 2D histogram to visualize the learned distribution and compare it to the ground truth.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span><span class="p">,</span> <span class="n">plot_2d_dist_contour</span>
@@ -855,8 +856,8 @@ This notebook trains and evaluates a Flux1 Score Matching model on the Two Moons
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">num_calibration_samples</span> <span class="o">=</span> <span class="mi">200</span> <span class="c1">#exercise: try 500, what changes?</span>
-<span class="n">num_posterior_samples</span> <span class="o">=</span> <span class="mi">1000</span> <span class="c1">#exercise: try 10_000, what changes?</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">num_calibration_samples</span> <span class="o">=</span> <span class="mi">200</span> <span class="c1">#excercise: try 500, what changes?</span>
+<span class="n">num_posterior_samples</span> <span class="o">=</span> <span class="mi">1000</span> <span class="c1">#excercise: try 10_000, what changes?</span>
 
 <span class="c1"># Get test data</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">dataset</span><span class="p">[</span><span class="s2">"test"</span><span class="p">]</span><span class="o">.</span><span class="n">with_format</span><span class="p">(</span><span class="s2">"jax"</span><span class="p">)[:</span><span class="n">num_calibration_samples</span><span class="p">]</span>
@@ -953,9 +954,9 @@ This notebook trains and evaluates a Flux1 Score Matching model on the Two Moons
 <span class="n">thetas_lc2st</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data_lc2st</span><span class="p">[</span><span class="s2">"thetas"</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
 
 <span class="c1"># Sample 1 posterior sample per observation</span>
-<span class="n">posterior_samples_lc2st</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span>
-    <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">43</span><span class="p">),</span> <span class="n">xs_lc2st</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># (num_lc2st_data, dim_obs, 1)</span>
+<span class="n">posterior_samples_lc2st</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+    <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">43</span><span class="p">),</span> <span class="n">xs_lc2st</span><span class="p">,</span> <span class="n">num_lc2st_data</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
 
 <span class="c1"># Reshape</span>
 <span class="n">thetas_lc2st_flat</span> <span class="o">=</span> <span class="n">thetas_lc2st</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">thetas_lc2st</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>

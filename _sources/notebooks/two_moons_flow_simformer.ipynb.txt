@@ -2,16 +2,15 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "92f93abd",
+   "id": "58807e2c",
    "metadata": {},
    "source": [
-    "# Two Moons Simformer Flow Matching Example\n",
-    "[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/sbi-benchmarks/two_moons/flow_simformer/two_moons_flow_simformer.ipynb)"
+    "# Two Moons Simformer Flow Matching Example"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "93526085",
+   "id": "e30911d6",
    "metadata": {},
    "source": [
     "---\n",
@@ -32,7 +31,7 @@
     "| 2. [Task & Data Preparation](#task-data-preparation) | Define task, visualize data, create datasets |\n",
     "| 3. [Model Configuration & Definition](#model-configuration-definition) | Load config, set parameters, instantiate model |\n",
     "| 4. [Training](#training) | Train or restore model, manage checkpoints |\n",
-    "| 5. [Evaluation & Visualization](#evaluation-visualization) | Sample the posterior and compare it with the reference samples |\n",
+    "| 5. [Evaluation & Visualization](#evaluation-visualization) | Visualize loss, sample posterior, compute log prob |\n",
     "| 6. [Posterior Calibration Checks](#posterior-calibration-checks) | Marginal coverage, TARP, SBC, L-C2ST |\n",
     "\n",
     "---"
@@ -40,7 +39,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "68c7d756",
+   "id": "15937f4a",
    "metadata": {},
    "source": [
     "## 1. Introduction & Setup\n",
@@ -51,7 +50,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "fe5f66a8",
+   "id": "ada95d49",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -72,7 +71,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3b68b6af",
+   "id": "a114bd5e",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -85,7 +84,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "05e2b70f",
+   "id": "00cb3b77",
    "metadata": {},
    "source": [
     "## 2. Task & Data Preparation \n",
@@ -96,7 +95,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6d3d2aae",
+   "id": "614d5825",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -107,7 +106,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f3d8e13b",
+   "id": "113cd801",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -121,7 +120,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0cd9078b",
+   "id": "a5d0297c",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -137,7 +136,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3329da7c",
+   "id": "8150d5f3",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -147,7 +146,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3f2fd027",
+   "id": "46324e88",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -158,7 +157,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "339f7d6c",
+   "id": "96e8c65a",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -169,7 +168,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "41b5a10f",
+   "id": "1224870b",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -181,7 +180,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6900cef1",
+   "id": "da0e5572",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -192,7 +191,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "10f7f716",
+   "id": "40a0ae86",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -209,18 +208,18 @@
   },
   {
    "cell_type": "markdown",
-   "id": "69deff8a",
+   "id": "579a7e1f",
    "metadata": {},
    "source": [
     "## 3. Model Configuration & Definition \n",
     "---\n",
-    "In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Simformer model."
+    "In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Simformer model. Edge masks and marginalization functions are used for flexible inference and posterior estimation."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b83b557f",
+   "id": "87649312",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -230,7 +229,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c80e01ac",
+   "id": "add9e58a",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -243,7 +242,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a989c8cf",
+   "id": "6fa0bf87",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -257,7 +256,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9558eb4b",
+   "id": "14bc0516",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -273,7 +272,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "7dea57e7",
+   "id": "02b97d7c",
    "metadata": {},
    "source": [
     "## 4. Training \n",
@@ -284,7 +283,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "46a7c5ce",
+   "id": "31b6a889",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -294,7 +293,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "2ae4e48e",
+   "id": "2187a1cb",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -303,17 +302,17 @@
   },
   {
    "cell_type": "markdown",
-   "id": "bded222e",
+   "id": "a53ded30",
    "metadata": {},
    "source": [
     "## 5. Evaluation & Visualization \n",
     "---\n",
-    "In this section, we evaluate the trained model by sampling from the posterior, and comparing results to reference data."
+    "In this section, we evaluate the trained Simformer model by sampling from the posterior, and comparing results to reference data. We also compute and visualize the unnormalized log probability over a grid to assess model calibration and density estimation. These analyses provide insight into model performance and reliability."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "d2610c22",
+   "id": "aca1e406",
    "metadata": {},
    "source": [
     "### Section 5.1: Posterior Sampling\n",
@@ -324,11 +323,11 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "5e60b960",
+   "id": "ffd49eb9",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# we want to do conditional inference. We need an observation for which we want to compute the posterior\n",
+    "# we want to do conditional inference. We need an observation for which we want to ocmpute the posterior\n",
     "def get_samples(idx, nsamples=10_000, use_ema=False, key=None):\n",
     "    observation, reference_samples = task.get_reference(idx)\n",
     "    true_param = jnp.array(task.get_true_parameters(idx))\n",
@@ -336,14 +335,16 @@
     "    if key is None:\n",
     "        key = jax.random.PRNGKey(42)\n",
     "\n",
-    "    samples = pipeline.sample(key, observation, nsamples, use_ema=use_ema, time_grid=jnp.linspace(0,1,100))\n",
+    "    time_grid = jnp.linspace(0,1,100)\n",
+    "\n",
+    "    samples = pipeline.sample(key, observation, nsamples, use_ema=use_ema, time_grid=time_grid)\n",
     "    return samples, true_param, reference_samples"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3b7fa6d5",
+   "id": "705ac774",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -353,27 +354,27 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "5acd2e1f",
+   "id": "f3efb36b",
    "metadata": {},
    "outputs": [],
    "source": [
-    "samples.shape # (100, 10000, 2, 1)"
+    "samples.shape # (100, 10000, 2)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "8a952c35",
+   "id": "94eb50c8",
    "metadata": {},
    "source": [
     "### Section 5.2: Visualize Posterior Samples\n",
     "---\n",
-    "In this section, we plot the posterior samples as 1D and 2D marginal histograms to visualize the learned distribution and compare it to the ground truth."
+    "In this section, we plot the posterior samples as a 2D histogram to visualize the learned distribution and compare it to the ground truth."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "64fab276",
+   "id": "f75f0869",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -383,7 +384,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "146b9b1e",
+   "id": "0dd1799e",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -397,7 +398,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "6754d6bb",
+   "id": "09d4d324",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/marginals_ema_1.png\" width=400>\n",
@@ -410,7 +411,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1cbba0bb",
+   "id": "fafe72ac",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -422,7 +423,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "441cfc82",
+   "id": "4287a9e2",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -463,7 +464,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "04cf4937",
+   "id": "08a09df7",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -474,7 +475,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a52a30f0",
+   "id": "5684c7e1",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -488,7 +489,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "0a7a5b35",
+   "id": "faf337d8",
    "metadata": {},
    "source": [
     "## 6. Posterior Calibration Checks"
@@ -497,7 +498,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "7e1d9704",
+   "id": "85368bdf",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -519,12 +520,12 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "fd286194",
+   "id": "aef8f67f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "num_calibration_samples = 200 #exercise: try 500, what changes?\n",
-    "num_posterior_samples = 1000 #exercise: try 10_000, what changes?\n",
+    "num_calibration_samples = 200 #excercise: try 500, what changes?\n",
+    "num_posterior_samples = 1000 #excercise: try 10_000, what changes?\n",
     "\n",
     "# Get test data\n",
     "data = task.dataset[\"test\"].with_format(\"jax\")[:num_calibration_samples]\n",
@@ -548,7 +549,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "607afca0",
+   "id": "d44e623c",
    "metadata": {},
    "source": [
     "### 6.1. Marginal coverage\n",
@@ -558,7 +559,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9e1609a0",
+   "id": "521fb383",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -569,7 +570,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "e88d4e26",
+   "id": "a6182d7a",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/marginal_coverage_1.png\" width=800>\n",
@@ -581,7 +582,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "536f5d5c",
+   "id": "38106b9d",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -602,7 +603,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "f9910a3c",
+   "id": "5a523e25",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/tarp_1.png\" width=800>\n",
@@ -614,7 +615,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0f1090d4",
+   "id": "fd2590bf",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -631,7 +632,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "1a94ea50",
+   "id": "998637d1",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/sbc_1.png\" width=500>\n",
@@ -643,7 +644,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "68b0c13c",
+   "id": "ed7648f8",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -657,9 +658,9 @@
     "thetas_lc2st = jnp.asarray(data_lc2st[\"thetas\"], dtype=jnp.bfloat16)\n",
     "\n",
     "# Sample 1 posterior sample per observation\n",
-    "posterior_samples_lc2st = pipeline.sample_batched(\n",
-    "    jax.random.PRNGKey(43), xs_lc2st, nsamples=1, use_ema=True\n",
-    ")[0]  # (num_lc2st_data, dim_obs, 1)\n",
+    "posterior_samples_lc2st = pipeline.sample(\n",
+    "    jax.random.PRNGKey(43), xs_lc2st, num_lc2st_data, use_ema=True\n",
+    ")\n",
     "\n",
     "# Reshape\n",
     "thetas_lc2st_flat = thetas_lc2st.reshape(thetas_lc2st.shape[0], -1)\n",
@@ -670,7 +671,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "4c1dfe22",
+   "id": "b17eabfd",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -710,7 +711,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9889d325",
+   "id": "ac20f4ff",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -724,7 +725,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "72e08162",
+   "id": "46ece924",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/two_moons/flow_simformer/imgs/lc2st_1.png\" width=500>"

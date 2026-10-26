@@ -364,8 +364,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/my_first_model.html">My First Model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion (EDM) 2D Unconditional Example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Score Matching 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_EDM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="diffusion_SM_2d_unconditional.html">Diffusion 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional.html">Flow Matching 2D Unconditional Example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="flow_matching_2d_unconditional_flux1joint.html">Flow Matching 2D Unconditional Example</a></li>
 </ul>
@@ -517,7 +517,7 @@
 <p>First, we set up the environment and import necessary libraries.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if running on Colab and install dependencies if needed</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if running on Colab and install dependencies if needed</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">google.colab</span>
     <span class="n">colab</span> <span class="o">=</span> <span class="kc">True</span>
@@ -526,16 +526,16 @@
 
 <span class="k">if</span> <span class="n">colab</span><span class="p">:</span>
     <span class="c1"># Install required packages and clone the repository</span>
-    <span class="err">!</span><span class="n">uv</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">quiet</span> <span class="s2">"gensbi[cuda13,examples]"</span> <span class="s2">"sbibm-jax[loader]"</span>
-    <span class="err">!</span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">depth</span> <span class="mi">1</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">aurelio</span><span class="o">-</span><span class="n">amerio</span><span class="o">/</span><span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span>
-    <span class="o">%</span><span class="n">cd</span> <span class="n">GenSBI</span><span class="o">-</span><span class="n">examples</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="n">sbi</span><span class="o">-</span><span class="n">benchmarks</span><span class="o">/</span><span class="n">gravitational_waves</span>
+    <span class="o">!</span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--quiet<span class="w"> </span><span class="s2">"gensbi[cuda13,examples]"</span><span class="w"> </span><span class="s2">"sbibm-jax[loader]"</span>
+    <span class="o">!</span>git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>https://github.com/aurelio-amerio/GenSBI-examples
+    <span class="o">%</span><span class="k">cd</span> GenSBI-examples/examples/sbi-benchmarks/gravitational_waves
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="c1"># Set JAX to use CPU or GPU as appropriate</span>
 <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"JAX_PLATFORMS"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -563,8 +563,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.experimental.recipes.vae_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_autoencoder_params</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes.flux1</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_flux1_params</span><span class="p">,</span> <span class="n">parse_training_config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.utils.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_marginals</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_sbc</span><span class="p">,</span> <span class="n">sbc_rank_plot</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_tarp</span><span class="p">,</span> <span class="n">plot_tarp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flux1Params</span><span class="p">,</span> <span class="n">Flux1</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.recipes</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConditionalPipeline</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowMatchingMethod</span>
@@ -572,7 +570,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">sbibm_jax.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskDataset</span>
 
 <span class="c1"># Point to the config file</span>
-<span class="n">config_path</span> <span class="o">=</span> <span class="s2">"./config/gw_config_6c.yaml"</span>
+<span class="n">config_path</span> <span class="o">=</span> <span class="s2">"./config/gw_config_6c_1.yaml"</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/lhome/ific/a/aamerio/miniforge3/envs/gensbi/lib/python3.12/site-packages/google/protobuf/runtime_version.py:98: UserWarning: Protobuf gencode version 5.28.3 is exactly one major version older than the runtime version 6.31.1 at grain/proto/execution_summary.proto. Please update the gencode to avoid compatibility violations in the next runtime release.
+  warnings.warn(
 </pre></div>
 </div>
 </div>
@@ -583,7 +587,7 @@
 <p>We define normalization helpers and the wrapper class that connects the VAE and the SBI model.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">):</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">):</span>
     <span class="n">mean</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
     <span class="n">std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">std</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">batch</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">batch</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
@@ -613,9 +617,6 @@
         <span class="n">guidance</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">encoder_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="c1"># `encoder_key` seeds the stochastic VAE encoder. During training the VAE</span>
-        <span class="c1"># draws from its own RNG state; at inference the key must be passed</span>
-        <span class="c1"># explicitly through `model_extras={"encoder_key": key}`.</span>
         <span class="c1"># 1. Encode the high-dimensional conditioning data `cond` (GW time series)</span>
         <span class="c1"># The VAE encoder reduces it to a latent feature map `cond_latent`</span>
         <span class="n">cond_latent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vae</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">cond</span><span class="p">,</span> <span class="n">encoder_key</span><span class="p">)</span>
@@ -640,7 +641,7 @@
 <p>We load the Gravitational Waves dataset.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">task</span> <span class="o">=</span> <span class="n">TaskDataset</span><span class="p">(</span><span class="s2">"gravitational_waves"</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">task</span> <span class="o">=</span> <span class="n">TaskDataset</span><span class="p">(</span><span class="s2">"gravitational_waves"</span><span class="p">)</span>
 
 <span class="n">df_train</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">df_train</span>
 <span class="n">df_val</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">df_val</span>
@@ -658,10 +659,12 @@
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "083b57a7862645bb827d887948a424ab", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot one sample</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># plot one sample</span>
 <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">x_o_raw</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">"xs"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
 <span class="n">theta_true</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">"thetas"</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
@@ -674,7 +677,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span><span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span><span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
 
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"k"</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_o</span><span class="p">[</span><span class="mi">0</span><span class="p">,:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"k"</span><span class="p">)</span>
@@ -683,7 +686,7 @@
 <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
-<span class="c1"># plt.savefig("imgs/gw_example.png", dpi=300,bbox_inches="tight") # uncomment to save the figure</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">"imgs/gw_example.png"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span><span class="n">bbox_inches</span><span class="o">=</span><span class="s2">"tight"</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -695,7 +698,7 @@
 <p>We initialize the VAE and the Flux model using the configuration.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- 1. Initialize VAE ---</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- 1. Initialize VAE ---</span>
 <span class="n">params_dict</span> <span class="o">=</span> <span class="n">parse_autoencoder_params</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
 
 <span class="n">ae_params</span> <span class="o">=</span> <span class="n">AutoEncoderParams</span><span class="p">(</span>
@@ -736,10 +739,10 @@
 </section>
 <section id="pipeline-and-restoration">
 <h2>5. Pipeline and Restoration<a class="headerlink" href="#pipeline-and-restoration" title="Link to this heading">#</a></h2>
-<p>We set up the <code class="docutils literal notranslate"><span class="pre">ConditionalPipeline</span></code> (with <code class="docutils literal notranslate"><span class="pre">FlowMatchingMethod</span></code>). Instead of training, we will restore a pre-trained checkpoint.</p>
+<p>We set up the <code class="docutils literal notranslate"><span class="pre">ConditionalFlowPipeline</span></code>. Instead of training, we will restore a pre-trained checkpoint.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: normally this part is being handled automatically by the `Task` class</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: normally this part is being handled automatically by the `Task` class</span>
 <span class="c1"># for the benchmark cases. </span>
 <span class="c1"># Here we perform the data preprocessing explicitly for pedagogical purposes.  </span>
 
@@ -783,7 +786,7 @@
 <span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_dir</span><span class="p">,</span> <span class="s2">"checkpoints"</span><span class="p">)</span>
 <span class="n">training_config</span><span class="p">[</span><span class="s2">"checkpoint_dir"</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint_dir</span>
 
-<span class="c1"># the ConditionalPipeline supports an arbitrary model (with the right interface), </span>
+<span class="c1"># the ConditionalFlowPipeline supports an arbitrary model (with the right interface), </span>
 <span class="c1"># so we can pass it our composite model</span>
 <span class="n">pipeline_latent</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
     <span class="n">model</span><span class="p">,</span>
@@ -810,7 +813,7 @@
 <p>We take a single observation from the test set, sample the posterior using our model, and visualize the results.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Select a test observation</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Select a test observation</span>
 <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">x_o_raw</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">"xs"</span><span class="p">][</span><span class="n">idx</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
 <span class="n">theta_true</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">"thetas"</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
@@ -820,17 +823,13 @@
 
 <span class="c1"># 2. Sample from the posterior</span>
 <span class="c1"># We generate 100,000 samples to get a smooth distribution</span>
-<span class="c1"># The VAE encoder is stochastic: pass a fixed key so the condition is encoded the</span>
-<span class="c1"># same way for every draw. The pipeline forwards `model_extras` to the model.</span>
-<span class="n">encoder_key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1234</span><span class="p">)</span>
-
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Sampling..."</span><span class="p">)</span>
 <span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline_latent</span><span class="o">.</span><span class="n">sample_batched</span><span class="p">(</span>
     <span class="n">nnx</span><span class="o">.</span><span class="n">Rngs</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span>
     <span class="n">x_o</span><span class="p">,</span>
     <span class="mi">100_000</span><span class="p">,</span>
     <span class="n">chunk_size</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
-    <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">"encoder_key"</span><span class="p">:</span> <span class="n">encoder_key</span><span class="p">},</span>
+    <span class="n">encoder_key</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1234</span><span class="p">),</span>
 <span class="p">)</span>
 
 <span class="c1"># Reshape samples: (num_samples, 1, 2, 1) -&gt; (num_samples, 2)</span>
@@ -847,7 +846,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 4. Plot</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># 4. Plot</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Plotting marginals..."</span><span class="p">)</span>
 <span class="n">plot_marginals</span><span class="p">(</span>
     <span class="n">res_unnorm</span><span class="p">,</span> 
@@ -870,7 +869,7 @@ Running these tests is slow, and requires a GPU.</p>
 </div></blockquote>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thetas_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_test</span><span class="p">[</span><span class="s2">"thetas"</span><span class="p">])[:</span><span class="mi">200</span><span class="p">]</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">thetas_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_test</span><span class="p">[</span><span class="s2">"thetas"</span><span class="p">])[:</span><span class="mi">200</span><span class="p">]</span>
 <span class="n">xs_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df_test</span><span class="p">[</span><span class="s2">"xs"</span><span class="p">])[:</span><span class="mi">200</span><span class="p">]</span>
 
 <span class="n">thetas_</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thetas_</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">),</span> <span class="n">thetas_mean</span><span class="p">,</span> <span class="n">thetas_std</span><span class="p">)</span>
@@ -883,7 +882,7 @@ Running these tests is slow, and requires a GPU.</p>
     <span class="n">xs_</span><span class="p">,</span>
     <span class="n">num_posterior_samples</span><span class="p">,</span>
     <span class="n">chunk_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">model_extras</span><span class="o">=</span><span class="p">{</span><span class="s2">"encoder_key"</span><span class="p">:</span> <span class="n">encoder_key</span><span class="p">},</span>
+    <span class="n">encoder_key</span><span class="o">=</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">1234</span><span class="p">),</span>
 <span class="p">)</span>
 
 <span class="n">thetas</span> <span class="o">=</span> <span class="n">thetas_</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">thetas_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -900,13 +899,13 @@ Running these tests is slow, and requires a GPU.</p>
 <h3>Tarp<a class="headerlink" href="#tarp" title="Link to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tarp_results</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
     <span class="n">thetas</span><span class="p">,</span>
     <span class="n">posterior_samples</span><span class="p">,</span>
     <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># will be calculated automatically.</span>
 <span class="p">)</span>
 
-<span class="n">plot_tarp</span><span class="p">(</span><span class="n">tarp_results</span><span class="p">)</span>
+<span class="n">plot_tarp</span><span class="p">(</span><span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
 <span class="c1"># plt.savefig(</span>
 <span class="c1">#     f"imgs/gw_tarp_v6c_conf{experiment}.png", dpi=100, bbox_inches="tight"</span>
 <span class="c1"># )  # uncomment to save the figure</span>
@@ -920,7 +919,7 @@ Running these tests is slow, and requires a GPU.</p>
 <h3>SBC<a class="headerlink" href="#sbc" title="Link to this heading">#</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ranks</span><span class="p">,</span> <span class="n">dap_samples</span> <span class="o">=</span> <span class="n">run_sbc</span><span class="p">(</span><span class="n">thetas</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ranks</span><span class="p">,</span> <span class="n">dap_samples</span> <span class="o">=</span> <span class="n">run_sbc</span><span class="p">(</span><span class="n">thetas</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="p">)</span>
 
 <span class="n">f</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">sbc_rank_plot</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">"hist"</span><span class="p">,</span> <span class="n">num_bins</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 <span class="c1"># plt.savefig(</span>
@@ -933,7 +932,7 @@ Running these tests is slow, and requires a GPU.</p>
 </div>
 <img src="https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/gravitational_waves/imgs/gw_sbc_conf1.png" alt="sbc" width="500"><blockquote>
 <div><p><strong>Note:</strong> <br>
-The model is not perfectly calibrated, and it is overconfident in some regions, while underconfident in others. <br> The model in this example has been trained in a “fast” configuration, as an example, and can be further refined by optimizing the model parameters and training configuration.</p>
+The model is note perfectly calibrated, and it is overconfident in some regions, while underconfident in others. <br> The model in this example has been trained in a “fast” configuration, as an example, and can be further refined by optimizing the model parameters and training configuration.</p>
 </div></blockquote>
 </section>
 </section>
