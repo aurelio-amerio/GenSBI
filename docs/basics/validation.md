@@ -107,10 +107,10 @@ num_posterior_samples = 1000
 posterior_samples_ = pipeline.sample_batched(
     jax.random.PRNGKey(42),
     xs, # Validation observations
-    num_samples=num_posterior_samples,
+    nsamples=num_posterior_samples,
     chunk_size=10, # Adjust based on memory
 )
-# Flatten posterior samples: (batch, num_samples, dim, 1) -> (batch, num_samples, dim)
+# Flatten posterior samples: (num_samples, batch, dim, 1) -> (num_samples, batch, dim)
 posterior_samples = posterior_samples_.reshape(
     posterior_samples_.shape[0], posterior_samples_.shape[1], -1
 )
