@@ -31,6 +31,10 @@ axis > 1 ("will not silently discard the rest. Use `sample_batched()`"), and
 `sample_batched(key, xs, nsamples=1)[0]` is a 10 000-iteration Python loop.
 Each iteration is a full solver run on a batch of one. The notebook re-check
 rewrote every L-C2ST cell this way but never measured it at full size.
+There is no isolated timing of the loop. The only numbers available are
+whole-notebook CPU wall times with L-C2ST cut to 2 000 conditions:
+`two_moons/flow_flux` 15.8 min end to end, `my_first_model` spot check
+35 min (notebook re-check, 2026-10-26). Nobody has run 10 000 conditions.
 
 `JointPipeline.sample` is inconsistent with this: it only *warns* on a batched
 `x_o`, and its sampler still carries explicit support for the
