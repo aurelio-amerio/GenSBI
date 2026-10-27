@@ -10,17 +10,19 @@ The changelog starts at 0.5.0. Breaking changes from earlier releases that
 still bite code written against the first tutorials are collected in
 [Migration notes](#migration-notes).
 
-## [Unreleased]
+## [0.5.2] - 2026-10-27
 
-### Breaking
+### Changed
 
 - The sampler and log-probability builders of `FlowMatchingMethod`,
   `DiffusionEDMMethod` and `ScoreMatchingMethod` no longer accept arbitrary
   keyword arguments. An argument that the method does not support (for
   example `time_grid=` on a diffusion pipeline, or a model keyword such as
   `encoder_key=` passed bare to `sample`/`sample_batched`) now raises
-  `TypeError` instead of being silently ignored. Pass model keyword arguments
-  through `model_extras={...}`.
+  `TypeError` instead of being silently ignored. This is a bug fix, but it
+  can break code that passed such arguments: they never had an effect, so
+  remove them, or pass model keyword arguments through
+  `model_extras={...}`.
 
 ### Fixed
 
@@ -37,6 +39,9 @@ still bite code written against the first tutorials are collected in
 - Batched-sampling snippets in `docs/basics/inference.md` and
   `docs/basics/validation.md` fixed (`x_o`/`nsamples` argument names, output
   shape).
+- Example notebooks refreshed: small bugs and typos fixed, and the
+  gravitational-wave and lensing examples pass the VAE encoder key via
+  `model_extras`.
 
 ## [0.5.1] - 2026-10-25
 
