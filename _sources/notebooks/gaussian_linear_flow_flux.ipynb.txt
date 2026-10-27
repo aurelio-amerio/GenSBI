@@ -2,7 +2,7 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "575472ff",
+   "id": "01a28aae",
    "metadata": {},
    "source": [
     "# Gaussian Linear Flux1 Flow Example\n",
@@ -12,7 +12,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "10528b5d",
+   "id": "9afbe29a",
    "metadata": {},
    "source": [
     "---\n",
@@ -25,7 +25,7 @@
     "| 2. [Task & Data Preparation](#task-data-preparation) | Define task, visualize data, create datasets |\n",
     "| 3. [Model Configuration & Definition](#model-configuration-definition) | Load config, set parameters, instantiate model |\n",
     "| 4. [Training](#training) | Train or restore model, manage checkpoints |\n",
-    "| 5. [Evaluation & Visualization](#evaluation-visualization) | Visualize loss, sample posterior, compute log prob |\n",
+    "| 5. [Evaluation & Visualization](#evaluation-visualization) | Sample the posterior and compare it with the reference samples |\n",
     "| 6. [Posterior Calibration Checks](#posterior-calibration-checks) | Marginal coverage, TARP, SBC, L-C2ST |\n",
     "\n",
     "---"
@@ -33,7 +33,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "4e334ae5",
+   "id": "e9a48541",
    "metadata": {},
    "source": [
     "## 1. Introduction & Setup\n",
@@ -44,7 +44,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0e850976",
+   "id": "1609e8e9",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -65,7 +65,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "20295582",
+   "id": "4eaa735b",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -78,7 +78,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "05966f83",
+   "id": "9c154c60",
    "metadata": {},
    "source": [
     "## 2. Task & Data Preparation\n",
@@ -89,7 +89,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "70afb632",
+   "id": "19ff9fd0",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -100,7 +100,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "7e7ba77f",
+   "id": "dbcb64d7",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -114,7 +114,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ba20ff7e",
+   "id": "3ccf5a47",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -130,7 +130,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f47a5c52",
+   "id": "4bf3dcd7",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -140,7 +140,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "05507ba1",
+   "id": "2ba6dfa0",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -151,7 +151,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c03fe6cd",
+   "id": "b7490341",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -162,11 +162,11 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "5247e59e",
+   "id": "5bf90dde",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# plot the 2D posterior \n",
+    "# plot the reference posterior\n",
     "plot_marginals(np.asarray(reference_samples, dtype=np.float32), gridsize=50, plot_levels=False, backend=\"seaborn\")\n",
     "plt.show()"
    ]
@@ -174,7 +174,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a98dfc49",
+   "id": "e479ae4e",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -185,7 +185,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "4ff892bd",
+   "id": "f2e546fa",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -202,18 +202,18 @@
   },
   {
    "cell_type": "markdown",
-   "id": "883772f4",
+   "id": "4f7ad933",
    "metadata": {},
    "source": [
     "## 3. Model Configuration & Definition\n",
     "---\n",
-    "In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1 model. Edge masks and marginalization functions are used for flexible inference and posterior estimation."
+    "In this section, we load the model and optimizer configuration, set all relevant parameters, and instantiate the Flux1 model."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "cdd144be",
+   "id": "2e269f73",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -223,7 +223,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f3b0b85a",
+   "id": "7bd2a1dd",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -236,7 +236,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6bd61174",
+   "id": "91b285e2",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -250,7 +250,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "981de8f0",
+   "id": "b585e807",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -266,7 +266,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "74a532c2",
+   "id": "6a16cd4c",
    "metadata": {},
    "source": [
     "## 4. Training\n",
@@ -277,7 +277,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a190e123",
+   "id": "aa66c129",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -287,7 +287,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "bc794987",
+   "id": "c00363b0",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -296,17 +296,17 @@
   },
   {
    "cell_type": "markdown",
-   "id": "3e086341",
+   "id": "0ab14ab6",
    "metadata": {},
    "source": [
     "## 5. Evaluation & Visualization\n",
     "---\n",
-    "In this section, we evaluate the trained Simformer model by sampling from the posterior, and comparing results to reference data."
+    "In this section, we evaluate the trained model by sampling from the posterior, and comparing results to reference data."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "22f804bc",
+   "id": "627100e5",
    "metadata": {},
    "source": [
     "### Section 5.1: Posterior Sampling\n",
@@ -317,11 +317,11 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "bafe3b7c",
+   "id": "dc6368f9",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# we want to do conditional inference. We need an observation for which we want to ocmpute the posterior\n",
+    "# we want to do conditional inference. We need an observation for which we want to compute the posterior\n",
     "def get_samples(idx, nsamples=10_000, use_ema=False, key=None):\n",
     "    observation, reference_samples = task.get_reference(idx)\n",
     "    true_param = jnp.array(task.get_true_parameters(idx))\n",
@@ -338,7 +338,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b8cda481",
+   "id": "e38bcb00",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -347,18 +347,18 @@
   },
   {
    "cell_type": "markdown",
-   "id": "56eec32e",
+   "id": "196d799d",
    "metadata": {},
    "source": [
     "### Section 5.2: Visualize Posterior Samples\n",
     "---\n",
-    "In this section, we plot the posterior samples as a 2D histogram to visualize the learned distribution and compare it to the ground truth."
+    "In this section, we plot the posterior samples as 1D and 2D marginal histograms to visualize the learned distribution and compare it to the ground truth."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "472e3768",
+   "id": "64328043",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -368,21 +368,21 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "7a9e9a23",
+   "id": "270d6a88",
    "metadata": {},
    "outputs": [],
    "source": [
     "plot_marginals(samples[-1,...,0], backend=\"seaborn\", gridsize=50)\n",
     "plt.show()\n",
     "\n",
-    "# alternatively use \"corner\" to plot containment levels too\n",
+    "# alternatively use \"corner\" to plot containment levels too\n",
     "# plot_marginals(samples[-1,...,0], backend=\"corner\", gridsize=20)\n",
     "# plt.show()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "2871f78b",
+   "id": "94ebf05f",
    "metadata": {},
    "source": [
     "<img src=\"https://raw.githubusercontent.com/aurelio-amerio/GenSBI-examples/refs/heads/main/examples/sbi-benchmarks/gaussian_linear/flow_flux/imgs/marginals_ema_1.png\" width=800>"
@@ -390,7 +390,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "15dcf36d",
+   "id": "eeb62d6e",
    "metadata": {},
    "source": [
     "## 6. Posterior Calibration Checks"
@@ -398,15 +398,15 @@
   },
   {
    "cell_type": "markdown",
-   "id": "a6219d9d",
+   "id": "82547e75",
    "metadata": {},
    "source": [
-    "We report here the results of the posterior calibration tests. As an excercise, you can implement the tests as in the Two Moons example and compare the results."
+    "We report here the results of the posterior calibration tests. As an exercise, you can implement the tests as in the Two Moons example and compare the results."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "28444aab",
+   "id": "6b72f878",
    "metadata": {},
    "source": [
     "**Average C2ST**: 0.5087 ± 0.0061"
@@ -414,7 +414,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "b22fc3ba",
+   "id": "e5742484",
    "metadata": {},
    "source": [
     "**Marginal Coverage:** <br><br>\n",
@@ -423,7 +423,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "9684db37",
+   "id": "f1ad0ebd",
    "metadata": {},
    "source": [
     "**TARP:** <br><br>\n",
@@ -432,7 +432,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "d5163060",
+   "id": "47fa2315",
    "metadata": {},
    "source": [
     "**SBC** <br><br>\n",
@@ -442,7 +442,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "fd7412ec",
+   "id": "7e2eb812",
    "metadata": {},
    "source": [
     "**L-C2ST**<br><br>\n",

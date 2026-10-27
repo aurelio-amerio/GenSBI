@@ -636,6 +636,7 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="methods-and-samplers-in-gensbi">
 <h1>Methods and Samplers in GenSBI<a class="headerlink" href="#methods-and-samplers-in-gensbi" title="Link to this heading">#</a></h1>
+<p><a class="reference external" href="https://colab.research.google.com/github/aurelio-amerio/GenSBI-examples/blob/main/examples/methods_and_samplers/methods_and_samplers.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg" /></a></p>
 <p>GenSBI supports three generative methods for simulation-based inference:</p>
 <ol class="arabic simple">
 <li><p><strong>Flow Matching</strong> — learns a velocity field and integrates an ODE from noise to data.</p></li>
@@ -1026,7 +1027,11 @@ density at any point.</p>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">logp_fm</span> <span class="o">=</span> <span class="n">pipeline_fm</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># evaluate the log_prob in chunks, to limit GPU memory usage</span>
+<span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="n">logp_fm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">pipeline_fm</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">x_1</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">chunk_size</span><span class="p">],</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">use_ema</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">chunk_size</span><span class="p">)]</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1155,7 +1160,7 @@ stochastic denoising sampler from Karras et al., 2022.</p>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The EDMSolver implements the stochastic denoising sampler from Karras et al., 2022. Defaults to algorithm 1 (deterministic)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># The EDMSolver implements the stochastic denoising sampler from Karras et al., 2022. Defaults to algorithm 1 (deterministic).</span>
 <span class="c1"># It progressively denoises samples following a noise schedule from high to low sigma.</span>
 <span class="n">samples_edm</span> <span class="o">=</span> <span class="n">pipeline_edm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="n">x_o</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">100_000</span><span class="p">)</span>
 <span class="n">samples_edm</span> <span class="o">=</span> <span class="n">unnormalize</span><span class="p">(</span><span class="n">samples_edm</span><span class="p">,</span> <span class="n">means</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">],</span> <span class="n">stds</span><span class="p">[:</span><span class="n">dim_obs</span><span class="p">])</span>

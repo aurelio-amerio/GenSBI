@@ -245,4 +245,4 @@ Now that you understand the structure:
 4. **Validate Results**: Use the [Validation Guide](/basics/validation).
 5. **Try Examples**: Explore the [Examples](/examples) page and the [GenSBI-examples repository](https://github.com/aurelio-amerio/GenSBI-examples).
 
-If you want to extend GenSBI or add custom components, see the [Contributing Guide](/CONTRIBUTING) and the [API Documentation](/api/gensbi/index).
+If you want to extend GenSBI or add custom components, see the [Contributing Guide](/basics/contributing) and the [API Documentation](/api/gensbi/index).

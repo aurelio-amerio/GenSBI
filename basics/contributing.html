@@ -638,6 +638,7 @@
 <p>Feel free to <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI/issues">open an issue</a> to propose new features, report bugs, or discuss ideas.</p>
 <section id="development-setup">
 <h2>Development Setup<a class="headerlink" href="#development-setup" title="Link to this heading">#</a></h2>
+<p>Python 3.12 or higher is required. We recommend <a class="reference external" href="https://docs.astral.sh/uv/">uv</a>.</p>
 <ol class="arabic">
 <li><p><strong>Clone the repository</strong>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/aurelio-amerio/GenSBI.git
@@ -645,18 +646,16 @@
 </pre></div>
 </div>
 </li>
-<li><p><strong>Install dependencies</strong> (we recommend using <a class="reference external" href="https://docs.astral.sh/uv/">uv</a>):</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># using uv (recommended) — installs the package in editable mode together</span>
-<span class="c1"># with the development dependency group (lint, test, docs, notebooks)</span>
-uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>cuda13<span class="w"> </span>--extra<span class="w"> </span>examples
+<li><p><strong>Install dependencies</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># editable install plus the dev dependency group (lint, test, docs, notebooks)</span>
+uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>dev
 
-<span class="c1"># or using pip</span>
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[cuda13,examples,test,docs]"</span>
+<span class="c1"># same, with CUDA 13 JAX and the example extras</span>
+uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>cuda13full
+
+<span class="c1"># or using pip (&gt;= 25.1, which understands dependency groups)</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[examples]"</span><span class="w"> </span>--group<span class="w"> </span>dev
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Python 3.12 or higher is required.</p>
 </div>
 </li>
 </ol>
@@ -664,20 +663,49 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <section id="requirements-for-contributions">
 <h2>Requirements for Contributions<a class="headerlink" href="#requirements-for-contributions" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p><strong>Tests</strong>: All new functionality must include comprehensive tests. We use <code class="docutils literal notranslate"><span class="pre">pytest</span></code>; run the full suite with <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">test/</span></code> and ensure all tests pass before submitting a PR.</p></li>
-<li><p><strong>Documentation</strong>: All public functions and classes must be documented using <strong>NumPy-style docstrings</strong>.</p></li>
-<li><p><strong>Code style</strong>: Please follow PEP 8 conventions.</p></li>
+<li><p><strong>Tests</strong>: All new functionality must include comprehensive tests. We use <code class="docutils literal notranslate"><span class="pre">pytest</span></code>; run the full suite with <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">pytest</span></code> and ensure all tests pass before submitting a PR. The next section lists the markers CI uses.</p></li>
+<li><p><strong>Documentation</strong>: All public functions and classes must be documented using <strong>NumPy-style docstrings</strong>. The API reference is generated from them with sphinx-autoapi.</p></li>
+<li><p><strong>Code style</strong>: Please follow PEP 8 conventions. CI fails on syntax errors and undefined names (<code class="docutils literal notranslate"><span class="pre">flake8</span> <span class="pre">--select=E9,F63,F7,F82</span></code>) and reports everything else at a 127-character line length as warnings.</p></li>
+<li><p><strong>Changelog</strong>: Add an entry to <code class="docutils literal notranslate"><span class="pre">CHANGELOG.md</span></code> for every user-visible change. The file follows <a class="reference external" href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>; while GenSBI is pre-1.0, minor releases may break the API, and such changes must be listed under a <strong>Breaking</strong> heading.</p></li>
+</ul>
+</section>
+<section id="running-the-tests">
+<h2>Running the tests<a class="headerlink" href="#running-the-tests" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> configures pytest to run on CPU (<code class="docutils literal notranslate"><span class="pre">JAX_PLATFORMS=cpu</span></code>) with two xdist workers, eight fake host devices for the sharding tests, and XLA flags that make floating-point results identical across CI runners. Do not override these when reproducing a CI failure.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w">                                                        </span><span class="c1"># whole suite</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span><span class="s2">"not slow and not experimental and not extraslow"</span><span class="w">   </span><span class="c1"># CI "fast" tier</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>slow<span class="w">                                                </span><span class="c1"># CI "slow" tier</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>experimental<span class="w">                                        </span><span class="c1"># CI "experimental" tier</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/core/test_ode_solver.py::test_name<span class="w"> </span>-n<span class="w"> </span><span class="m">0</span><span class="w">          </span><span class="c1"># one test, without xdist</span>
+</pre></div>
+</div>
+<p>Tests marked <code class="docutils literal notranslate"><span class="pre">extraslow</span></code> are end-to-end recovery runs and never execute in CI; run them locally when touching the code they cover.</p>
+</section>
+<section id="development-conventions">
+<h2>Development conventions<a class="headerlink" href="#development-conventions" title="Link to this heading">#</a></h2>
+<p>These are the rules that are easy to break without noticing, because the thing that enforces them lives in a different file from the one you are editing.</p>
+<ul class="simple">
+<li><p><strong>JAX floor.</strong> CI runs the fast tier a second time with <code class="docutils literal notranslate"><span class="pre">jax==0.11.1</span></code> and <code class="docutils literal notranslate"><span class="pre">jaxlib==0.11.1</span></code> pinned. New code must work at the minimum JAX version declared in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, not only at the latest release. If you need a newer JAX feature, raise the floor in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> deliberately and note it in the changelog.</p></li>
+<li><p><strong>Import graph stays acyclic.</strong> <code class="docutils literal notranslate"><span class="pre">tests/test_import_smoke.py</span></code> imports <code class="docutils literal notranslate"><span class="pre">gensbi.models</span></code> and <code class="docutils literal notranslate"><span class="pre">gensbi.normalizing_flows</span></code> in fresh subprocesses, so a circular import that happens to work in the test process still fails CI. <code class="docutils literal notranslate"><span class="pre">gensbi.core</span></code> lazy-loads its method classes for this reason. If a new module needs something from a higher layer, prefer a lazy import inside the function over a module-level one.</p></li>
+<li><p><strong>Sharding vocabulary is a cross-repo contract.</strong> <code class="docutils literal notranslate"><span class="pre">LOGICAL_AXES</span></code>, <code class="docutils literal notranslate"><span class="pre">RULES</span></code>, <code class="docutils literal notranslate"><span class="pre">MODEL_AXIS</span></code> and the semantics of the helpers in <code class="docutils literal notranslate"><span class="pre">src/gensbi/sharding.py</span></code> must stay identical to <code class="docutils literal notranslate"><span class="pre">heal_swin_nnx/sharding.py</span></code> in the <a class="reference external" href="https://pypi.org/project/heal-swin-nnx/">heal-swin-nnx</a> package. Neither package imports the other; a test in <code class="docutils literal notranslate"><span class="pre">tests/sharding/</span></code> pins the vocabulary against the installed <code class="docutils literal notranslate"><span class="pre">heal-swin-nnx</span></code>. Change both repositories together.</p></li>
+<li><p><strong>Notebooks under <code class="docutils literal notranslate"><span class="pre">docs/</span></code> are downloaded copies.</strong> <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">download</span></code> in <code class="docutils literal notranslate"><span class="pre">docs/</span></code> wipes <code class="docutils literal notranslate"><span class="pre">docs/notebooks/</span></code> and refetches every notebook from the <a class="reference external" href="https://github.com/aurelio-amerio/GenSBI-examples">GenSBI-examples</a> repository, along with <code class="docutils literal notranslate"><span class="pre">getting_started/my_first_model.ipynb</span></code> and <code class="docutils literal notranslate"><span class="pre">advanced/methods_and_samplers.ipynb</span></code>. Fix notebooks there, not here; edits made in this repository are lost on the next download.</p></li>
+<li><p><strong>Third-party workarounds live in <code class="docutils literal notranslate"><span class="pre">src/gensbi/_compat.py</span></code>.</strong> Each shim documents the upstream bug it works around and is written to be a no-op once the fix ships, so it can be deleted when the corresponding dependency floor is raised past it.</p></li>
+<li><p><strong>Custom models follow a fixed call signature.</strong> The pipelines call models positionally; see the <a class="reference external" href="https://gensbi.com/advanced/custom_models.html">Custom Models</a> page before adding an architecture.</p></li>
 </ul>
 </section>
 <section id="directory-structure">
 <h2>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading">#</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>GenSBI/
 ├── src/gensbi/              # Main source code
+│   ├── core/                # GenerativeMethod strategies (flow matching, EDM, score matching)
 │   ├── models/              # Neural network architectures
+│   │   ├── core/            # Shared patching, tokenizers, stats
 │   │   ├── embedding/       # Embedding layers
 │   │   ├── flux1/           # Flux1 transformer model
 │   │   ├── flux1joint/      # Flux1Joint variant
 │   │   ├── simformer/       # Simformer model
+│   │   ├── maf/             # Masked autoregressive flow
+│   │   ├── tarflow/         # Transformer autoregressive flow
 │   │   ├── losses/          # Loss function implementations
 │   │   └── wrappers/        # Model wrappers for ODE/SDE interface
 │   ├── recipes/             # High-level training pipelines
@@ -685,9 +713,11 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 │   │   ├── conditional_pipeline.py
 │   │   ├── unconditional_pipeline.py
 │   │   ├── joint_pipeline.py
+│   │   ├── flow_pipeline.py # Discrete normalizing-flow (NPE) pipeline
 │   │   ├── flux1.py
 │   │   ├── flux1joint.py
-│   │   └── simformer.py
+│   │   ├── simformer.py
+│   │   └── id_strategies.py # Token-id embedding strategies
 │   ├── flow_matching/       # Flow matching implementation
 │   │   ├── path/            # Interpolation paths
 │   │   ├── solver/          # ODE solvers
@@ -696,6 +726,8 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 │   ├── diffusion/           # Diffusion model implementation
 │   │   ├── path/            # Noise schedules (VP, VE, EDM)
 │   │   └── solver/          # Diffusion samplers
+│   ├── normalizing_flows/   # Bijections and change-of-variables primitives
+│   ├── inference/           # NLE posterior sampling (MCLMC, tempered SMC, nested sampling)
 │   ├── diagnostics/         # Diagnostic and validation tools
 │   │   ├── metrics/         # Evaluation metrics
 │   │   ├── lc2st.py         # LC2ST diagnostic
@@ -705,23 +737,19 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 │   ├── experimental/        # Experimental features
 │   │   ├── models/
 │   │   └── recipes/
+│   ├── sharding.py          # Multi-device mesh helpers
+│   ├── _compat.py           # Shims for third-party breakage
 │   └── utils/               # Utility functions
-├── test/                    # Test suite
-│   ├── diagnostics/
-│   ├── diffusion/
-│   ├── experimental/
-│   ├── flow_matching/
-│   ├── models/
-│   ├── recipes/
-│   └── utils/
+├── tests/                   # Test suite, mirrors src/gensbi
 ├── docs/                    # Documentation source
 │   ├── basics/              # User guides
 │   ├── getting_started/     # Installation &amp; quick start
+│   ├── advanced/            # Custom models, samplers, normalizing flows
 │   ├── theoretical_overview/# Theory behind flow &amp; diffusion models
-│   ├── examples/            # Example pipeline scripts
-│   │   └── config_examples/ # Example YAML configuration files
-│   ├── notebooks/           # Tutorial notebooks
+│   ├── examples/            # Example pipeline scripts and YAML configs
+│   ├── notebooks/           # Tutorial notebooks (downloaded, see above)
 │   └── conf.py              # Sphinx configuration
+├── CHANGELOG.md
 └── pyproject.toml           # Package configuration
 </pre></div>
 </div>
@@ -730,10 +758,11 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <h2>Pull Request Process<a class="headerlink" href="#pull-request-process" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
 <li><p>Create a branch: <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">checkout</span> <span class="pre">-b</span> <span class="pre">feature/your-feature-name</span></code></p></li>
-<li><p>Make your changes with tests and documentation</p></li>
-<li><p>Run tests: <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">test/</span></code></p></li>
+<li><p>Make your changes with tests, documentation and a changelog entry</p></li>
+<li><p>Run tests: <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">pytest</span></code></p></li>
 <li><p>Push and open a PR with a clear description of your changes</p></li>
 </ol>
+<p>We appreciate your contributions and look forward to collaborating with you!</p>
 </section>
 <section id="questions">
 <h2>Questions?<a class="headerlink" href="#questions" title="Link to this heading">#</a></h2>
@@ -742,7 +771,6 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <li><p>Read the <a class="reference internal" href="../api/gensbi/index.html"><span class="doc std std-doc">API Documentation</span></a></p></li>
 <li><p>Open an issue on GitHub for discussion</p></li>
 </ul>
-<p>We appreciate your contributions and look forward to collaborating with you!</p>
 </section>
 </section>
 
@@ -795,6 +823,8 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-setup">Development Setup</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#requirements-for-contributions">Requirements for Contributions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-tests">Running the tests</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-conventions">Development conventions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-structure">Directory Structure</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pull-request-process">Pull Request Process</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#questions">Questions?</a></li>
