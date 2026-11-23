@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Handout: three numerics tests fail on JAX 0.12.1 (2026-11-23) &#8212; GenSBI  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=6a604523" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=3a97f689" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=18a8d5f5"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=b8b12719"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../../_static/design-tabs.js?v=fcb327ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'superpowers/specs/2026-11-23-jax-0121-numerics-handout';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = true;</script>
+    <link rel="icon" href="../../_static/logo-square-small.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo-square-small.png" class="logo__image only-light" alt="GenSBI  documentation - Home"/>
+    <img src="../../_static/logo-square-small.png" class="logo__image only-dark pst-js-only" alt="GenSBI  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../documentation/index.html">
+    Get Started!
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../references.html">
+    References
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/aurelio-amerio/GenSBI" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Handout: three numerics tests fail on JAX 0.12.1 (2026-11-23)</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="handout-three-numerics-tests-fail-on-jax-0-12-1-2026-11-23">
+<span id="handout-three-numerics-tests-fail-on-jax-0121-2026-11-23"></span><h1>Handout: three numerics tests fail on JAX 0.12.1 (2026-11-23)<a class="headerlink" href="#handout-three-numerics-tests-fail-on-jax-0-12-1-2026-11-23" title="Link to this heading">#</a></h1>
+<p>Status: <strong>resolved — see §6 (root causes, fix, evidence).</strong> Original status: problem statement
+and reproduction — cause not identified, nothing fixed. Found
+on PR #55 (<code class="docutils literal notranslate"><span class="pre">fix/diagnostics-calibration</span></code>), whose <code class="docutils literal notranslate"><span class="pre">test</span></code> job went red for reasons unrelated to
+that PR. This worktree (<code class="docutils literal notranslate"><span class="pre">worktree-jax-0.12.1-numerics</span></code>) is branched from <code class="docutils literal notranslate"><span class="pre">main</span></code> at <code class="docutils literal notranslate"><span class="pre">0dea64bc</span></code>
+and contains no code changes.</p>
+<section id="the-problem">
+<span id="1-the-problem"></span><h2>1. The problem<a class="headerlink" href="#the-problem" title="Link to this heading">#</a></h2>
+<p>CI’s <code class="docutils literal notranslate"><span class="pre">test</span></code> job installs the newest dependencies that <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> allows
+(<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span> <span class="pre">--group</span> <span class="pre">test</span></code>; <code class="docutils literal notranslate"><span class="pre">uv.lock</span></code> is gitignored, so nothing is pinned). <code class="docutils literal notranslate"><span class="pre">jax</span></code> is constrained
+to <code class="docutils literal notranslate"><span class="pre">&gt;=0.11.1,</span> <span class="pre">&lt;0.13.0</span></code>, so the job picked up <strong>jax / jaxlib 0.12.1</strong> when it was released.
+With that version three tests of the fast tier fail:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>test</p></th>
+<th class="head"><p>failure</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tests/models/maf/test_maf_precision.py::test_refactor_is_bit_identical</span></code></p></td>
+<td><p>log-probs differ from the stored values in the last float32 digit</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tests/models/tarflow/test_tarflow_precision.py::test_refactor_is_bit_identical</span></code></p></td>
+<td><p>same</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tests/experimental/models/pixeldit/test_training.py::test_tiny_overfit_and_cond_sensitivity</span></code></p></td>
+<td><p>loss drops 52.6x after 3000 steps, the test requires 100x</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">main</span></code> is affected in the same way: its last CI run (2026-10-27, <code class="docutils literal notranslate"><span class="pre">0dea64bc</span></code>) passed only
+because it resolved jax 0.12.0.1. Any PR opened now gets a red <code class="docutils literal notranslate"><span class="pre">test</span></code> job.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">test-jax-floor</span></code> job, which pins <code class="docutils literal notranslate"><span class="pre">jax==0.11.1</span></code>, still passes.</p>
+</section>
+<section id="evidence">
+<span id="2-evidence"></span><h2>2. Evidence<a class="headerlink" href="#evidence" title="Link to this heading">#</a></h2>
+<p><strong>CI, PR #55, run 45221344336, job <code class="docutils literal notranslate"><span class="pre">test</span></code></strong> (ubuntu-26.04 runner): <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">failed,</span> <span class="pre">1292</span> <span class="pre">passed,</span> <span class="pre">2</span> <span class="pre">skipped</span></code>. Versions installed: jax 0.12.1, jaxlib 0.12.1, numpy 2.5.5, optax 0.2.9,
+flax 0.12.12, equinox 0.13.8, diffrax 0.7.2, scipy 1.18.1.</p>
+<p><strong>CI, <code class="docutils literal notranslate"><span class="pre">main</span></code>, run 40486100994, job <code class="docutils literal notranslate"><span class="pre">test</span></code></strong> (ubuntu-24.04 runner): all passed. Versions:
+jax 0.12.0.1, jaxlib 0.12.0.1, numpy 2.5.4, optax 0.2.8, the rest identical.</p>
+<p><strong>Local reproduction</strong> (Intel Xeon Gold 6130, the repo’s <code class="docutils literal notranslate"><span class="pre">.venv</span></code> with jax 0.12.0.1,
+numpy 2.5.4, optax 0.2.8, flax 0.12.10), changing only jax and jaxlib through a throwaway
+overlay so that <code class="docutils literal notranslate"><span class="pre">.venv</span></code> is not touched:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span>v<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">0</span>.12.0.1<span class="w"> </span><span class="m">0</span>.12.1<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>uv<span class="w"> </span>run<span class="w"> </span>--no-sync<span class="w"> </span>--with<span class="w"> </span><span class="s2">"jax==</span><span class="nv">$v</span><span class="s2">"</span><span class="w"> </span>--with<span class="w"> </span><span class="s2">"jaxlib==</span><span class="nv">$v</span><span class="s2">"</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>tests/models/maf/test_maf_precision.py::test_refactor_is_bit_identical<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>tests/models/tarflow/test_tarflow_precision.py::test_refactor_is_bit_identical<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>tests/experimental/models/pixeldit/test_training.py::test_tiny_overfit_and_cond_sensitivity<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-q<span class="w"> </span>-n<span class="w"> </span><span class="m">3</span><span class="w"> </span>-p<span class="w"> </span>no:cacheprovider
+<span class="k">done</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>jax / jaxlib</p></th>
+<th class="head"><p>result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0.12.0.1</p></td>
+<td><p>3 passed</p></td>
+</tr>
+<tr class="row-odd"><td><p>0.12.1</p></td>
+<td><p>3 failed, with the same numbers as CI</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>So the jax version alone is enough to cause it. numpy 2.5.5, optax 0.2.9 and the newer
+runner image are not needed to reproduce.</p>
+<p>The numbers under 0.12.1 (stored value in brackets where it differs):</p>
+<ul class="simple">
+<li><p>MAF log-probs: <code class="docutils literal notranslate"><span class="pre">-2.781574,</span> <span class="pre">-3.5820527,</span> <span class="pre">-5.5947804</span> <span class="pre">[-5.5947814],</span> <span class="pre">-3.1017501</span> <span class="pre">[-3.1017504],</span> <span class="pre">-3.853031</span></code></p></li>
+<li><p>TarFlow log-probs: <code class="docutils literal notranslate"><span class="pre">-2.7815738,</span> <span class="pre">-3.5820527,</span> <span class="pre">-5.59478</span> <span class="pre">[-5.594781],</span> <span class="pre">-3.1017501,</span> <span class="pre">-3.8530312</span> <span class="pre">[-3.853031]</span></code></p></li>
+<li><p>PixelDiT overfit: loss <code class="docutils literal notranslate"><span class="pre">3.7532</span> <span class="pre">-&gt;</span> <span class="pre">0.0713</span></code>, ratio 52.6x. The test’s docstring records
+118-136x at jax 0.11.1 and 0.12.0.1.</p></li>
+</ul>
+<p><strong>The existing workaround does not help.</strong> <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> sets
+<code class="docutils literal notranslate"><span class="pre">XLA_FLAGS=--xla_cpu_enable_platform_dependent_math=false</span></code> for the test suite, added for an
+earlier rounding change (XNNPACK’s f32 dot kernel on AMD Zen 4/5, google/XNNPACK#11736,
+which drove the same PixelDiT ratio to about 57x). Evaluating the MAF log-probs directly,
+with and without that flag:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>jax / jaxlib</p></th>
+<th class="head"><p>flag set</p></th>
+<th class="head"><p>bit-identical to the stored values</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0.12.0.1</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>0.12.0.1</p></td>
+<td><p>no</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-even"><td><p>0.12.1</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-odd"><td><p>0.12.1</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>On this Intel CPU the flag changes nothing in either version, and 0.12.1 differs in both
+cases.</p>
+</section>
+<section id="what-is-not-known">
+<span id="3-what-is-not-known"></span><h2>3. What is not known<a class="headerlink" href="#what-is-not-known" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Which change in 0.12.1 moved the rounding.</strong> Not looked up. The 52.6x ratio is close to
+the 57x of the XNNPACK episode, which suggests the same kind of kernel change now applies
+on more CPUs or is no longer switched off by the flag. That is a guess, not a finding.</p></li>
+<li><p><strong>Whether another flag or setting restores the old arithmetic in 0.12.1.</strong></p></li>
+<li><p><strong>Whether the PixelDiT result is only slower convergence or a worse optimum.</strong> The run was
+not extended beyond 3000 steps, and the loss curve was not compared between versions.</p></li>
+<li><p><strong>Whether the slow and experimental tiers are affected.</strong> CI stops after the fast tier
+fails, so they did not run. They were not run locally under 0.12.1 either.</p></li>
+<li><p><strong>Whether GPU results change.</strong> Everything above is CPU.</p></li>
+</ul>
+</section>
+<section id="options">
+<span id="4-options"></span><h2>4. Options<a class="headerlink" href="#options" title="Link to this heading">#</a></h2>
+<p>These are not exclusive.</p>
+<ol class="arabic simple">
+<li><p><strong>Cap <code class="docutils literal notranslate"><span class="pre">jax&lt;0.12.1</span></code></strong> in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (all four entries: the base dependency and the
+<code class="docutils literal notranslate"><span class="pre">cuda12</span></code>, <code class="docutils literal notranslate"><span class="pre">cuda13</span></code>, <code class="docutils literal notranslate"><span class="pre">tpu</span></code> extras). Turns CI green at once. It also stops users from
+installing 0.12.1 with GenSBI, although nothing here shows the library misbehaving on it:
+the failures are last-digit differences and one convergence threshold. A CI-only pin
+(as <code class="docutils literal notranslate"><span class="pre">test-jax-floor</span></code> does with <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span></code>) avoids restricting users, but then the
+<code class="docutils literal notranslate"><span class="pre">test</span></code> job no longer tests the newest release.</p></li>
+<li><p><strong>Compare the MAF and TarFlow log-probs with a tolerance</strong> instead of <code class="docutils literal notranslate"><span class="pre">jnp.array_equal</span></code>.
+The stored values were captured to prove that one refactor (the mixed-precision work) was
+a no-op. Exact equality across JAX releases is a stronger promise than that, and this is
+the second release to change CPU rounding. The observed differences are about 2e-7
+relative; a tolerance near 1e-6 would pass 0.12.1 and still catch a real change.</p></li>
+<li><p><strong>Investigate the PixelDiT test before touching its threshold.</strong> Its assertion message
+says not to weaken it without investigating. Things to establish: what changed in
+0.12.1, whether a flag restores the old path, and whether more steps reach 100x.</p></li>
+</ol>
+</section>
+<section id="related">
+<span id="5-related"></span><h2>5. Related<a class="headerlink" href="#related" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/experimental/models/pixeldit/test_training.py</span></code> is under <code class="docutils literal notranslate"><span class="pre">tests/experimental/</span></code> but
+<code class="docutils literal notranslate"><span class="pre">test_tiny_overfit_and_cond_sensitivity</span></code> carries no <code class="docutils literal notranslate"><span class="pre">experimental</span></code> marker, so it runs in
+the fast tier. Whether that is intended was not checked.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">uv.lock</span></code> being gitignored is what lets a dependency release break CI without any commit.</p></li>
+<li><p>PR #55 is blocked on a green <code class="docutils literal notranslate"><span class="pre">test</span></code> job by this issue, not by its own changes.</p></li>
+</ul>
+</section>
+<section id="resolution-2026-11-23-same-day">
+<span id="6-resolution-2026-11-23-same-day"></span><h2>6. Resolution (2026-11-23, same day)<a class="headerlink" href="#resolution-2026-11-23-same-day" title="Link to this heading">#</a></h2>
+<p>Environment: worktree <code class="docutils literal notranslate"><span class="pre">.venv</span></code> built with <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span> <span class="pre">--group</span> <span class="pre">dev</span> <span class="pre">--upgrade</span></code> (jax/jaxlib 0.12.1, the
+newest release; numpy 2.5.5, optax 0.2.9, flax 0.12.12, grain 0.2.19). No dependency bump was
+needed for the fix. Intel Xeon Gold 6130.</p>
+<section id="maf-tarflow-goldens-the-rng-moved-not-the-model">
+<h3>6.1 MAF / TarFlow goldens: the RNG moved, not the model<a class="headerlink" href="#maf-tarflow-goldens-the-rng-moved-not-the-model" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">JAX_ACCURATE_ERF_INV=False</span></code> alone restores both sets of log-probs bit for bit
+(<code class="docutils literal notranslate"><span class="pre">JAX_ACCURATE_DEFAULT_ERFC</span></code>, <code class="docutils literal notranslate"><span class="pre">JAX_SOFTMAX_CUSTOM_JVP</span></code>, <code class="docutils literal notranslate"><span class="pre">JAX_USE_SIMPLIFIED_JAXPR_CONSTANTS</span></code> do
+nothing). jax 0.12.1 made the accurate <code class="docutils literal notranslate"><span class="pre">erf_inv</span></code> the default, and <code class="docutils literal notranslate"><span class="pre">jax.random.normal</span></code> is built on
+it: the first float of <code class="docutils literal notranslate"><span class="pre">jax.random.normal(PRNGKey(1),</span> <span class="pre">(5,</span> <span class="pre">3))</span></code> changes in its last bit. The tests
+draw both the input <code class="docutils literal notranslate"><span class="pre">x</span></code> and the initial weights from <code class="docutils literal notranslate"><span class="pre">jax.random</span></code>, so they moved by ~1 ULP and
+the log-probs by &lt;=1.8e-7 relative. The model’s arithmetic is unchanged.</p>
+<p><strong>Follow-up: the goldens tested nothing about the models, so they were removed.</strong> They were
+captured from GenSBI’s own JAX code (not PyTorch) on 2026-07-20 (mixed-precision plan, Tasks 7/8).
+Both models default to <code class="docutils literal notranslate"><span class="pre">zero_init=True</span></code>, so at init each flow is the identity and its log-prob is
+the base density: MAF’s goldens equal <code class="docutils literal notranslate"><span class="pre">N(0,</span> <span class="pre">I).logpdf(x)</span></code> exactly and TarFlow’s to 1 ULP, which is
+why the two “independent” golden sets are the same numbers. They pinned <code class="docutils literal notranslate"><span class="pre">jax.random.normal</span></code> bits,
+which is why an <code class="docutils literal notranslate"><span class="pre">erf_inv</span></code> change broke them, and they duplicated the existing in-run
+<code class="docutils literal notranslate"><span class="pre">test_zero_init_*_is_standard_normal</span></code> tests. Replaced in both <code class="docutils literal notranslate"><span class="pre">*_precision.py</span></code> files by the bf16
+compute-knob tests every other model already had, on a non-trivial flow (<code class="docutils literal notranslate"><span class="pre">zero_init=False</span></code>):
+fp32 master weights + fp32 finite log-prob under bf16 compute, and bf16 log-prob differs from fp32
+(knob reaches the compute) by &lt; 2e-2 relative (measured 1.2e-3 MAF, 4.5e-3 TarFlow). No stored
+numbers, so nothing to drift across JAX releases.</p>
+</section>
+<section id="pixeldit-overfit-an-unstable-test-recipe-reshuffled-by-rounding">
+<h3>6.2 PixelDiT overfit: an unstable test recipe, reshuffled by rounding<a class="headerlink" href="#pixeldit-overfit-an-unstable-test-recipe-reshuffled-by-rounding" title="Link to this heading">#</a></h3>
+<p>Evidence, in the order it was gathered (ratio after 3000 steps; test threshold 100x):</p>
+<ol class="arabic">
+<li><p>Seed 2 loss curves: 0.12.0.1 -&gt; 119x; 0.12.1 -&gt; 52.6x; 0.12.1 with <code class="docutils literal notranslate"><span class="pre">erf_inv</span></code> off -&gt; <strong>1.0x</strong>
+(no learning at all).</p></li>
+<li><p>Crossover with pinned init weights (erf_inv off): 0.12.1 arithmetic + 0.12.0.1 init -&gt; 1.0x;
+0.12.0.1 arithmetic + 0.12.1 init -&gt; 118.9x. Init is irrelevant; the training-step arithmetic
+decides.</p></li>
+<li><p>Flag toggles on that pinned setup: <code class="docutils literal notranslate"><span class="pre">JAX_SOFTMAX_CUSTOM_JVP=False</span></code> -&gt; 129x; the constants and
+erfc flags leave the trajectory bit-identical (they do not touch this model).</p></li>
+<li><p>But it is <strong>not</strong> a softmax defect. Both softmax gradient rules are exact (new:
+<code class="docutils literal notranslate"><span class="pre">y*(xdot</span> <span class="pre">-</span> <span class="pre">sum(y*xdot))</span></code>; old: autodiff through exp/sum/div with stop-gradient max). 8-seed
+sweeps (model seeds 0-7):</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>config</p></th>
+<th class="head"><p>failures (&lt;100x)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0.12.0.1 default</p></td>
+<td><p>0/8 (114-140x)</p></td>
+</tr>
+<tr class="row-odd"><td><p>0.12.1 default</p></td>
+<td><p>2/8 (67x, 53x)</p></td>
+</tr>
+<tr class="row-even"><td><p>0.12.0.1 + <code class="docutils literal notranslate"><span class="pre">JAX_SOFTMAX_CUSTOM_JVP=True</span></code></p></td>
+<td><p>2/8 (67x, 11x)</p></td>
+</tr>
+<tr class="row-odd"><td><p>0.12.1 + <code class="docutils literal notranslate"><span class="pre">JAX_SOFTMAX_CUSTOM_JVP=False</span></code></p></td>
+<td><p>1/8 (11x)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Every rounding perturbation, including turning the <em>old</em> rule back on, just moves which seeds
+fail; pooled ~1 in 5 fail, and 0.12.0.1’s 0/8 is consistent with luck (P ~ 0.17).</p>
+</li>
+<li><p>Mechanism (traced every 20 steps): the failing run tracks the healthy one until warmup ends
+(peak lr 5e-3 at step 50), takes a gradient spike (global norm 9.5 at step 80), loss jumps
+1.07 -&gt; 3.49, recovers briefly, then by step 160 collapses for good to ~3.6 (the
+constant-prediction loss) with a runaway parameter norm. Plain Adam at 5e-3, 50 warmup steps,
+no clipping, 4 samples. The library’s own pipelines use max_lr ~1e-4 with gradient clipping.</p></li>
+</ol>
+<p>Fix: <code class="docutils literal notranslate"><span class="pre">optax.chain(optax.clip_by_global_norm(1.0),</span> <span class="pre">optax.adam(schedule))</span></code>. Schedule, step count
+and the 100x threshold are unchanged. Clipped recipe, 8 seeds x 4 setups:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>setup</p></th>
+<th class="head"><p>ratios (seeds 0-7)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>jax 0.11.1</p></td>
+<td><p>156 183 143 183 181 178 158 178</p></td>
+</tr>
+<tr class="row-odd"><td><p>jax 0.12.0.1</p></td>
+<td><p>155 173 169 170 166 171 161 158</p></td>
+</tr>
+<tr class="row-even"><td><p>jax 0.12.1</p></td>
+<td><p>175 161 151 180 158 156 147 173</p></td>
+</tr>
+<tr class="row-odd"><td><p>jax 0.12.1, old softmax rule</p></td>
+<td><p>188 152 155 180 180 153 154 164</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>32/32 pass, worst 143x. The XNNPACK/AMD Zen 4/5 episode (~57x) is the same instability; not
+re-measured on AMD (no AMD host available), but clipping removes the failure mode rather than
+avoiding one rounding variant.</p>
+</section>
+<section id="still-open">
+<h3>6.3 Still open<a class="headerlink" href="#still-open" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>AMD Zen 4/5 runners: not measured with the clipped recipe.</p></li>
+<li><p>Done in the same branch: floor raised to <code class="docutils literal notranslate"><span class="pre">grain&gt;=0.2.19</span></code> (which catches the absl error
+upstream) and <code class="docutils literal notranslate"><span class="pre">gensbi/_compat.py</span></code> deleted; <code class="docutils literal notranslate"><span class="pre">tests/test_grain_compat.py</span></code> kept as the floor guard
+(fails on grain 0.2.18 without the shim, passes on 0.2.19).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_tiny_overfit_and_cond_sensitivity</span></code> still has no <code class="docutils literal notranslate"><span class="pre">experimental</span></code> marker (unchanged).</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-problem">1. The problem</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#evidence">2. Evidence</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-not-known">3. What is not known</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options">4. Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#related">5. Related</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#resolution-2026-11-23-same-day">6. Resolution (2026-11-23, same day)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#maf-tarflow-goldens-the-rng-moved-not-the-model">6.1 MAF / TarFlow goldens: the RNG moved, not the model</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pixeldit-overfit-an-unstable-test-recipe-reshuffled-by-rounding">6.2 PixelDiT overfit: an unstable test recipe, reshuffled by rounding</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#still-open">6.3 Still open</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Aurelio Amerio.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__center">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
