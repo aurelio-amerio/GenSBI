@@ -349,21 +349,32 @@ def test_tiny_overfit_and_cond_sensitivity():
 
     Dataset: 4 (obs, cond) pairs where obs = checkerboard * cond[0] +
     gradient * cond[1].  Trained via the flow-matching pipeline loss with
-    a warmup + cosine schedule for 3000 steps (~44 s on CPU).
+    a warmup + cosine schedule and global-norm clipping (1.0) for 3000 steps
+    (~44 s on CPU).
 
     Loss check: the CFM objective is stochastic (random t and noise each step),
     so the final loss is evaluated as the mean over 64 fixed random keys to
     get a stable estimate.  The 100x threshold is consistent with the model
     overfitting the 4-sample batch to the point where the velocity field is
-    well-approximated; 3000 steps with a cosine schedule reliably reaches it
-    (measured 118-136x across Intel and AMD CPUs at jax 0.11.1 and 0.12.0.1).
+    well-approximated.  With clipping, 3000 steps reach 143-188x on every one
+    of model seeds 0-7 under jax 0.11.1, 0.12.0.1 and 0.12.1 (Intel Xeon).
+
+    Why the clip: without it, plain Adam at the 5e-3 peak sometimes takes a
+    gradient spike just after warmup (step ~80) and collapses irreversibly to
+    the constant-prediction loss (ratio 1x), or recovers only partly (11-67x).
+    Which seeds hit this is decided by last-bit rounding, so every JAX release
+    that touches CPU numerics reshuffled the failures: about 1 seed in 5 failed
+    under jax 0.12.1 (its new softmax custom-JVP default and its more accurate
+    erf_inv, which changes ``jax.random.normal``), while seed 2 happened to pass
+    under 0.12.0.1. The recipe was unstable; the model and JAX were not wrong.
 
     Platform note: with jaxlib >= 0.12, XNNPACK's f32 dot kernel on AMD Zen 4/5
     (AVX-512) sums K in a single FMA chain (google/XNNPACK#11736); every dot in
-    this tiny model is narrow, and that rounding change alone drives the ratio
-    to ~57x on those CPUs. The test suite therefore sets
+    this tiny model is narrow, and that rounding change alone drove the
+    unclipped ratio to ~57x on those CPUs, the same instability as above. The
+    test suite therefore also sets
     ``XLA_FLAGS=--xla_cpu_enable_platform_dependent_math=false`` (pyproject
-    ``[tool.pytest.ini_options] env``), which restores 119x on the same CPUs.
+    ``[tool.pytest.ini_options] env``) so CPU arithmetic matches across runners.
 
     Cond sensitivity uses structurally different tokens cond_A=[[1],[0]] vs
     cond_B=[[0],[1]] — RMSNorm cannot annihilate these (uniform shifts would
@@ -401,8 +412,11 @@ def test_tiny_overfit_and_cond_sensitivity():
             decay_steps=_NSTEPS,
             end_value=1e-5,
         )
+        # Global-norm clipping guards the step right after warmup; see the docstring.
         optimizer = nnx.Optimizer(
-            pipeline.model, optax.adam(schedule), wrt=nnx.Param
+            pipeline.model,
+            optax.chain(optax.clip_by_global_norm(1.0), optax.adam(schedule)),
+            wrt=nnx.Param,
         )
 
         eval_key = jax.random.PRNGKey(99)
