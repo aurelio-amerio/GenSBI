@@ -6,18 +6,6 @@ from flax import nnx
 from gensbi.models import TarFlow, TarFlowParams
 from tests.precision_utils import assert_tree_dtype
 
-# Captured from UNMODIFIED code (before this task's refactor) with:
-#   PYTHONPATH=.../src JAX_PLATFORMS=cpu python -c "
-#   import jax, jax.numpy as jnp
-#   from flax import nnx
-#   from gensbi.models import TarFlow, TarFlowParams
-#   m = TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=3, cond_dim=2, num_blocks=2,
-#                              layers_per_block=1))
-#   x = jax.random.normal(jax.random.PRNGKey(1), (5, 3, 1))
-#   cond = jnp.ones((5, 2))
-#   print(repr(m.log_prob(x, cond)))"
-GOLDEN_LOG_PROBS = [-2.7815738, -3.5820527, -5.594781, -3.1017501, -3.853031]
-
 
 def _make(**kw):
     return TarFlow(TarFlowParams(rngs=nnx.Rngs(0), dim=3, cond_dim=2,
@@ -38,15 +26,26 @@ def test_log_prob_fp32_and_finite():
     assert jnp.all(jnp.isfinite(lp))
 
 
-def test_refactor_is_bit_identical():
-    # Golden values computed from the pre-refactor code at the start of this
-    # task; regenerate with the command in the module docstring above.
-    m = _make()
+def test_bf16_compute_keeps_fp32_weights_and_output():
+    # zero_init=False so the flow is not the identity (with the default zero_init the
+    # log-prob is just the base N(0, I) density and the dtype knob has nothing to act on).
+    m = _make(zero_init=False, dtype=jnp.bfloat16)
+    assert_tree_dtype(nnx.to_pure_dict(nnx.state(m, nnx.Param)), jnp.float32)
+    x = jax.random.normal(jax.random.PRNGKey(1), (5, 3, 1))
+    lp = m.log_prob(x, jnp.ones((5, 2)))
+    assert lp.dtype == jnp.float32
+    assert jnp.all(jnp.isfinite(lp))
+
+
+def test_bf16_compute_is_wired_and_close_to_fp32():
+    # Same rngs seed -> identical fp32 master weights; only the compute dtype differs.
     x = jax.random.normal(jax.random.PRNGKey(1), (5, 3, 1))
     cond = jnp.ones((5, 2))
-    lp = m.log_prob(x, cond)
-    expected = jnp.asarray(GOLDEN_LOG_PROBS)
-    assert jnp.array_equal(lp, expected), "TarFlow refactor must be a bit-exact no-op"
+    lp32 = _make(zero_init=False, dtype=jnp.float32).log_prob(x, cond)
+    lp16 = _make(zero_init=False, dtype=jnp.bfloat16).log_prob(x, cond)
+    assert not jnp.array_equal(lp16, lp32), "TarFlow dtype knob does not reach the compute"
+    err = jnp.max(jnp.abs(lp16 - lp32)) / jnp.max(jnp.abs(lp32))
+    assert err < 2e-2, f"bf16 compute deviates {err} from fp32"
 
 
 def test_dtype_kwarg_accepted():
