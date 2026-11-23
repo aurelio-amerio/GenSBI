@@ -5,6 +5,7 @@
 # MODIFICATION NOTICE:
 # This file was modified by Aurelio Amerio on 01-2026.
 # Description: Ported implementation to use JAX instead of PyTorch.
+# 11-2026: synced the classifier handling with upstream.
 # --------------------------------------------------------------------------
 
 
@@ -15,6 +16,7 @@ import jax
 from jax import Array
 import jax.numpy as jnp
 
+from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, cross_val_score
 from sklearn.neural_network import MLPClassifier
@@ -26,7 +28,7 @@ def c2st(
     seed: int = 1,
     n_folds: int = 5,
     metric: str = "accuracy",
-    classifier: Union[str, Callable] = "rf",
+    classifier: Union[str, BaseEstimator, Callable] = "rf",
     classifier_kwargs: Optional[Dict[str, Any]] = None,
     z_score: bool = True,
     noise_scale: Optional[float] = None,
@@ -60,10 +62,13 @@ def c2st(
         Number of folds to use for cross-validation. Default is 5.
     metric : str, optional
         Scikit-learn metric to use for scoring. Default is 'accuracy'.
-    classifier : str or Callable, optional
-        Classification architecture to use. 'rf' for RandomForestClassifier, 'mlp' for MLPClassifier, or a scikit-learn compatible classifier. Default is 'rf'.
+    classifier : str, BaseEstimator or Callable, optional
+        Classification architecture to use. 'rf' for RandomForestClassifier, 'mlp' for MLPClassifier,
+        a scikit-learn classifier instance, its class, or a function that returns a scikit-learn
+        classifier. Default is 'rf'.
     classifier_kwargs : dict, optional
-        Additional keyword arguments for the classifier.
+        Additional keyword arguments for the classifier. If they leave ``random_state``
+        unset, it is set to ``seed``.
     z_score : bool, optional
         Whether to z-score X and Y using the mean and std of X. Default is True.
     noise_scale : float, optional
@@ -109,6 +114,23 @@ def c2st(
             "early_stopping": True,
             "n_iter_no_change": 50,
         }
+    elif isinstance(classifier, BaseEstimator):
+        clf_class = clone(classifier).set_params  # returns the configured copy
+        clf_kwargs = classifier_kwargs or {}
+    elif callable(classifier) and not isinstance(classifier, str):
+        clf_class = classifier
+        clf_kwargs = classifier_kwargs or {}
+    else:
+        raise ValueError(
+            f"Invalid classifier {classifier!r}. Expected 'rf', 'mlp', a sklearn "
+            "classifier or its class, or a function that returns a sklearn classifier."
+        )
+
+    clf = clf_class(**clf_kwargs)
+    if not (isinstance(clf, BaseEstimator) and is_classifier(clf)):
+        raise ValueError(f"classifier must build a sklearn classifier, got {clf!r}.")
+    if clf.get_params().get("random_state", 0) is None:
+        clf.set_params(random_state=seed)
 
     if z_score:
         X_mean = jnp.mean(X, axis=0)
@@ -124,8 +146,6 @@ def c2st(
         key1, key2 = jax.random.split(key)
         X += noise_scale * jax.random.normal(key1, X.shape)
         Y += noise_scale * jax.random.normal(key2, Y.shape)
-
-    clf = clf_class(random_state=seed, **clf_kwargs)
 
     # prepare data, convert to numpy
     data = np.concatenate((np.array(X), np.array(Y)))

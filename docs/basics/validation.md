@@ -8,10 +8,11 @@ GenSBI provides a native JAX-based `diagnostics` module. This module is inspired
 This is a JAX module. To use it with PyTorch (if desired), a compatibility layer must be employed.
 ```
 
-This page focuses on three complementary diagnostics:
+This page focuses on four complementary diagnostics:
 
 - **Simulation-Based Calibration (SBC)**: a *global* calibration check averaged over the prior predictive distribution.
 - **Targeted At Random Parameters (TARP)**: a *global* calibration/accuracy test based on expected coverage probabilities.
+- **Marginal coverage**: a *global*, per-parameter check of the highest-density credible regions.
 - **Local Classifier 2-Sample Test (L-C2ST)**: a *local* hypothesis test to assess posterior correctness for a *specific* observation.
 
 ```{note}
@@ -155,23 +156,64 @@ TARP comes with strong theoretical guarantees in the original work, but its full
 ```
 
 ```python
+from gensbi.diagnostics import check_tarp
+
 # Create TARP plot using the same samples from SBC
-ecp, alpha = run_tarp(
+tarp_result = run_tarp(
     thetas,
     posterior_samples,
     references=None, # Automatically calculated if None
 )
 
 # Plot coverage
-plot_tarp(ecp, alpha)
+plot_tarp(tarp_result)
 plt.show()
+
+# atc: area between the coverage curve and the diagonal (0 if calibrated)
+# ks_pval: KS test of the per-pair coverage values against a uniform distribution
+atc, ks_pval = check_tarp(tarp_result)
 ```
 
+`run_tarp` returns a `TARPResult` that holds the coverage curve (`ecp`), the credibility levels (`alpha`) and an uncertainty band.
+
 Ideally, the curve should follow the diagonal. If the curve is above the diagonal, the model is under-confident. If below, it is over-confident.
+
+`plot_tarp` draws two panels by default: the coverage against the credibility level, and the same curve as $z$-scores (1σ = 68.27%, 2σ = 95.45%, ...), which shows the high-coverage end that the first panel compresses. In the $z$-score panel the curve turns dashed above the level that the posterior samples can resolve: with $N$ samples per observation, a tail mass below $1/(N+1)$ ($z \approx 3.3$ for 1000 samples) is an extrapolation. Independently of that, a level needs enough test pairs to be measured: with 200 pairs, fewer than one miss is expected above $z \approx 2.8$, which the uncertainty band reflects.
 
 For more details, see the `sbi` how-to:
 
 - https://sbi.readthedocs.io/en/latest/how_to_guide/17_tarp.html
+
+## Marginal coverage
+
+Marginal coverage checks each parameter on its own. For every test pair and every parameter it computes the **credibility** $\alpha$ of the true value: the mass of the marginal posterior that is denser than the true value. The true value lies inside the highest-density region of level $c$ exactly when $\alpha \leq c$, so for a calibrated posterior $\alpha$ is uniform on $[0, 1]$ and the fraction of test pairs with $\alpha \leq c$ equals $c$.
+
+```python
+from gensbi.diagnostics.marginal_coverage import (
+    compute_marginal_coverage,
+    plot_marginal_coverage,
+)
+
+# alpha has shape (dim_theta, num_test_pairs)
+alpha = compute_marginal_coverage(thetas, posterior_samples, method="histogram")
+
+# Both keyword arguments are optional: one panel title per parameter, and the
+# number of posterior samples, which marks where the curve is extrapolated
+plot_marginal_coverage(
+    alpha,
+    parameter_labels=["theta_1", "theta_2", "theta_3"],
+    num_posterior_samples=num_posterior_samples,
+)
+plt.show()
+```
+
+The plot shows the empirical coverage against the nominal one, both as $z$-scores (1σ = 68.27%, 2σ = 95.45%, ...). A curve below the diagonal means the posterior is over-confident, a curve above it means it is under-confident. As in the TARP plot, the curve is dashed above the level that the posterior samples can resolve.
+
+The marginal density is estimated from the posterior samples with a histogram (`method="histogram"`) or a kernel density estimate (`method="KDE"`). In both cases the true value is pooled with the samples before the density is estimated, and $\alpha$ is the rank of the true value's density among the samples' densities, with ties split at random. For a calibrated posterior the true value and the samples are interchangeable, so this rank is exactly uniform for any posterior shape and any number of samples. The tie-breaking is random: pass `seed` to change the draw.
+
+```{note}
+Highest-density coverage cannot test a flat marginal, because all its points are equally dense. Use the SBC ranks for parameters whose posterior is as flat as their prior.
+```
 
 ## Local Classifier 2-Sample Test (L-C2ST)
 

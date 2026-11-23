@@ -149,3 +149,121 @@ def test_tarp_bootstrap():
     assert result.ecp_lower is not None
     assert result.ecp_upper is not None
     assert result.ecp.shape[0] == 10  # num_bootstrap
+
+
+def test_tarp_num_bins_none_uses_one_bin_per_ten_samples():
+    thetas, posterior_samples = get_tarp_data()  # 20 TARP samples -> 2 bins
+
+    result = run_tarp(thetas, posterior_samples, num_bins=None)
+    assert result.alpha.shape == (3,)
+    assert result.ecp.shape == (3,)
+
+    result_boot = run_tarp(
+        thetas, posterior_samples, num_bins=None, bootstrap=True, num_bootstrap=4
+    )
+    assert result_boot.alpha.shape == (3,)
+    assert result_boot.ecp.shape == (4, 3)
+
+
+@pytest.mark.parametrize("num_points", [101, 201])
+def test_check_tarp_atc_is_an_area_independent_of_the_grid(num_points):
+    # ECP runs 0.1 above the diagonal until it saturates at 1. Over alpha in
+    # [0.5, 1] the area between the curves is 0.1 * 0.4 + 0.1**2 / 2 = 0.045.
+    alpha = jnp.linspace(0.0, 1.0, num_points)
+    ecp = jnp.clip(alpha + 0.1, 0.0, 1.0)
+    result = TARPResult(ecp=ecp, alpha=alpha, ecp_mean=ecp)
+
+    atc, _ = check_tarp(result)
+
+    assert atc == pytest.approx(0.045, abs=1e-3)
+
+
+def _conjugate_gaussian_toy(scale, seed=0, num_sims=500, num_post=200, dim=2):
+    """theta ~ N(0, 1), x = theta + N(0, 1): the posterior is N(x / 2, 1 / 2).
+
+    ``scale`` multiplies the posterior standard deviation (1 is calibrated).
+    """
+    rng = np.random.default_rng(seed)
+    thetas = rng.normal(size=(num_sims, dim))
+    xs = thetas + rng.normal(size=(num_sims, dim))
+    samples = xs / 2 + scale * np.sqrt(0.5) * rng.normal(size=(num_post, num_sims, dim))
+    return thetas.astype(np.float32), samples.astype(np.float32)
+
+
+@pytest.mark.parametrize("bootstrap", [False, True])
+def test_run_tarp_keeps_the_coverage_value_of_every_pair(bootstrap):
+    thetas, posterior_samples = get_tarp_data()
+
+    result = run_tarp(thetas, posterior_samples, bootstrap=bootstrap, num_bootstrap=4)
+
+    coverage = np.asarray(result.coverage_values)
+    assert coverage.shape == (thetas.shape[0],)
+    assert result.num_posterior_samples == posterior_samples.shape[0]
+    # each value is a count of posterior samples divided by their number
+    counts = coverage * posterior_samples.shape[0]
+    np.testing.assert_allclose(counts, np.round(counts), atol=1e-4)
+    assert coverage.min() >= 0.0 and coverage.max() <= 1.0
+
+
+def test_check_tarp_ks_accepts_a_calibrated_posterior():
+    thetas, samples = _conjugate_gaussian_toy(scale=1.0)
+    _, ks_pval = check_tarp(run_tarp(thetas, samples))
+    assert ks_pval > 1e-2
+
+
+@pytest.mark.parametrize("scale", [0.7, 1.5])
+def test_check_tarp_ks_rejects_a_miscalibrated_posterior(scale):
+    thetas, samples = _conjugate_gaussian_toy(scale=scale)
+    _, ks_pval = check_tarp(run_tarp(thetas, samples))
+    assert ks_pval < 1e-3
+
+
+def _curve_segments(ax, color):
+    """x/y data of the lines of one colour on an axis, keyed by line style."""
+    from matplotlib.colors import to_rgba
+
+    return {
+        line.get_linestyle(): line.get_data()
+        for line in ax.get_lines()
+        if to_rgba(line.get_color()) == to_rgba(color)
+    }
+
+
+def test_confidence_panel_reports_the_measured_coverage_at_three_sigma():
+    """The 3 sigma reading must come from the pairs, not from interpolating a 30-bin curve."""
+    from scipy.stats import norm
+
+    thetas, samples = _conjugate_gaussian_toy(scale=0.7, num_sims=3000, num_post=500)
+    result = run_tarp(thetas, samples)
+
+    fig, ax = plot_tarp(result, mode="confidence")
+    segments = _curve_segments(ax, "#202A44")
+    z = np.concatenate([seg[0] for seg in segments.values()])
+    z_hat = np.concatenate([seg[1] for seg in segments.values()])
+    order = np.argsort(z)
+    plotted = 2 * norm.cdf(np.interp(3.0, z[order], z_hat[order])) - 1
+    plt.close(fig)
+
+    # A pair whose truth is closer to the reference than r of the N samples is
+    # spread over ((r, r + 1) / (N + 1)), so it is covered at level c with
+    # probability clip(c * (N + 1) - r, 0, 1).
+    num_post = samples.shape[0]
+    counts = np.round(np.asarray(result.coverage_values, dtype=np.float64) * num_post)
+    measured = np.mean(np.clip(0.9973 * (num_post + 1) - counts, 0.0, 1.0))
+    assert measured < 0.985  # clearly overconfident at 3 sigma (nominal 0.9973)
+    assert abs(plotted - measured) < 0.004
+
+
+def test_confidence_panel_is_dashed_beyond_the_posterior_sample_resolution():
+    """With N posterior samples, tail masses below 1 / (N + 1) are extrapolated."""
+    thetas, samples = _conjugate_gaussian_toy(scale=1.0, num_sims=400, num_post=100)
+    result = run_tarp(thetas, samples)
+
+    fig, ax = plot_tarp(result, mode="confidence")
+    segments = _curve_segments(ax, "#202A44")
+    plt.close(fig)
+
+    z_resolved = 2.58  # two-sided z of a tail mass of 1 / 101
+    assert segments["-"][0].max() <= z_resolved
+    assert segments["--"][0].min() >= z_resolved - 0.1  # dashed part continues the solid one
+    assert segments["--"][0].max() > 3.0

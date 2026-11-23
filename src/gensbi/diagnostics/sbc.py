@@ -5,6 +5,8 @@
 # MODIFICATION NOTICE:
 # This file was modified by Aurelio Amerio on 01-2026.
 # Description: Ported implementation to use JAX instead of PyTorch.
+# 11-2026: synced with upstream fixes (input validation, uniformity checks for
+# discrete ranks, rank plots over the full rank range).
 # --------------------------------------------------------------------------
 
 import warnings
@@ -96,7 +98,7 @@ def run_sbc(
 
     num_posterior_samples = posterior_samples.shape[0]
 
-    # _validate_sbc_inputs(thetas, xs, num_sbc_samples, num_posterior_samples)
+    _validate_sbc_inputs(thetas, xs, num_sbc_samples, num_posterior_samples)
 
     expected_shape = (
         num_posterior_samples,
@@ -342,8 +344,15 @@ def check_prior_vs_dap(prior_samples: Array, dap_samples: Array) -> Array:
     )
 
 
-def check_uniformity_frequentist(ranks: Array, num_posterior_samples: int) -> Array:
+def check_uniformity_frequentist(
+    ranks: Array, num_posterior_samples: int, seed: int = 1
+) -> Array:
     """Return p-values for uniformity of the ranks using Kolmogorov-Smirnov test.
+
+    The ranks are integers in ``[0, num_posterior_samples]``, while the KS test
+    assumes a continuous distribution. Each rank is therefore jittered with
+    Uniform(0, 1) noise, which makes it exactly Uniform(0, num_posterior_samples + 1)
+    for a calibrated posterior.
 
     Parameters
     ----------
@@ -352,6 +361,8 @@ def check_uniformity_frequentist(ranks: Array, num_posterior_samples: int) -> Ar
         shape (N, dim_parameters).
     num_posterior_samples : int
         Number of posterior samples used for SBC ranking.
+    seed : int, optional
+        Random seed of the jitter. Default is 1.
 
     Returns
     -------
@@ -359,10 +370,13 @@ def check_uniformity_frequentist(ranks: Array, num_posterior_samples: int) -> Ar
         ks_pvals: p-values of the Kolmogorov-Smirnov test of uniformity,
         one for each dim_parameters.
     """
+    ranks = np.asarray(ranks, dtype=np.float64)
+    jitter = np.random.default_rng(seed).uniform(size=ranks.shape)
+
     kstest_pvals = jnp.array(
         [
-            kstest(rks, uniform(loc=0, scale=num_posterior_samples).cdf)[1]
-            for rks in ranks.T
+            kstest(rks, uniform(loc=0, scale=num_posterior_samples + 1).cdf)[1]
+            for rks in (ranks + jitter).T
         ],
         dtype=jnp.float32,
     )
@@ -375,7 +389,8 @@ def check_uniformity_c2st(
 ) -> Array:
     """Return C2ST scores for uniformity of the ranks.
 
-    Run a C2ST between ranks and uniform samples.
+    Run a C2ST between the ranks and integers drawn uniformly from
+    ``[0, num_posterior_samples]``, the distribution of the ranks under calibration.
 
     Parameters
     ----------
@@ -404,15 +419,15 @@ def check_uniformity_c2st(
     for rep in range(num_repetitions):
         for dim_idx, rks in enumerate(ranks.T):
             key, subkey = jax.random.split(key)
-            uniform_samples = jax.random.uniform(
+            uniform_ranks = jax.random.randint(
                 subkey,
                 shape=(rks.shape[0],),
                 minval=0,
-                maxval=num_posterior_samples,
+                maxval=num_posterior_samples + 1,
             )
             c2st_scores[rep, dim_idx] = c2st(
-                rks[:, None],
-                uniform_samples[:, None],
+                jnp.asarray(rks, dtype=jnp.float32)[:, None],
+                uniform_ranks.astype(jnp.float32)[:, None],
             ).item()
 
     # Use variance over repetitions to estimate robustness of C2ST
@@ -519,13 +534,12 @@ def _validate_and_prepare_ranks(
     else:
         if not isinstance(ranks, List):
             raise TypeError("ranks must be an Array, np.ndarray, or a List of them.")
-        ranks_list = ranks
+        ranks_list = list(ranks)
 
     for idx, rank in enumerate(ranks_list):
         if not isinstance(rank, (Array, np.ndarray)):
             raise TypeError("All ranks in the list must be Arrays or np.ndarrays.")
-        if isinstance(rank, Array):
-            ranks_list[idx]: np.ndarray = rank.numpy()  # type: ignore
+        ranks_list[idx] = np.asarray(rank, dtype=np.float64)
 
     plot_types = ["hist", "cdf"]
     if plot_type not in plot_types:
@@ -724,6 +738,7 @@ def _sbc_rank_plot(
                     _plot_ranks_as_cdf(
                         ranki[:, jj],  # type: ignore
                         num_bins,
+                        num_posterior_samples,
                         num_repeats,
                         ranks_label=ranks_labels[ii],
                         color=f"C{ii}" if colors is None else colors[ii],
@@ -736,6 +751,7 @@ def _sbc_rank_plot(
                         _plot_cdf_region_expected_under_uniformity(
                             num_sbc_runs,
                             num_bins,
+                            num_posterior_samples,
                             num_repeats,
                             alpha=uniform_region_alpha,
                         )
@@ -781,6 +797,7 @@ def _sbc_rank_plot(
             _plot_ranks_as_cdf(
                 ranki[:, jj],  # type: ignore
                 num_bins,
+                num_posterior_samples,
                 num_repeats,
                 ranks_label=parameter_labels[jj],
                 color=f"C{jj}" if colors is None else colors[jj],
@@ -793,6 +810,7 @@ def _sbc_rank_plot(
             _plot_cdf_region_expected_under_uniformity(
                 num_sbc_runs,
                 num_bins,
+                num_posterior_samples,
                 num_repeats,
                 alpha=uniform_region_alpha,
             )
@@ -843,6 +861,7 @@ def _plot_ranks_as_hist(
     plt.hist(
         ranks,
         bins=num_bins,
+        range=(0, num_posterior_samples),
         label=ranks_label,
         color=color,
         alpha=alpha,
@@ -858,9 +877,48 @@ def _plot_ranks_as_hist(
     plt.xlabel("posterior rank" if xlabel is None else xlabel)
 
 
+def _uniform_rank_bin_probs(num_bins: int, num_posterior_samples: int) -> np.ndarray:
+    """Probability of each rank bin under uniformity.
+
+    The ranks are integers in ``[0, num_posterior_samples]``, so the bins over
+    that range do not all hold the same number of rank values.
+    """
+    counts, _ = np.histogram(
+        np.arange(num_posterior_samples + 1),
+        bins=num_bins,
+        range=(0, num_posterior_samples),
+    )
+    return counts / (num_posterior_samples + 1)
+
+
+def _ecdf(ranks: np.ndarray, num_bins: int, num_posterior_samples: int) -> np.ndarray:
+    """Empirical CDF of the ranks at the right edge of each bin over [0, N]."""
+    hist, _ = np.histogram(ranks, bins=num_bins, range=(0, num_posterior_samples))
+    histcs = hist.cumsum()
+    return histcs / histcs.max()
+
+
+def _cdf_x(num_bins: int, num_posterior_samples: int, num_repeats: int) -> np.ndarray:
+    """x positions of the CDF steps in rank units, num_repeats per bin."""
+    return np.linspace(0, num_posterior_samples, num_repeats * num_bins)
+
+
+def _uniform_cdf_band(
+    num_sbc_runs: int, num_bins: int, num_posterior_samples: int
+) -> Tuple[np.ndarray, np.ndarray]:
+    """99% band of the empirical CDF at each bin under uniformity."""
+    p = _uniform_rank_bin_probs(num_bins, num_posterior_samples).cumsum()
+    # Decrease the last entry by epsilon to find valid confidence intervals.
+    p[-1] -= 1e-9
+    lower = binom(num_sbc_runs, p).ppf(0.005)
+    upper = binom(num_sbc_runs, p).ppf(0.995)
+    return lower / lower.max(), upper / upper.max()
+
+
 def _plot_ranks_as_cdf(
     ranks: np.ndarray,
     num_bins: int,
+    num_posterior_samples: int,
     num_repeats: int,
     ranks_label: Optional[str] = None,
     xlabel: Optional[str] = None,
@@ -877,6 +935,8 @@ def _plot_ranks_as_cdf(
         SBC ranks in shape (num_sbc_runs, ).
     num_bins : int
         Number of bins for the histogram, recommendation is num_sbc_runs / 20.
+    num_posterior_samples : int
+        Number of posterior samples used for ranking.
     num_repeats : int
         Number of repeats of each CDF step, i.e., resolution of the eCDF.
     ranks_label : str, optional
@@ -892,14 +952,10 @@ def _plot_ranks_as_cdf(
     num_ticks : int, optional
         Number of ticks on the x-axis. Default is 3.
     """
-    # Generate histogram of ranks.
-    hist, *_ = np.histogram(ranks, bins=num_bins, density=False)
-    # Construct empirical CDF.
-    histcs = hist.cumsum()
     # Plot cdf and repeat each stair step
     plt.plot(
-        np.linspace(0, num_bins, num_repeats * num_bins),
-        np.repeat(histcs / histcs.max(), num_repeats),
+        _cdf_x(num_bins, num_posterior_samples, num_repeats),
+        np.repeat(_ecdf(ranks, num_bins, num_posterior_samples), num_repeats),
         label=ranks_label,
         color=color,
         alpha=alpha,
@@ -913,14 +969,15 @@ def _plot_ranks_as_cdf(
         plt.yticks(np.linspace(0, 1, 3), [])
 
     plt.ylim(0, 1)
-    plt.xlim(0, num_bins)
-    plt.xticks(np.linspace(0, num_bins, num_ticks))
+    plt.xlim(0, num_posterior_samples)
+    plt.xticks(np.linspace(0, num_posterior_samples, num_ticks))
     plt.xlabel("posterior rank" if xlabel is None else xlabel)
 
 
 def _plot_cdf_region_expected_under_uniformity(
     num_sbc_runs: int,
     num_bins: int,
+    num_posterior_samples: int,
     num_repeats: int,
     alpha: float = 0.2,
     color: str = "gray",
@@ -933,6 +990,8 @@ def _plot_cdf_region_expected_under_uniformity(
         Number of SBC runs.
     num_bins : int
         Number of bins.
+    num_posterior_samples : int
+        Number of posterior samples used for ranking.
     num_repeats : int
         Number of repeats.
     alpha : float, optional
@@ -941,23 +1000,13 @@ def _plot_cdf_region_expected_under_uniformity(
         Color for the region. Default is "gray".
     """
 
-    # Construct uniform histogram.
-    uni_bins = binom(num_sbc_runs, p=1 / num_bins).ppf(0.5) * np.ones(num_bins)
-    uni_bins_cdf = uni_bins.cumsum() / uni_bins.sum()
-    # Decrease value one in last entry by epsilon to find valid
-    # confidence intervals.
-    uni_bins_cdf[-1] -= 1e-9
-
-    lower = [binom(num_sbc_runs, p=p).ppf(0.005) for p in uni_bins_cdf]
-    upper = [binom(num_sbc_runs, p=p).ppf(0.995) for p in uni_bins_cdf]
+    lower, upper = _uniform_cdf_band(num_sbc_runs, num_bins, num_posterior_samples)
 
     # Plot grey area with expected ECDF.
     plt.fill_between(
-        x=np.linspace(0, num_bins, num_repeats * num_bins),
-        y1=np.repeat(lower / np.max(lower), num_repeats),
-        y2=np.repeat(
-            upper / np.max(upper), num_repeats
-        ),  # pyright: ignore[reportArgumentType]
+        x=_cdf_x(num_bins, num_posterior_samples, num_repeats),
+        y1=np.repeat(lower, num_repeats),
+        y2=np.repeat(upper, num_repeats),
         color=color,
         alpha=alpha,
         label="expected under uniformity",
@@ -987,8 +1036,10 @@ def _plot_hist_region_expected_under_uniformity(
         Color for the region. Default is "gray".
     """
 
-    lower = binom(num_sbc_runs, p=1 / (num_bins + 1)).ppf(0.005)
-    upper = binom(num_sbc_runs, p=1 / (num_bins + 1)).ppf(0.995)
+    # Binomial quantiles grow with p, so this band holds every bin's interval.
+    p = _uniform_rank_bin_probs(num_bins, num_posterior_samples)
+    lower = binom(num_sbc_runs, p=p.min()).ppf(0.005)
+    upper = binom(num_sbc_runs, p=p.max()).ppf(0.995)
 
     # Plot grey area with expected ECDF.
     plt.fill_between(

@@ -210,3 +210,114 @@ def test_reject_test_and_pvalue():
     
     reject = lc2st.reject_test(thetas, xs[0], alpha=0.5)
     assert isinstance(reject, bool)
+
+
+# Fixes ported from upstream sbi
+
+_FAST_MLP = {"hidden_layer_sizes": (8,), "max_iter": 60, "random_state": 0}
+
+
+def _gaussian_toy(num_samples=300, x_mean=10.0, x_std=0.3):
+    """theta ~ N(0, 1), x an affine map of theta + noise, exact posterior samples."""
+    rng = np.random.default_rng(0)
+    thetas = rng.normal(size=(num_samples, 2))
+    x_raw = thetas + rng.normal(size=(num_samples, 2))
+    posterior_samples = x_raw / 2 + np.sqrt(0.5) * rng.normal(size=(num_samples, 2))
+    xs = x_mean + x_std * x_raw
+    return tuple(jnp.asarray(a, dtype=jnp.float32) for a in (thetas, xs, posterior_samples))
+
+
+@pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
+def test_z_score_matches_normalising_the_inputs_by_hand():
+    """z_score=True must be the same test as z_score=False on pre-normalised data."""
+    thetas, xs, posterior_samples = _gaussian_toy()
+    theta_o, x_o = posterior_samples[:100], xs[0]
+
+    t_mean, t_std = posterior_samples.mean(0), posterior_samples.std(0)
+    x_mean, x_std = xs.mean(0), xs.std(0)
+
+    def norm_t(a):
+        return (a - t_mean) / t_std
+
+    def norm_x(a):
+        return (a - x_mean) / x_std
+
+    kwargs = dict(classifier="mlp", classifier_kwargs=dict(_FAST_MLP), num_trials_null=3)
+    auto = LC2ST(thetas, xs, posterior_samples, z_score=True, **kwargs)
+    manual = LC2ST(
+        norm_t(thetas), norm_x(xs), norm_t(posterior_samples), z_score=False, **kwargs
+    )
+    for lc2st in (auto, manual):
+        lc2st.train_under_null_hypothesis(verbosity=0)
+        lc2st.train_on_observed_data(verbosity=0)
+
+    np.testing.assert_allclose(
+        auto.get_statistics_under_null_hypothesis(theta_o, x_o),
+        manual.get_statistics_under_null_hypothesis(norm_t(theta_o), norm_x(x_o)),
+        rtol=1e-3,
+    )
+    np.testing.assert_allclose(
+        auto.get_statistic_on_observed_data(theta_o, x_o),
+        manual.get_statistic_on_observed_data(norm_t(theta_o), norm_x(x_o)),
+        rtol=1e-3,
+    )
+
+
+@pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
+def test_z_score_handles_constant_features():
+    thetas, xs, posterior_samples = _gaussian_toy(num_samples=100)
+    xs = xs.at[:, 1].set(3.0)  # zero standard deviation
+
+    lc2st = LC2ST(
+        thetas, xs, posterior_samples, z_score=True, classifier_kwargs=dict(_FAST_MLP)
+    )
+    lc2st.train_on_observed_data(verbosity=0)
+
+    assert np.isfinite(lc2st.get_statistic_on_observed_data(posterior_samples, xs[0]))
+
+
+def test_permute_data_swaps_labels_within_pairs():
+    """Row i of P and row i of Q share an observation, so they may only swap with each other."""
+    from gensbi.diagnostics.lc2st import permute_data
+
+    theta_p = jnp.arange(40.0).reshape(20, 2)
+    theta_q = -theta_p - 1.0
+
+    perm_p, perm_q = permute_data(theta_p, theta_q, seed=0)
+
+    kept = np.all(np.asarray(perm_p == theta_p) & np.asarray(perm_q == theta_q), axis=1)
+    swapped = np.all(np.asarray(perm_p == theta_q) & np.asarray(perm_q == theta_p), axis=1)
+    assert np.all(kept | swapped)
+    assert kept.any() and swapped.any()
+
+
+def test_p_value_counts_the_observed_statistic_among_the_null_ones():
+    """p = (1 + #{T_null >= T_obs}) / (1 + num_trials), so it is never 0."""
+    thetas, xs, posterior_samples = get_dummy_data()
+    lc2st = LC2ST(thetas, xs, posterior_samples, num_trials_null=4)
+    null_stats = np.array([0.1, 0.2, 0.3, 0.5])
+
+    def fake_null(theta_o, x_o, return_probs=False, verbosity=0):
+        return (None, null_stats) if return_probs else null_stats
+
+    lc2st.get_statistics_under_null_hypothesis = fake_null
+
+    lc2st.get_statistic_on_observed_data = lambda theta_o, x_o: 0.5
+    assert lc2st.p_value(thetas, xs[0]) == pytest.approx(2 / 5)
+
+    lc2st.get_statistic_on_observed_data = lambda theta_o, x_o: 0.9
+    assert lc2st.p_value(thetas, xs[0]) == pytest.approx(1 / 5)
+
+
+def test_ensemble_classifier_supports_estimators_without_random_state():
+    from sklearn.naive_bayes import GaussianNB
+    from gensbi.diagnostics.lc2st import EnsembleClassifier
+
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(40, 3))
+    y = (X[:, 0] > 0).astype(float)
+
+    ensemble = EnsembleClassifier(GaussianNB(), num_ensemble=2, verbosity=0)
+
+    assert ensemble.fit(X, y) is ensemble
+    assert ensemble.predict_proba(X).shape == (40, 2)

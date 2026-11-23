@@ -5,9 +5,12 @@
 # MODIFICATION NOTICE:
 # This file was modified by Aurelio Amerio on 01-2026.
 # Description: Ported implementation to use JAX instead of PyTorch.
+# 11-2026: synced with upstream fixes (data normalised exactly once, labels
+# permuted within pairs, permutation p-value that counts the observed statistic).
 # --------------------------------------------------------------------------
 
 
+import warnings
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
@@ -111,10 +114,11 @@ class LC2ST:
 
     To evaluate the test, steps 1 and 2 are performed over multiple trials under the
     null hypothesis (H0). If the null distribution is not known, it is estimated
-    using the permutation method, i.e. by training the classifier on the permuted
-    data. The statistics obtained under (H0) is then compared to the one obtained
-    on observed data to compute the p-value, used to decide whether to reject (H0)
-    or not.
+    using the permutation method, i.e. by training the classifier on data whose
+    P and Q labels are swapped at random within each pair that shares an
+    observation. The statistics obtained under (H0) is then compared to the one
+    obtained on observed data to compute the p-value, used to decide whether to
+    reject (H0) or not.
 
     Parameters
     ----------
@@ -137,7 +141,8 @@ class LC2ST:
         - "random_forest" or "mlp", defaults to "mlp" or
         - A classifier class (e.g., RandomForestClassifier, MLPClassifier).
     z_score : bool, optional
-        Whether to z-score to normalize the data. Default is False.
+        Whether to z-score to normalize the data, using the mean and standard
+        deviation of ``posterior_samples`` and ``xs``. Default is False.
     classifier_kwargs : Dict[str, Any], optional
         Custom kwargs for the sklearn classifier. Default is None.
     num_trials_null : int, optional
@@ -180,9 +185,11 @@ class LC2ST:
         # z-score normalization parameters
         self.z_score = z_score
         self.theta_p_mean = jnp.mean(self.theta_p, axis=0)
-        self.theta_p_std = jnp.std(self.theta_p, axis=0)
+        theta_std = jnp.std(self.theta_p, axis=0)
+        self.theta_p_std = jnp.where(theta_std == 0, 1.0, theta_std)
         self.x_p_mean = jnp.mean(self.x_p, axis=0)
-        self.x_p_std = jnp.std(self.x_p, axis=0)
+        x_std = jnp.std(self.x_p, axis=0)
+        self.x_p_std = jnp.where(x_std == 0, 1.0, x_std)
 
         # set parameters for classifier training
         self.seed = seed
@@ -204,6 +211,18 @@ class LC2ST:
         self.permutation = permutation
         # can be specified if known and independent of x (see `LC2ST-NF`)
         self.null_distribution = None
+
+    def _normalize_theta(self, theta: Array) -> Array:
+        """Z-score parameters if ``z_score`` is set. The only place they are normalized."""
+        if self.z_score:
+            return (theta - self.theta_p_mean) / self.theta_p_std
+        return theta
+
+    def _normalize_x(self, x: Array) -> Array:
+        """Z-score observations if ``z_score`` is set. The only place they are normalized."""
+        if self.z_score:
+            return (x - self.x_p_mean) / self.x_p_std
+        return x
 
     def _train(
         self,
@@ -234,13 +253,11 @@ class LC2ST:
             List of trained classifiers for each cv fold.
         """
 
-        # prepare data
-
-        if self.z_score:
-            theta_p = (theta_p - self.theta_p_mean) / self.theta_p_std
-            theta_q = (theta_q - self.theta_p_mean) / self.theta_p_std
-            x_p = (x_p - self.x_p_mean) / self.x_p_std
-            x_q = (x_q - self.x_p_mean) / self.x_p_std
+        # Normalize data. Callers pass raw data: this is the only normalization.
+        theta_p = self._normalize_theta(theta_p)
+        theta_q = self._normalize_theta(theta_q)
+        x_p = self._normalize_x(x_p)
+        x_q = self._normalize_x(x_q)
 
         # initialize classifier
         clf = self.clf_class(**self.clf_kwargs or {})
@@ -307,10 +324,9 @@ class LC2ST:
         if x_o.shape == self.x_p_mean.shape:
             x_o = x_o[None, ...]
 
-        # prepare data
-        if self.z_score:
-            theta_o = (theta_o - self.theta_p_mean) / self.theta_p_std
-            x_o = (x_o - self.x_p_mean) / self.x_p_std
+        # Normalize data. Callers pass raw data: this is the only normalization.
+        theta_o = self._normalize_theta(theta_o)
+        x_o = self._normalize_x(x_o)
 
         probs, scores = [], []
 
@@ -343,7 +359,12 @@ class LC2ST:
         # set random state
         if seed is not None:
             if "random_state" in self.clf_kwargs:
-                print("WARNING: changing the random state of the classifier.")
+                warnings.warn(
+                    "Overwriting 'random_state' in classifier_kwargs because "
+                    "a 'seed' was provided to train_on_observed_data().",
+                    UserWarning,
+                    stacklevel=2,
+                )
             self.clf_kwargs["random_state"] = seed
 
         # train the classifier
@@ -392,10 +413,11 @@ class LC2ST:
     ) -> float:
         r"""Computes the p-value for L-C2ST.
 
-        The p-value is the proportion of times the L-C2ST statistic under the null
-        hypothesis is greater than the L-C2ST statistic at the observation `x_o`.
-        It is computed by taking the empirical mean over statistics computed on
-        several trials under the null hypothesis: $1/H \sum_{h=1}^{H} I(T_h < T_o)$.
+        The p-value is the proportion of L-C2ST statistics that are at least as
+        large as the one at the observation `x_o`, among the statistics of the
+        trials under the null hypothesis and the observed one itself:
+        $(1 + \sum_{h=1}^{H} I(T_h \geq T_o)) / (1 + H)$. Counting the observed
+        statistic keeps the test valid and the p-value above zero.
 
         Parameters
         ----------
@@ -414,7 +436,8 @@ class LC2ST:
         _, stats_null = self.get_statistics_under_null_hypothesis(
             theta_o=theta_o, x_o=x_o, return_probs=True, verbosity=0
         )
-        return float((stat_data < stats_null).mean())
+        num_extreme = (stat_data <= stats_null).sum()
+        return float((1 + num_extreme) / (1 + len(stats_null)))
 
     def reject_test(
         self,
@@ -462,23 +485,20 @@ class LC2ST:
         ):
             # prepare data
             if self.permutation:
-                joint_p = jnp.concatenate([self.theta_p, self.x_p], axis=1)
-                joint_q = jnp.concatenate([self.theta_q, self.x_q], axis=1)
-                # permute data (same as permuting the labels)
-                joint_p_perm, joint_q_perm = permute_data(joint_p, joint_q, seed=t)
-                # extract the permuted P and Q and x
-                theta_p_t, x_p_t = (
-                    joint_p_perm[:, : self.theta_p.shape[-1]],
-                    joint_p_perm[:, self.theta_p.shape[1] :],
+                # Rows i of P and Q share the observation x_i, so swapping their
+                # labels leaves the observations in place.
+                theta_p_t, theta_q_t = permute_data(
+                    self.theta_p,
+                    self.theta_q,
+                    seed=self.seed * self.num_trials_null + t,
                 )
-                theta_q_t, x_q_t = (
-                    joint_q_perm[:, : self.theta_q.shape[-1]],
-                    joint_q_perm[:, self.theta_q.shape[1] :],
-                )
+                x_p_t, x_q_t = self.x_p, self.x_q
             else:
-                assert (
-                    self.null_distribution is not None
-                ), "You need to provide a null distribution"
+                if self.null_distribution is None:
+                    raise ValueError(
+                        "A null distribution must be provided when permutation=False. "
+                        "Set null_distribution or use permutation=True."
+                    )
                 theta_p_t = self.null_distribution.sample(
                     self.rngs.sample(), (self.theta_p.shape[0],)
                 )
@@ -487,13 +507,7 @@ class LC2ST:
                 )
                 x_p_t, x_q_t = self.x_p, self.x_q
 
-            if self.z_score:
-                theta_p_t = (theta_p_t - self.theta_p_mean) / self.theta_p_std
-                theta_q_t = (theta_q_t - self.theta_p_mean) / self.theta_p_std
-                x_p_t = (x_p_t - self.x_p_mean) / self.x_p_std
-                x_q_t = (x_q_t - self.x_p_mean) / self.x_p_std
-
-            # train
+            # train (normalization is handled in _train)
             clf_t = self._train(theta_p_t, theta_q_t, x_p_t, x_q_t, verbosity=0)
             trained_clfs_null[t] = clf_t
 
@@ -547,19 +561,16 @@ class LC2ST:
             if self.permutation:
                 theta_o_t = theta_o
             else:
-                assert (
-                    self.null_distribution is not None
-                ), "You need to provide a null distribution"
+                if self.null_distribution is None:
+                    raise ValueError(
+                        "A null distribution must be provided when permutation=False."
+                    )
 
                 theta_o_t = self.null_distribution.sample(
                     self.rngs.sample(), (theta_o.shape[0],)
                 )
 
-            if self.z_score:
-                theta_o_t = (theta_o_t - self.theta_p_mean) / self.theta_p_std
-                x_o = (x_o - self.x_p_mean) / self.x_p_std
-
-            # evaluate
+            # evaluate (normalization is handled in get_scores)
             clf_t = self.trained_clfs_null[t]
             probs, scores = self.get_scores(
                 theta_o=theta_o_t, x_o=x_o, trained_clfs=clf_t, return_probs=True
@@ -660,30 +671,32 @@ def eval_lc2st(
 
 
 def permute_data(theta_p: Array, theta_q: Array, seed: int = 1) -> Tuple[Array, Array]:
-    """Permutes the concatenated data [P,Q] to create null samples.
+    """Swaps the P and Q labels within each pair to create null samples.
+
+    Row `i` of P and row `i` of Q must share the observation `x_i`. Each pair is
+    swapped with probability 1/2, which is the symmetry of the data under the
+    null hypothesis.
 
     Parameters
     ----------
     theta_p : Array
         Samples from P, of shape (sample_size, dim).
     theta_q : Array
-        Samples from Q, of shape (sample_size, dim).
+        Samples from Q, of shape (sample_size, dim), row-aligned with `theta_p`.
     seed : int, optional
         Random seed. Default is 1.
 
     Returns
     -------
     Tuple[Array, Array]
-        Permuted data [theta_p, theta_q].
+        Permuted data [theta_p, theta_q], each of shape (sample_size, dim).
     """
     key = jax.random.PRNGKey(seed)
     # check inputs
-    assert theta_p.shape[0] == theta_q.shape[0]
+    assert theta_p.shape == theta_q.shape
 
-    sample_size = theta_p.shape[0]
-    X = jnp.concatenate([theta_p, theta_q], axis=0)
-    x_perm = X[jax.random.permutation(key, sample_size * 2)]
-    return x_perm[:sample_size], x_perm[sample_size:]
+    swap = jax.random.uniform(key, (theta_p.shape[0], 1)) < 0.5
+    return jnp.where(swap, theta_q, theta_p), jnp.where(swap, theta_p, theta_q)
 
 
 class EnsembleClassifier(BaseEstimator):
@@ -700,12 +713,14 @@ class EnsembleClassifier(BaseEstimator):
             disable=self.verbosity < 1,
         ):
             clf = clone(self.clf)
-            if clf.random_state is not None:  # type: ignore
-                clf.random_state += n  # type: ignore
-            else:
-                clf.random_state = n + 1  # type: ignore
+            if hasattr(clf, "random_state"):
+                if clf.random_state is not None:  # type: ignore
+                    clf.random_state += n  # type: ignore
+                else:
+                    clf.random_state = n + 1  # type: ignore
             clf.fit(X, y)  # type: ignore
             self.trained_clfs.append(clf)
+        return self
 
     def predict_proba(self, X):
         probas = [clf.predict_proba(X) for clf in self.trained_clfs]
