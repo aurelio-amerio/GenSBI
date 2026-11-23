@@ -59,7 +59,7 @@ These are the rules that are easy to break without noticing, because the thing t
 
 - **Notebooks under `docs/` are downloaded copies.** `make download` in `docs/` wipes `docs/notebooks/` and refetches every notebook from the [GenSBI-examples](https://github.com/aurelio-amerio/GenSBI-examples) repository, along with `getting_started/my_first_model.ipynb` and `advanced/methods_and_samplers.ipynb`. Fix notebooks there, not here; edits made in this repository are lost on the next download.
 
-- **Third-party workarounds live in `src/gensbi/_compat.py`.** Each shim documents the upstream bug it works around and is written to be a no-op once the fix ships, so it can be deleted when the corresponding dependency floor is raised past it.
+- **Third-party workarounds live in `src/gensbi/_compat.py`** (create it when one is needed; there are none at the moment). Each shim documents the upstream bug it works around and is written to be a no-op once the fix ships, so it can be deleted when the corresponding dependency floor is raised past it.
 
 - **Custom models follow a fixed call signature.** The pipelines call models positionally; see the [Custom Models](https://gensbi.com/advanced/custom_models.html) page before adding an architecture.
 
@@ -109,7 +109,6 @@ GenSBI/
 │   │   ├── models/
 │   │   └── recipes/
 │   ├── sharding.py          # Multi-device mesh helpers
-│   ├── _compat.py           # Shims for third-party breakage
 │   └── utils/               # Utility functions
 ├── tests/                   # Test suite, mirrors src/gensbi
 ├── docs/                    # Documentation source

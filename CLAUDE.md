@@ -115,9 +115,9 @@ The developer-facing ones are also written up for humans under "Development conv
 - **Import hygiene.** `tests/test_import_smoke.py` imports `gensbi.models` and
   `gensbi.normalizing_flows` in fresh subprocesses; keep the graph acyclic (lazy imports in
   `core/__init__.py` exist for this reason).
-- **Shims.** `gensbi/_compat.py` holds workarounds for third-party breakage (currently the grain
-  0.2.18 absl-flag crash, applied in `gensbi/__init__.py`). Each is a no-op once upstream fixes
-  ship and should then be deleted.
+- **Shims.** Workarounds for third-party breakage go in `gensbi/_compat.py` (create it when
+  needed; none exist at the moment). Each must be a no-op once the upstream fix ships and be
+  deleted when the dependency floor is raised past it, as the grain 0.2.18 absl-flag shim was.
 - **Docstrings** are NumPy style; sphinx-autoapi renders them, so public signatures and
   parameter sections matter.
 - **CHANGELOG.md** follows Keep a Changelog from 0.5.0. Pre-1.0 minor releases may break; list

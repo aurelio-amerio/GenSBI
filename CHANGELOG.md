@@ -80,6 +80,10 @@ still bite code written against the first tutorials are collected in
   - `run_sbc` validates its inputs again: it raises if `thetas` and `xs`
     differ in length (the missing rows used to get rank 0) and warns below
     100 SBC or posterior samples.
+- The minimum `grain` version is now 0.2.19, which fixes upstream the
+  `UnparsedFlagAccessError` crash in `mp_prefetch` on jax >= 0.11. The
+  workaround GenSBI applied on import (`gensbi._compat`) is removed, and
+  `import gensbi` no longer imports `grain`.
 
 ### Fixed
 
