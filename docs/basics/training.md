@@ -57,7 +57,7 @@ For advanced use cases, you can use the unified pipelines (`ConditionalPipeline`
 - **Steps vs. Epochs**: Training runs for a fixed number of steps (`nsteps`), not epochs. This is common in generative modeling where datasets (like simulation outputs) might be effectively infinite.
 - **EMA (Exponential Moving Average)**: The pipeline maintains a shadow copy of the model weights using EMA. This version is smoother and often yields better generation results. It is saved in a separate `checkpoints/ema` folder.
 - **Early Stopping**: Validation runs every `val_every` steps. If the validation loss stops improving or diverges significantly from training loss (controlled by `val_error_ratio`), training stops early.
-- **Checkpointing**: Models are automatically saved to the `checkpoints` directory. Both the latest training state and the EMA state are preserved.
+- **Checkpointing**: Models are automatically saved to the `checkpoints` directory. Both the latest training state and the EMA state are preserved. To share a trained model as a single file, see [Sampling from a Weights File](/basics/inference).
 
 ## Data Preprocessing
 
