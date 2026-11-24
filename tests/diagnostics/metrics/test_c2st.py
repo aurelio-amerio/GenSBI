@@ -67,3 +67,41 @@ def test_check_c2st():
     Y_dist = X + 100
     with pytest.raises(AssertionError, match="too far from the desired near-chance"):
         check_c2st(X, Y_dist, alg="test_alg", tol=0.1)
+
+
+# Fixes ported from upstream sbi
+
+
+def _separated_samples():
+    key1, key2 = jax.random.split(jax.random.PRNGKey(0))
+    X = jax.random.normal(key1, (200, 2))
+    Y = jax.random.normal(key2, (200, 2)) + 5.0
+    return X, Y
+
+
+def test_c2st_accepts_a_classifier_class():
+    from sklearn.linear_model import LogisticRegression
+
+    X, Y = _separated_samples()
+    assert c2st(X, Y, classifier=LogisticRegression) > 0.9
+
+
+def test_c2st_accepts_a_classifier_instance():
+    from sklearn.linear_model import LogisticRegression
+
+    X, Y = _separated_samples()
+    assert c2st(X, Y, classifier=LogisticRegression(C=0.5)) > 0.9
+
+
+def test_c2st_rejects_an_unknown_classifier():
+    X, Y = _separated_samples()
+    with pytest.raises(ValueError, match="Invalid classifier"):
+        c2st(X, Y, classifier="svm")
+
+
+def test_c2st_accepts_random_state_in_classifier_kwargs():
+    X, Y = _separated_samples()
+    score = c2st(
+        X, Y, classifier="rf", classifier_kwargs={"n_estimators": 10, "random_state": 3}
+    )
+    assert score > 0.9

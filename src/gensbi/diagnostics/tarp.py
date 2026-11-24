@@ -7,6 +7,10 @@
 # Description: Ported implementation to use JAX instead of PyTorch.
 # Fixed normalization bug where references were not scaled.
 # Fixed histogram range bug.
+# 11-2026: synced with upstream fixes (num_bins=None, area-to-curve scaling).
+# The coverage value of every pair is kept, and check_tarp tests those values
+# for uniformity instead of comparing the points of the binned curve. The
+# confidence panel is drawn from those values as well.
 # Reverted to single-pass implementation (no bootstrap).
 # --------------------------------------------------------------------------
 
@@ -32,7 +36,14 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from gensbi.diagnostics.metrics import l1, l2
-from gensbi.diagnostics.utils import alpha_from_z, jefferys_interval, probit
+from gensbi.diagnostics.utils import (
+    alpha_from_z,
+    estimate_hat_z,
+    jefferys_interval,
+    plot_coverage_curve,
+    probit,
+    resolution_limit_z,
+)
 
 
 @dataclass
@@ -55,6 +66,14 @@ class TARPResult:
         Lower bound of ECP (2.5th percentile or Jeffrey's lower). shape: (num_bins + 1,)
     ecp_upper : Optional[Array]
         Upper bound of ECP (97.5th percentile or Jeffrey's upper). shape: (num_bins + 1,)
+    coverage_values : Optional[Array]
+        For each (theta, posterior) pair, the fraction of posterior samples that
+        are closer to the reference point than the true parameter (f in
+        Algorithm 2 of the paper). Uniform for a calibrated posterior; ``ecp``
+        is their binned empirical CDF. shape: (num_tarp_samples,)
+    num_posterior_samples : Optional[int]
+        Number of posterior samples per pair, i.e. ``coverage_values`` are
+        multiples of ``1 / num_posterior_samples``.
     """
 
     ecp: Array
@@ -62,6 +81,8 @@ class TARPResult:
     ecp_mean: Array
     ecp_lower: Optional[Array] = None
     ecp_upper: Optional[Array] = None
+    coverage_values: Optional[Array] = None
+    num_posterior_samples: Optional[int] = None
 
     @property
     def z_alpha(self) -> Array:
@@ -141,10 +162,10 @@ def run_tarp(
 
     Returns
     -------
-    ecp : Array
-        Expected coverage probability, see equation 4 of the paper.
-    alpha : Array
-        Credibility values, see equation 2 of the paper.
+    TARPResult
+        The expected coverage probability ``ecp`` (equation 4 of the paper) on the
+        grid of credibility levels ``alpha`` (equation 2), with its mean and
+        uncertainty band. Pass it to :func:`plot_tarp` or :func:`check_tarp`.
     """
     key = jax.random.PRNGKey(seed)
     thetas = jnp.asarray(thetas)
@@ -165,6 +186,9 @@ def run_tarp(
             f"Wrong posterior samples shape for TARP: {posterior_samples.shape}, expected {expected_shape}"
         )
 
+    if num_bins is None:
+        num_bins = num_tarp_samples // 10
+
     # Generate references once for non-bootstrap; bootstrap regenerates per iteration
     if references is None and not bootstrap:
         references = get_tarp_references(key, thetas)
@@ -172,17 +196,20 @@ def run_tarp(
     if references is not None:
         references = jnp.asarray(references)
 
-    if not bootstrap:
-        ecp, alpha = _run_tarp_single(
-            key,
-            posterior_samples,
-            thetas,
-            references,
-            distance,
-            num_bins,
-            z_score_theta,
-        )
+    # One pass over the pairs as they are. Without bootstrap this is the result;
+    # with bootstrap it provides the per-pair coverage values, which a resampled
+    # set of pairs cannot.
+    ecp, alpha, coverage_values = _run_tarp_single(
+        key,
+        posterior_samples,
+        thetas,
+        references,
+        distance,
+        num_bins,
+        z_score_theta,
+    )
 
+    if not bootstrap:
         # Without bootstrap, approximate 95% CI using Jeffrey's interval
         # (Beta prior-based interval for binomial proportions). This is
         # cheaper than bootstrap and gives smooth, well-calibrated bands.
@@ -196,6 +223,8 @@ def run_tarp(
             ecp_mean=ecp,
             ecp_lower=jnp.array(lower),
             ecp_upper=jnp.array(upper),
+            coverage_values=coverage_values,
+            num_posterior_samples=num_posterior_samples,
         )
 
     # With bootstrap, uncertainty is estimated from the percentiles
@@ -221,6 +250,8 @@ def run_tarp(
         ecp_mean=ecp_mean,
         ecp_lower=ecp_lower,
         ecp_upper=ecp_upper,
+        coverage_values=coverage_values,
+        num_posterior_samples=num_posterior_samples,
     )
 
 
@@ -232,7 +263,7 @@ def _run_tarp_single(
     distance: Callable,
     num_bins: int,
     z_score_theta: bool,
-) -> Tuple[Array, Array]:
+) -> Tuple[Array, Array, Array]:
     """Runs a single iteration of TARP."""
     if references is None:
         references = get_tarp_references(rng_key, thetas)
@@ -274,7 +305,7 @@ def _run_tarp_bootstrap(
         else:
             curr_references = references
 
-        ecp, alpha = _compute_tarp(
+        ecp, alpha, _ = _compute_tarp(
             boot_samples,
             boot_thetas,
             curr_references,
@@ -299,9 +330,11 @@ def _compute_tarp(
     distance: Callable = l2,
     num_bins: Optional[int] = 30,
     z_score_theta: bool = False,
-) -> Tuple[Array, Array]:
+) -> Tuple[Array, Array, Array]:
     """
     Core TARP computation (JIT-compiled).
+
+    Returns the ECP curve, its alpha grid, and the coverage value of each pair.
 
     For each simulation i, computes f_i = fraction of posterior samples that
     are closer to the reference point than the true parameter theta_i
@@ -344,7 +377,7 @@ def _compute_tarp(
     ecp = jnp.cumsum(hist, axis=0) / hist.sum()
     ecp = jnp.concatenate([jnp.zeros((1,)), ecp])
 
-    return ecp, alpha_grid
+    return ecp, alpha_grid, coverage_values
 
 
 def get_tarp_references(key, thetas: Array) -> Array:
@@ -354,29 +387,66 @@ def get_tarp_references(key, thetas: Array) -> Array:
     return jax.random.uniform(key, thetas.shape, minval=lo, maxval=hi)
 
 
+def _randomised_coverage_values(result: TARPResult, seed: int) -> Optional[np.ndarray]:
+    """Coverage values with their discreteness removed, or None if not stored.
+
+    A coverage value is a count of posterior samples divided by their number
+    N, so it lies on a grid. Adding Uniform(0, 1) noise to the count and
+    dividing by N + 1 spreads each value over its cell, which makes it exactly
+    Uniform(0, 1) for a calibrated posterior.
+    """
+    if result.coverage_values is None or result.num_posterior_samples is None:
+        return None
+    num_post = result.num_posterior_samples
+    counts = np.round(np.asarray(result.coverage_values, dtype=np.float64) * num_post)
+    jitter = np.random.default_rng(seed).uniform(size=counts.shape)
+    return (counts + jitter) / (num_post + 1)
+
+
 def check_tarp(
     result: TARPResult,
+    seed: int = 1,
 ) -> Tuple[float, float]:
     r"""
     Quantitative check of the TARP coverage curve.
 
+    Parameters
+    ----------
+    result : TARPResult
+        Results from run_tarp.
+    seed : int, optional
+        Random seed of the jitter used by the KS test. Default is 1.
+
     Returns
     -------
     atc : float
-        Area To Curve for :math:`\alpha > 0.5`. Positive means conservative
-        (ECP above diagonal), negative means overconfident.
+        Area To Curve: the area between the ECP curve and the diagonal for
+        :math:`\alpha > 0.5`. Positive means conservative (ECP above diagonal),
+        negative means overconfident. It does not depend on the number of bins.
     ks_prob : float
-        Two-sample KS test p-value. Low values indicate the ECP differs
-        significantly from the ideal diagonal.
+        p-value of a Kolmogorov-Smirnov test of the per-pair coverage values
+        against Uniform(0, 1), their distribution for a calibrated posterior.
+        Low values indicate miscalibration. The values are counts of posterior
+        samples, so each count is jittered with Uniform(0, 1) noise to make it
+        continuous and exactly uniform under calibration.
+
+        If ``result`` carries no coverage values (a ``TARPResult`` built by
+        hand), this falls back to a two-sample KS test between the points of
+        the ECP curve and the alpha grid, which has very little power.
     """
 
     ecp = result.ecp_mean
     alpha = result.alpha
 
     midindex = alpha.shape[0] // 2
-    atc = (ecp[midindex:] - alpha[midindex:]).sum().item()
+    dalpha = alpha[1] - alpha[0]
+    atc = ((ecp[midindex:] - alpha[midindex:]) * dalpha).sum().item()
 
-    kstest_pvals = float(kstest(np.array(ecp), np.array(alpha))[1])  # type: ignore
+    coverage = _randomised_coverage_values(result, seed)
+    if coverage is None:
+        kstest_pvals = float(kstest(np.array(ecp), np.array(alpha))[1])  # type: ignore
+    else:
+        kstest_pvals = float(kstest(coverage, "uniform")[1])
 
     return atc, kstest_pvals
 
@@ -386,6 +456,7 @@ def plot_tarp(
     title: Optional[str] = None,
     figsize: Optional[Tuple[int, int]] = None,
     mode: str = "both",
+    seed: int = 1,
 ) -> Tuple[Figure, Union[Axes, Array]]:
     """
     Plot the expected coverage probability (ECP).
@@ -399,9 +470,18 @@ def plot_tarp(
     figsize : tuple, optional
         Figure size.
     mode : str, optional
-        "credibility", "confidence", or "both". Default is "credibility".
+        "credibility", "confidence", or "both". Default is "both".
         "credibility" plots ECP vs alpha.
-        "confidence" plots z(ECP) vs z(alpha).
+        "confidence" plots the empirical coverage against the nominal one as
+        z-scores (1 sigma = 68.27%, ...). It is computed from the coverage
+        value of every pair, not from the binned ECP curve, so it resolves
+        levels the alpha grid does not. The curve is dashed above the level
+        that the posterior samples can resolve (a tail mass of
+        ``1 / (num_posterior_samples + 1)``, z = 3.3 for 1000 samples), where
+        it is an extrapolation. The band is the 95% Jeffreys interval.
+    seed : int, optional
+        Random seed of the jitter that removes the discreteness of the coverage
+        values in the confidence view. Default is 1.
     """
 
     if mode not in ["credibility", "confidence", "both"]:
@@ -420,10 +500,10 @@ def plot_tarp(
     if mode == "both":
         ax = fig.subplots(1, 2)
         _plot_tarp_credibility(result, ax[0], title)
-        _plot_tarp_confidence(result, ax[1], title)
+        _plot_tarp_confidence(result, ax[1], title, seed)
     elif mode == "confidence":
         ax = plt.gca()
-        _plot_tarp_confidence(result, ax, title)
+        _plot_tarp_confidence(result, ax, title, seed)
     else:
         ax = plt.gca()
         _plot_tarp_credibility(result, ax, title)
@@ -487,16 +567,36 @@ def _plot_tarp_credibility(result: TARPResult, ax: Axes, title: Optional[str] = 
     )
 
 
-def _plot_tarp_confidence(result: TARPResult, ax: Axes, title: Optional[str] = None):
+def _plot_tarp_confidence(
+    result: TARPResult, ax: Axes, title: Optional[str] = None, seed: int = 1
+):
     """Internal function to plot confidence mode (Z-scores)."""
 
-    z_nominal = result.z_alpha
-    z_empirical = result.z_mean
+    zmax = 3.5
+    coverage = _randomised_coverage_values(result, seed)
 
-    bg_z_lower = result.z_lower
-    bg_z_upper = result.z_upper
+    if coverage is not None:
+        # Evaluate the coverage directly on a grid of z-scores. The alpha grid
+        # of the ECP curve is uniform in credibility, so it has almost no
+        # points at high z.
+        hat_z = estimate_hat_z(coverage, nbins=141, zmax=zmax, z_band=1.96)
+        z_nominal, z_empirical = hat_z["z"], hat_z["mean"]
+        bg_z_lower = hat_z["lower"]
+        # an infinite upper bound (full coverage) is clamped for plotting
+        bg_z_upper = np.where(np.isinf(hat_z["upper"]), 100.0, hat_z["upper"])
+        z_resolved = resolution_limit_z(result.num_posterior_samples)
+    else:
+        # A result built by hand, without per-pair values: fall back to the
+        # binned ECP curve, which is not reliable above the last alpha bin.
+        z_nominal = result.z_alpha
+        z_empirical = result.z_mean
+        bg_z_lower = result.z_lower
+        bg_z_upper = result.z_upper
+        z_resolved = None
 
-    ax.plot(z_nominal, z_empirical, color="#202A44", label="TARP")
+    plot_coverage_curve(
+        ax, z_nominal, z_empirical, z_resolved, color="#202A44", label="TARP"
+    )
 
     if bg_z_lower is not None and bg_z_upper is not None:
         ax.fill_between(
@@ -508,7 +608,6 @@ def _plot_tarp_confidence(result: TARPResult, ax: Axes, title: Optional[str] = N
             label="95% CI",
         )
 
-    zmax = 3.5
     ax.plot([0, zmax], [0, zmax], "--", color="darkgreen", label="Ideal")
 
     ax.set_xlim(0, zmax)
@@ -551,6 +650,10 @@ def _plot_tarp_confidence(result: TARPResult, ax: Axes, title: Optional[str] = N
         target_z = sigma
         if target_z <= z_nominal.max() and target_z >= z_nominal.min():
             achieved_z = np.interp(target_z, z_nominal, z_empirical)
+            if not np.isfinite(achieved_z):
+                # every pair is covered at this level: nothing to annotate
+                ax.plot([target_z, target_z], [0, zmax], ":", color="r", alpha=1)
+                continue
             ax.plot([target_z, target_z], [0, achieved_z], ":", color="r", alpha=1)
             ax.plot([0, target_z], [achieved_z, achieved_z], ":", color="r", alpha=1)
 
