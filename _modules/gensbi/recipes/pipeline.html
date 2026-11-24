@@ -1049,10 +1049,13 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    train_dataset : iterable</span>
-<span class="sd">        Training dataset, should yield batches of data.</span>
-<span class="sd">    val_dataset : iterable</span>
-<span class="sd">        Validation dataset, should yield batches of data.</span>
+<span class="sd">    train_dataset : iterable or None</span>
+<span class="sd">        Training dataset, should yield batches of data. May be None for a</span>
+<span class="sd">        pipeline that is only used for inference (restore or import weights,</span>
+<span class="sd">        then sample); :meth:`train` then raises ``ValueError``.</span>
+<span class="sd">    val_dataset : iterable or None</span>
+<span class="sd">        Validation dataset, should yield batches of data. May be None, as</span>
+<span class="sd">        ``train_dataset``.</span>
 <span class="sd">    dim_obs : int</span>
 <span class="sd">        Dimensionality of the parameter (theta) space.</span>
 <span class="sd">    dim_cond : int</span>
@@ -1102,13 +1105,15 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">val_dataset</span> <span class="o">=</span> <span class="n">val_dataset</span></div>
 
 
+        <span class="c1"># Loaders are optional: an inference-only pipeline (import weights,</span>
+        <span class="c1"># then sample) has none. train() checks for them.</span>
 <div class="viewcode-block" id="AbstractPipeline.train_dataset_iter">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.train_dataset_iter">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">train_dataset_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_dataset_iter</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">train_dataset</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">iter</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AbstractPipeline.val_dataset_iter">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.val_dataset_iter">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_iter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_dataset</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_iter</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">val_dataset</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">iter</span><span class="p">(</span><span class="n">val_dataset</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="AbstractPipeline.dim_obs">
@@ -1852,29 +1857,68 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="AbstractPipeline.export_safetensors">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.export_safetensors">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">export_safetensors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export_safetensors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Export trained weights to a single ``.safetensors`` file.</span>
 
-<span class="sd">        ``ema=True`` (default) exports the EMA model -- usually the weights you</span>
-<span class="sd">        want for inference and for sharing. Pass ``ema=False`` for the primary</span>
-<span class="sd">        model. This is a thin wrapper over</span>
-<span class="sd">        :func:`gensbi.utils.serialization.save_safetensors`.</span>
+<span class="sd">        Thin wrapper over :func:`gensbi.utils.serialization.save_safetensors`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str | os.PathLike</span>
+<span class="sd">            Destination ``.safetensors`` file.</span>
+<span class="sd">        ema : bool, optional</span>
+<span class="sd">            If True (default), export the EMA model: usually the weights you</span>
+<span class="sd">            want for inference and for sharing. If False, export the primary</span>
+<span class="sd">            model.</span>
+<span class="sd">        metadata : mapping, optional</span>
+<span class="sd">            Extra provenance stored in the file header.</span>
+<span class="sd">        wrt : nnx filter, optional</span>
+<span class="sd">            Restrict the saved variable collections (e.g. ``nnx.Param``).</span>
+<span class="sd">            Default saves every variable except RNG state, which is never</span>
+<span class="sd">            written.</span>
 <span class="sd">        """</span>
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="k">if</span> <span class="n">ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
-        <span class="n">save_safetensors</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span></div>
+        <span class="n">save_safetensors</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="n">wrt</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="AbstractPipeline.import_safetensors">
 <a class="viewcode-back" href="../../../api/gensbi/recipes/pipeline/index.html#gensbi.recipes.pipeline.AbstractPipeline.import_safetensors">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">import_safetensors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">import_safetensors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ema</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Load weights from a ``.safetensors`` file into this pipeline in place.</span>
 
-<span class="sd">        ``ema=True`` (default) loads into the EMA model. Thin wrapper over</span>
-<span class="sd">        :func:`gensbi.utils.serialization.load_safetensors`.</span>
+<span class="sd">        Thin wrapper over :func:`gensbi.utils.serialization.load_safetensors`</span>
+<span class="sd">        that then finishes like :meth:`restore_model`: both models are put in</span>
+<span class="sd">        eval mode and wrapped, so the pipeline can sample right away. A</span>
+<span class="sd">        pipeline built without data loaders (``train_dataset=None``,</span>
+<span class="sd">        ``val_dataset=None``) can therefore go straight from a weights file</span>
+<span class="sd">        to :meth:`sample`.</span>
+
+<span class="sd">        Only one of the two models is loaded per call. To sample with both</span>
+<span class="sd">        ``use_ema=True`` and ``use_ema=False``, import a file into each;</span>
+<span class="sd">        the model that was not imported keeps the weights it had.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str | os.PathLike</span>
+<span class="sd">            Source ``.safetensors`` file.</span>
+<span class="sd">        ema : bool, optional</span>
+<span class="sd">            If True (default), load into the EMA model, otherwise into the</span>
+<span class="sd">            primary model.</span>
+<span class="sd">        strict : bool, optional</span>
+<span class="sd">            If True (default), the file's key set must equal the model's.</span>
+<span class="sd">        wrt : nnx filter, optional</span>
+<span class="sd">            Restrict the variable collections that are loaded and compared;</span>
+<span class="sd">            pass the filter the file was exported with. RNG state is never</span>
+<span class="sd">            loaded.</span>
 <span class="sd">        """</span>
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span> <span class="k">if</span> <span class="n">ema</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
-        <span class="n">load_safetensors</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_reshard</span><span class="p">(</span><span class="n">model</span><span class="p">)</span></div>
+        <span class="n">load_safetensors</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">,</span> <span class="n">wrt</span><span class="o">=</span><span class="n">wrt</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ema_model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reshard</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_model</span><span class="p">()</span></div>
 
 
     <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
@@ -1990,7 +2034,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            List of training losses.</span>
 <span class="sd">        val_loss_array : list</span>
 <span class="sd">            List of validation losses.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the pipeline was built without data loaders</span>
+<span class="sd">            (``train_dataset=None`` or ``val_dataset=None``).</span>
 <span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_dataset_iter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_dataset_iter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"train() needs data loaders, but this pipeline was built with "</span>
+                <span class="s2">"train_dataset=None or val_dataset=None (inference only)."</span>
+            <span class="p">)</span>
 
         <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_optimizer</span><span class="p">()</span>
         <span class="n">ema_optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_ema_optimizer</span><span class="p">()</span>

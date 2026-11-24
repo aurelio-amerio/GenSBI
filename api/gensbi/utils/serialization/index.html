@@ -643,6 +643,9 @@ caller has already reconstructed from its <code class="docutils literal notransl
 <code class="docutils literal notranslate"><span class="pre">{str:</span> <span class="pre">array}</span></code> table (nnx state paths joined with <code class="docutils literal notranslate"><span class="pre">&quot;.&quot;</span></code>) plus a small
 provenance <code class="docutils literal notranslate"><span class="pre">metadata</span></code> blob; it does <em>not</em> carry enough information to rebuild
 the model architecture (an explicit non-goal).</p>
+<p>RNG state (the <code class="docutils literal notranslate"><span class="pre">RngKey</span></code> / <code class="docutils literal notranslate"><span class="pre">RngCount</span></code> leaves of dropout and drop-path
+streams) is never written or read: it only matters during training, and typed
+PRNG keys have no portable array form.</p>
 <section id="attributes">
 <h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
@@ -667,10 +670,13 @@ the model architecture (an explicit non-goal).</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.utils.serialization._join_key" title="gensbi.utils.serialization._join_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_join_key</span></code></a>(path)</p></td>
 <td><p>Join an nnx state-path tuple into a safetensors string key.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.utils.serialization.load_safetensors" title="gensbi.utils.serialization.load_safetensors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_safetensors</span></code></a>(model, path, *[, strict])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.utils.serialization._state" title="gensbi.utils.serialization._state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_state</span></code></a>(model, wrt)</p></td>
+<td><p>Model state selected by <code class="docutils literal notranslate"><span class="pre">wrt</span></code>, always without RNG state.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.utils.serialization.load_safetensors" title="gensbi.utils.serialization.load_safetensors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_safetensors</span></code></a>(model, path, *[, strict, wrt])</p></td>
 <td><p>Load weights from a <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file into <code class="docutils literal notranslate"><span class="pre">model</span></code> in place.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.utils.serialization.save_safetensors" title="gensbi.utils.serialization.save_safetensors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_safetensors</span></code></a>(model, path, *[, metadata, wrt])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.utils.serialization.save_safetensors" title="gensbi.utils.serialization.save_safetensors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_safetensors</span></code></a>(model, path, *[, metadata, wrt])</p></td>
 <td><p>Save <code class="docutils literal notranslate"><span class="pre">model</span></code>'s weights to a single <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file.</p></td>
 </tr>
 </tbody>
@@ -707,8 +713,14 @@ contains the <code class="docutils literal notranslate"><span class="pre">&quot;
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="gensbi.utils.serialization._state">
+<span class="sig-prename descclassname"><span class="pre">gensbi.utils.serialization.</span></span><span class="sig-name descname"><span class="pre">_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/utils/serialization.html#_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.utils.serialization._state" title="Link to this definition">#</a></dt>
+<dd><p>Model state selected by <code class="docutils literal notranslate"><span class="pre">wrt</span></code>, always without RNG state.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.utils.serialization.load_safetensors">
-<span class="sig-prename descclassname"><span class="pre">gensbi.utils.serialization.</span></span><span class="sig-name descname"><span class="pre">load_safetensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/utils/serialization.html#load_safetensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.utils.serialization.load_safetensors" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.utils.serialization.</span></span><span class="sig-name descname"><span class="pre">load_safetensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/utils/serialization.html#load_safetensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.utils.serialization.load_safetensors" title="Link to this definition">#</a></dt>
 <dd><p>Load weights from a <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file into <code class="docutils literal notranslate"><span class="pre">model</span></code> in place.</p>
 <p>The caller must have reconstructed <code class="docutils literal notranslate"><span class="pre">model</span></code> from its <code class="docutils literal notranslate"><span class="pre">Params</span></code> first;
 that model is the structural schema.</p>
@@ -722,6 +734,10 @@ every shared key must match shape (<code class="docutils literal notranslate"><s
 False, only the intersection is loaded; model leaves absent from
 the file keep their current values and file keys absent from the
 model are ignored.</p></li>
+<li><p><strong>wrt</strong> (<em>nnx filter</em><em>, </em><em>optional</em>) – Restrict the variable collections that are loaded and, with
+<code class="docutils literal notranslate"><span class="pre">strict=True</span></code>, compared against the file. Pass the filter the file
+was saved with (e.g. <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code>). Default is every variable except
+RNG state, which is never loaded: the model keeps its own.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -746,7 +762,8 @@ weights.</p>
 <li><p><strong>metadata</strong> (<em>mapping</em><em>, </em><em>optional</em>) – Extra provenance, stringified and merged over (overriding) the defaults
 <code class="docutils literal notranslate"><span class="pre">format</span></code>/<code class="docutils literal notranslate"><span class="pre">version</span></code>/<code class="docutils literal notranslate"><span class="pre">framework</span></code>/<code class="docutils literal notranslate"><span class="pre">model_class</span></code>.</p></li>
 <li><p><strong>wrt</strong> (<em>nnx filter</em><em>, </em><em>optional</em>) – Restrict the saved variable collections (e.g. <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code>). Default
-saves the full state.</p></li>
+saves every variable except RNG state (<code class="docutils literal notranslate"><span class="pre">Param</span></code>, <code class="docutils literal notranslate"><span class="pre">BatchStat</span></code>,
+buffers, …). RNG state is excluded whatever the filter.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -820,6 +837,7 @@ saves the full state.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.serialization._flat_arrays"><code class="docutils literal notranslate"><span class="pre">_flat_arrays()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.serialization._join_key"><code class="docutils literal notranslate"><span class="pre">_join_key()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.serialization._state"><code class="docutils literal notranslate"><span class="pre">_state()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.serialization.load_safetensors"><code class="docutils literal notranslate"><span class="pre">load_safetensors()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.serialization.save_safetensors"><code class="docutils literal notranslate"><span class="pre">save_safetensors()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.utils.serialization._DEFAULT_METADATA"><code class="docutils literal notranslate"><span class="pre">_DEFAULT_METADATA</span></code></a></li>

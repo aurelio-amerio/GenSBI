@@ -14,6 +14,10 @@ gensbi.utils.serialization
    provenance ``metadata`` blob; it does *not* carry enough information to rebuild
    the model architecture (an explicit non-goal).
 
+   RNG state (the ``RngKey`` / ``RngCount`` leaves of dropout and drop-path
+   streams) is never written or read: it only matters during training, and typed
+   PRNG keys have no portable array form.
+
    ..
        !! processed by numpydoc !!
 
@@ -34,6 +38,7 @@ Functions
 
    gensbi.utils.serialization._flat_arrays
    gensbi.utils.serialization._join_key
+   gensbi.utils.serialization._state
    gensbi.utils.serialization.load_safetensors
    gensbi.utils.serialization.save_safetensors
 
@@ -89,7 +94,30 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: load_safetensors(model, path, *, strict = True)
+.. py:function:: _state(model, wrt)
+
+   
+   Model state selected by ``wrt``, always without RNG state.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: load_safetensors(model, path, *, strict = True, wrt=None)
 
    
    Load weights from a ``.safetensors`` file into ``model`` in place.
@@ -107,6 +135,11 @@ Module Contents
                   the file keep their current values and file keys absent from the
                   model are ignored.
    :type strict: bool, optional
+   :param wrt: Restrict the variable collections that are loaded and, with
+               ``strict=True``, compared against the file. Pass the filter the file
+               was saved with (e.g. ``nnx.Param``). Default is every variable except
+               RNG state, which is never loaded: the model keeps its own.
+   :type wrt: nnx filter, optional
 
    :returns: **model** -- The same ``model`` object, updated in place with the loaded
              weights.
@@ -142,7 +175,8 @@ Module Contents
                     ``format``/``version``/``framework``/``model_class``.
    :type metadata: mapping, optional
    :param wrt: Restrict the saved variable collections (e.g. ``nnx.Param``). Default
-               saves the full state.
+               saves every variable except RNG state (``Param``, ``BatchStat``,
+               buffers, ...). RNG state is excluded whatever the filter.
    :type wrt: nnx filter, optional
 
 

@@ -54,10 +54,13 @@ Module Contents
    This class provides a template for implementing training and evaluation pipelines for conditional generative models.
    Subclasses should implement model creation, default parameter setup, loss function, sampling, and evaluation methods.
 
-   :param train_dataset: Training dataset, should yield batches of data.
-   :type train_dataset: iterable
-   :param val_dataset: Validation dataset, should yield batches of data.
-   :type val_dataset: iterable
+   :param train_dataset: Training dataset, should yield batches of data. May be None for a
+                         pipeline that is only used for inference (restore or import weights,
+                         then sample); :meth:`train` then raises ``ValueError``.
+   :type train_dataset: iterable or None
+   :param val_dataset: Validation dataset, should yield batches of data. May be None, as
+                       ``train_dataset``.
+   :type val_dataset: iterable or None
    :param dim_obs: Dimensionality of the parameter (theta) space.
    :type dim_obs: int
    :param dim_cond: Dimensionality of the observation (x) space.
@@ -533,15 +536,25 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: export_safetensors(path, *, ema=True, metadata=None)
+   .. py:method:: export_safetensors(path, *, ema=True, metadata=None, wrt=None)
 
       
       Export trained weights to a single ``.safetensors`` file.
 
-      ``ema=True`` (default) exports the EMA model -- usually the weights you
-      want for inference and for sharing. Pass ``ema=False`` for the primary
-      model. This is a thin wrapper over
-      :func:`gensbi.utils.serialization.save_safetensors`.
+      Thin wrapper over :func:`gensbi.utils.serialization.save_safetensors`.
+
+      :param path: Destination ``.safetensors`` file.
+      :type path: str | os.PathLike
+      :param ema: If True (default), export the EMA model: usually the weights you
+                  want for inference and for sharing. If False, export the primary
+                  model.
+      :type ema: bool, optional
+      :param metadata: Extra provenance stored in the file header.
+      :type metadata: mapping, optional
+      :param wrt: Restrict the saved variable collections (e.g. ``nnx.Param``).
+                  Default saves every variable except RNG state, which is never
+                  written.
+      :type wrt: nnx filter, optional
 
 
 
@@ -741,13 +754,33 @@ Module Contents
           !! processed by numpydoc !!
 
 
-   .. py:method:: import_safetensors(path, *, ema=True, strict=True)
+   .. py:method:: import_safetensors(path, *, ema=True, strict=True, wrt=None)
 
       
       Load weights from a ``.safetensors`` file into this pipeline in place.
 
-      ``ema=True`` (default) loads into the EMA model. Thin wrapper over
-      :func:`gensbi.utils.serialization.load_safetensors`.
+      Thin wrapper over :func:`gensbi.utils.serialization.load_safetensors`
+      that then finishes like :meth:`restore_model`: both models are put in
+      eval mode and wrapped, so the pipeline can sample right away. A
+      pipeline built without data loaders (``train_dataset=None``,
+      ``val_dataset=None``) can therefore go straight from a weights file
+      to :meth:`sample`.
+
+      Only one of the two models is loaded per call. To sample with both
+      ``use_ema=True`` and ``use_ema=False``, import a file into each;
+      the model that was not imported keeps the weights it had.
+
+      :param path: Source ``.safetensors`` file.
+      :type path: str | os.PathLike
+      :param ema: If True (default), load into the EMA model, otherwise into the
+                  primary model.
+      :type ema: bool, optional
+      :param strict: If True (default), the file's key set must equal the model's.
+      :type strict: bool, optional
+      :param wrt: Restrict the variable collections that are loaded and compared;
+                  pass the filter the file was exported with. RNG state is never
+                  loaded.
+      :type wrt: nnx filter, optional
 
 
 
@@ -1025,6 +1058,9 @@ Module Contents
       :returns: * **loss_array** (*list*) -- List of training losses.
                 * **val_loss_array** (*list*) -- List of validation losses.
 
+      :raises ValueError: If the pipeline was built without data loaders
+          (``train_dataset=None`` or ``val_dataset=None``).
+
 
 
 
@@ -1130,6 +1166,8 @@ Module Contents
 
 
    .. py:attribute:: train_dataset_iter
+      :value: None
+
 
 
    .. py:attribute:: training_config
@@ -1141,6 +1179,8 @@ Module Contents
 
 
    .. py:attribute:: val_dataset_iter
+      :value: None
+
 
 
 .. py:class:: ModelEMA(model, tx)

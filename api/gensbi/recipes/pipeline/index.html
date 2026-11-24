@@ -694,8 +694,11 @@ Subclasses should implement model creation, default parameter setup, loss functi
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>train_dataset</strong> (<em>iterable</em>) – Training dataset, should yield batches of data.</p></li>
-<li><p><strong>val_dataset</strong> (<em>iterable</em>) – Validation dataset, should yield batches of data.</p></li>
+<li><p><strong>train_dataset</strong> (<em>iterable</em><em> or </em><em>None</em>) – Training dataset, should yield batches of data. May be None for a
+pipeline that is only used for inference (restore or import weights,
+then sample); <a class="reference internal" href="#gensbi.recipes.pipeline.AbstractPipeline.train" title="gensbi.recipes.pipeline.AbstractPipeline.train"><code class="xref py py-meth docutils literal notranslate"><span class="pre">train()</span></code></a> then raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></li>
+<li><p><strong>val_dataset</strong> (<em>iterable</em><em> or </em><em>None</em>) – Validation dataset, should yield batches of data. May be None, as
+<code class="docutils literal notranslate"><span class="pre">train_dataset</span></code>.</p></li>
 <li><p><strong>dim_obs</strong> (<em>int</em>) – Dimensionality of the parameter (theta) space.</p></li>
 <li><p><strong>dim_cond</strong> (<em>int</em>) – Dimensionality of the observation (x) space.</p></li>
 <li><p><strong>model</strong> (<em>nnx.Module</em><em>, </em><em>optional</em>) – The model to be trained. If None, the model is created using <cite>_make_model</cite>.</p></li>
@@ -925,12 +928,23 @@ as is when it holds exactly <code class="docutils literal notranslate"><span cla
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.export_safetensors">
-<span class="sig-name descname"><span class="pre">export_safetensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.export_safetensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.export_safetensors" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">export_safetensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.export_safetensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.export_safetensors" title="Link to this definition">#</a></dt>
 <dd><p>Export trained weights to a single <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file.</p>
-<p><code class="docutils literal notranslate"><span class="pre">ema=True</span></code> (default) exports the EMA model – usually the weights you
-want for inference and for sharing. Pass <code class="docutils literal notranslate"><span class="pre">ema=False</span></code> for the primary
-model. This is a thin wrapper over
-<a class="reference internal" href="../../utils/serialization/index.html#gensbi.utils.serialization.save_safetensors" title="gensbi.utils.serialization.save_safetensors"><code class="xref py py-func docutils literal notranslate"><span class="pre">gensbi.utils.serialization.save_safetensors()</span></code></a>.</p>
+<p>Thin wrapper over <a class="reference internal" href="../../utils/serialization/index.html#gensbi.utils.serialization.save_safetensors" title="gensbi.utils.serialization.save_safetensors"><code class="xref py py-func docutils literal notranslate"><span class="pre">gensbi.utils.serialization.save_safetensors()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em><em> | </em><em>os.PathLike</em>) – Destination <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file.</p></li>
+<li><p><strong>ema</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True (default), export the EMA model: usually the weights you
+want for inference and for sharing. If False, export the primary
+model.</p></li>
+<li><p><strong>metadata</strong> (<em>mapping</em><em>, </em><em>optional</em>) – Extra provenance stored in the file header.</p></li>
+<li><p><strong>wrt</strong> (<em>nnx filter</em><em>, </em><em>optional</em>) – Restrict the saved variable collections (e.g. <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code>).
+Default saves every variable except RNG state, which is never
+written.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1026,10 +1040,30 @@ model. This is a thin wrapper over
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.import_safetensors">
-<span class="sig-name descname"><span class="pre">import_safetensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.import_safetensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.import_safetensors" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">import_safetensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ema</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.import_safetensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.import_safetensors" title="Link to this definition">#</a></dt>
 <dd><p>Load weights from a <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file into this pipeline in place.</p>
-<p><code class="docutils literal notranslate"><span class="pre">ema=True</span></code> (default) loads into the EMA model. Thin wrapper over
-<a class="reference internal" href="../../utils/serialization/index.html#gensbi.utils.serialization.load_safetensors" title="gensbi.utils.serialization.load_safetensors"><code class="xref py py-func docutils literal notranslate"><span class="pre">gensbi.utils.serialization.load_safetensors()</span></code></a>.</p>
+<p>Thin wrapper over <a class="reference internal" href="../../utils/serialization/index.html#gensbi.utils.serialization.load_safetensors" title="gensbi.utils.serialization.load_safetensors"><code class="xref py py-func docutils literal notranslate"><span class="pre">gensbi.utils.serialization.load_safetensors()</span></code></a>
+that then finishes like <a class="reference internal" href="#gensbi.recipes.pipeline.AbstractPipeline.restore_model" title="gensbi.recipes.pipeline.AbstractPipeline.restore_model"><code class="xref py py-meth docutils literal notranslate"><span class="pre">restore_model()</span></code></a>: both models are put in
+eval mode and wrapped, so the pipeline can sample right away. A
+pipeline built without data loaders (<code class="docutils literal notranslate"><span class="pre">train_dataset=None</span></code>,
+<code class="docutils literal notranslate"><span class="pre">val_dataset=None</span></code>) can therefore go straight from a weights file
+to <a class="reference internal" href="#gensbi.recipes.pipeline.AbstractPipeline.sample" title="gensbi.recipes.pipeline.AbstractPipeline.sample"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sample()</span></code></a>.</p>
+<p>Only one of the two models is loaded per call. To sample with both
+<code class="docutils literal notranslate"><span class="pre">use_ema=True</span></code> and <code class="docutils literal notranslate"><span class="pre">use_ema=False</span></code>, import a file into each;
+the model that was not imported keeps the weights it had.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em><em> | </em><em>os.PathLike</em>) – Source <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file.</p></li>
+<li><p><strong>ema</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True (default), load into the EMA model, otherwise into the
+primary model.</p></li>
+<li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True (default), the file’s key set must equal the model’s.</p></li>
+<li><p><strong>wrt</strong> (<em>nnx filter</em><em>, </em><em>optional</em>) – Restrict the variable collections that are loaded and compared;
+pass the filter the file was exported with. RNG state is never
+loaded.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1192,8 +1226,12 @@ condition; it cannot override <code class="docutils literal notranslate"><span c
 </ul>
 </p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Tuple[list, list]</p>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the pipeline was built without data loaders
+(<code class="docutils literal notranslate"><span class="pre">train_dataset=None</span></code> or <code class="docutils literal notranslate"><span class="pre">val_dataset=None</span></code>).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple[list, list]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1281,7 +1319,7 @@ condition; it cannot override <code class="docutils literal notranslate"><span c
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.train_dataset_iter">
-<span class="sig-name descname"><span class="pre">train_dataset_iter</span></span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.train_dataset_iter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.train_dataset_iter" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">train_dataset_iter</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.train_dataset_iter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.train_dataset_iter" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1296,7 +1334,7 @@ condition; it cannot override <code class="docutils literal notranslate"><span c
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="gensbi.recipes.pipeline.AbstractPipeline.val_dataset_iter">
-<span class="sig-name descname"><span class="pre">val_dataset_iter</span></span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.val_dataset_iter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.val_dataset_iter" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">val_dataset_iter</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="reference internal" href="../../../../_modules/gensbi/recipes/pipeline.html#AbstractPipeline.val_dataset_iter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.recipes.pipeline.AbstractPipeline.val_dataset_iter" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>

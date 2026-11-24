@@ -652,7 +652,7 @@ model wrapping utilities, plotting functions, and model serialization.</p>
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.utils.load_safetensors" title="gensbi.utils.load_safetensors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_safetensors</span></code></a>(model, path, *[, strict])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.utils.load_safetensors" title="gensbi.utils.load_safetensors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_safetensors</span></code></a>(model, path, *[, strict, wrt])</p></td>
 <td><p>Load weights from a <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file into <code class="docutils literal notranslate"><span class="pre">model</span></code> in place.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.utils.save_safetensors" title="gensbi.utils.save_safetensors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_safetensors</span></code></a>(model, path, *[, metadata, wrt])</p></td>
@@ -666,7 +666,7 @@ model wrapping utilities, plotting functions, and model serialization.</p>
 <h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading">#</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="gensbi.utils.load_safetensors">
-<span class="sig-prename descclassname"><span class="pre">gensbi.utils.</span></span><span class="sig-name descname"><span class="pre">load_safetensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/utils/serialization.html#load_safetensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.utils.load_safetensors" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.utils.</span></span><span class="sig-name descname"><span class="pre">load_safetensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wrt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/gensbi/utils/serialization.html#load_safetensors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.utils.load_safetensors" title="Link to this definition">#</a></dt>
 <dd><p>Load weights from a <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file into <code class="docutils literal notranslate"><span class="pre">model</span></code> in place.</p>
 <p>The caller must have reconstructed <code class="docutils literal notranslate"><span class="pre">model</span></code> from its <code class="docutils literal notranslate"><span class="pre">Params</span></code> first;
 that model is the structural schema.</p>
@@ -680,6 +680,10 @@ every shared key must match shape (<code class="docutils literal notranslate"><s
 False, only the intersection is loaded; model leaves absent from
 the file keep their current values and file keys absent from the
 model are ignored.</p></li>
+<li><p><strong>wrt</strong> (<em>nnx filter</em><em>, </em><em>optional</em>) – Restrict the variable collections that are loaded and, with
+<code class="docutils literal notranslate"><span class="pre">strict=True</span></code>, compared against the file. Pass the filter the file
+was saved with (e.g. <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code>). Default is every variable except
+RNG state, which is never loaded: the model keeps its own.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -704,7 +708,8 @@ weights.</p>
 <li><p><strong>metadata</strong> (<em>mapping</em><em>, </em><em>optional</em>) – Extra provenance, stringified and merged over (overriding) the defaults
 <code class="docutils literal notranslate"><span class="pre">format</span></code>/<code class="docutils literal notranslate"><span class="pre">version</span></code>/<code class="docutils literal notranslate"><span class="pre">framework</span></code>/<code class="docutils literal notranslate"><span class="pre">model_class</span></code>.</p></li>
 <li><p><strong>wrt</strong> (<em>nnx filter</em><em>, </em><em>optional</em>) – Restrict the saved variable collections (e.g. <code class="docutils literal notranslate"><span class="pre">nnx.Param</span></code>). Default
-saves the full state.</p></li>
+saves every variable except RNG state (<code class="docutils literal notranslate"><span class="pre">Param</span></code>, <code class="docutils literal notranslate"><span class="pre">BatchStat</span></code>,
+buffers, …). RNG state is excluded whatever the filter.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>

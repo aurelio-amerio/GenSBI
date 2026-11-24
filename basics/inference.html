@@ -740,6 +740,45 @@
 </pre></div>
 </div>
 </section>
+<section id="sampling-from-a-weights-file">
+<h2>Sampling from a Weights File<a class="headerlink" href="#sampling-from-a-weights-file" title="Link to this heading">#</a></h2>
+<p>Trained weights can be exported to a single <code class="docutils literal notranslate"><span class="pre">.safetensors</span></code> file and loaded
+into a pipeline built from scratch, without the training data or the
+checkpoint folder. This is the path to use when you share a model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># After training (or restore_model): one file per set of weights</span>
+<span class="n">pipeline</span><span class="o">.</span><span class="n">export_safetensors</span><span class="p">(</span><span class="s2">"ema.safetensors"</span><span class="p">)</span>                <span class="c1"># EMA weights</span>
+<span class="n">pipeline</span><span class="o">.</span><span class="n">export_safetensors</span><span class="p">(</span><span class="s2">"final.safetensors"</span><span class="p">,</span> <span class="n">ema</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>   <span class="c1"># primary weights</span>
+</pre></div>
+</div>
+<p>On the receiving side, rebuild the same architecture and pass <code class="docutils literal notranslate"><span class="pre">None</span></code> for the
+two data loaders. <code class="docutils literal notranslate"><span class="pre">import_safetensors</span></code> puts the models in eval mode and
+wraps them, so the pipeline can sample right away:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">ConditionalPipeline</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>            <span class="c1"># same architecture and params as the exported model</span>
+    <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>       <span class="c1"># no data loaders: inference only</span>
+    <span class="n">dim_obs</span><span class="p">,</span> <span class="n">dim_cond</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="n">FlowMatchingMethod</span><span class="p">(),</span>
+<span class="p">)</span>
+<span class="n">pipeline</span><span class="o">.</span><span class="n">import_safetensors</span><span class="p">(</span><span class="s2">"ema.safetensors"</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x_observed</span><span class="p">,</span> <span class="n">nsamples</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Things to know:</p>
+<ul class="simple">
+<li><p>The file holds the weights only. It does not describe the architecture, so
+ship the model configuration with it, together with any pre-processing
+statistics your data needs.</p></li>
+<li><p>Each call loads one model. <code class="docutils literal notranslate"><span class="pre">use_ema=False</span></code> samples from the primary model,
+which keeps its initial weights unless you also import a file with
+<code class="docutils literal notranslate"><span class="pre">ema=False</span></code>.</p></li>
+<li><p>All variables are saved (parameters, batch statistics, buffers) except RNG
+state such as dropout keys, which only matters in training. Pass
+<code class="docutils literal notranslate"><span class="pre">wrt=nnx.Param</span></code> to both <code class="docutils literal notranslate"><span class="pre">export_safetensors</span></code> and <code class="docutils literal notranslate"><span class="pre">import_safetensors</span></code> to
+store the trainable parameters only.</p></li>
+<li><p>A pipeline built without loaders cannot be trained: <code class="docutils literal notranslate"><span class="pre">train()</span></code> raises a
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></li>
+</ul>
+</section>
 <section id="exact-likelihood-inference-with-normalizing-flows-experimental">
 <h2>Exact-Likelihood Inference with Normalizing Flows (experimental)<a class="headerlink" href="#exact-likelihood-inference-with-normalizing-flows-experimental" title="Link to this heading">#</a></h2>
 <p>GenSBI also ships discrete normalizing flows (<code class="docutils literal notranslate"><span class="pre">MAFlow</span></code>, <code class="docutils literal notranslate"><span class="pre">TarFlow</span></code>) whose
@@ -814,6 +853,7 @@ with MCMC posterior sampling via <code class="docutils literal notranslate"><spa
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#batched-inference">Batched Inference</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sampling-from-a-weights-file">Sampling from a Weights File</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exact-likelihood-inference-with-normalizing-flows-experimental">Exact-Likelihood Inference with Normalizing Flows (experimental)</a></li>
 </ul>
   </nav></div>
