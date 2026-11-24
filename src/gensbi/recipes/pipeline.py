@@ -264,10 +264,13 @@ class AbstractPipeline(abc.ABC):
 
     Parameters
     ----------
-    train_dataset : iterable
-        Training dataset, should yield batches of data.
-    val_dataset : iterable
-        Validation dataset, should yield batches of data.
+    train_dataset : iterable or None
+        Training dataset, should yield batches of data. May be None for a
+        pipeline that is only used for inference (restore or import weights,
+        then sample); :meth:`train` then raises ``ValueError``.
+    val_dataset : iterable or None
+        Validation dataset, should yield batches of data. May be None, as
+        ``train_dataset``.
     dim_obs : int
         Dimensionality of the parameter (theta) space.
     dim_cond : int
@@ -311,8 +314,10 @@ class AbstractPipeline(abc.ABC):
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
 
-        self.train_dataset_iter = iter(self.train_dataset)
-        self.val_dataset_iter = iter(self.val_dataset)
+        # Loaders are optional: an inference-only pipeline (import weights,
+        # then sample) has none. train() checks for them.
+        self.train_dataset_iter = None if train_dataset is None else iter(train_dataset)
+        self.val_dataset_iter = None if val_dataset is None else iter(val_dataset)
 
         self.dim_obs = dim_obs
         self.dim_cond = dim_cond
@@ -948,26 +953,65 @@ class AbstractPipeline(abc.ABC):
         print(f"Restored model from intermediate checkpoint @ step {step}")
         return step
 
-    def export_safetensors(self, path, *, ema=True, metadata=None):
+    def export_safetensors(self, path, *, ema=True, metadata=None, wrt=None):
         """Export trained weights to a single ``.safetensors`` file.
 
-        ``ema=True`` (default) exports the EMA model -- usually the weights you
-        want for inference and for sharing. Pass ``ema=False`` for the primary
-        model. This is a thin wrapper over
-        :func:`gensbi.utils.serialization.save_safetensors`.
+        Thin wrapper over :func:`gensbi.utils.serialization.save_safetensors`.
+
+        Parameters
+        ----------
+        path : str | os.PathLike
+            Destination ``.safetensors`` file.
+        ema : bool, optional
+            If True (default), export the EMA model: usually the weights you
+            want for inference and for sharing. If False, export the primary
+            model.
+        metadata : mapping, optional
+            Extra provenance stored in the file header.
+        wrt : nnx filter, optional
+            Restrict the saved variable collections (e.g. ``nnx.Param``).
+            Default saves every variable except RNG state, which is never
+            written.
         """
         model = self.ema_model if ema else self.model
-        save_safetensors(model, path, metadata=metadata)
+        save_safetensors(model, path, metadata=metadata, wrt=wrt)
 
-    def import_safetensors(self, path, *, ema=True, strict=True):
+    def import_safetensors(self, path, *, ema=True, strict=True, wrt=None):
         """Load weights from a ``.safetensors`` file into this pipeline in place.
 
-        ``ema=True`` (default) loads into the EMA model. Thin wrapper over
-        :func:`gensbi.utils.serialization.load_safetensors`.
+        Thin wrapper over :func:`gensbi.utils.serialization.load_safetensors`
+        that then finishes like :meth:`restore_model`: both models are put in
+        eval mode and wrapped, so the pipeline can sample right away. A
+        pipeline built without data loaders (``train_dataset=None``,
+        ``val_dataset=None``) can therefore go straight from a weights file
+        to :meth:`sample`.
+
+        Only one of the two models is loaded per call. To sample with both
+        ``use_ema=True`` and ``use_ema=False``, import a file into each;
+        the model that was not imported keeps the weights it had.
+
+        Parameters
+        ----------
+        path : str | os.PathLike
+            Source ``.safetensors`` file.
+        ema : bool, optional
+            If True (default), load into the EMA model, otherwise into the
+            primary model.
+        strict : bool, optional
+            If True (default), the file's key set must equal the model's.
+        wrt : nnx filter, optional
+            Restrict the variable collections that are loaded and compared;
+            pass the filter the file was exported with. RNG state is never
+            loaded.
         """
         model = self.ema_model if ema else self.model
-        load_safetensors(model, path, strict=strict)
+        load_safetensors(model, path, strict=strict, wrt=wrt)
+
+        self.model.eval()
+        self.ema_model.eval()
+
         self._reshard(model)
+        self._wrap_model()
 
     @abc.abstractmethod
     def _wrap_model(self):
@@ -1071,7 +1115,18 @@ class AbstractPipeline(abc.ABC):
             List of training losses.
         val_loss_array : list
             List of validation losses.
+
+        Raises
+        ------
+        ValueError
+            If the pipeline was built without data loaders
+            (``train_dataset=None`` or ``val_dataset=None``).
         """
+        if self.train_dataset_iter is None or self.val_dataset_iter is None:
+            raise ValueError(
+                "train() needs data loaders, but this pipeline was built with "
+                "train_dataset=None or val_dataset=None (inference only)."
+            )
 
         optimizer = self._get_optimizer()
         ema_optimizer = self._get_ema_optimizer()

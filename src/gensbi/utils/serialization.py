@@ -6,6 +6,10 @@ caller has already reconstructed from its ``Params``. The file stores a flat
 ``{str: array}`` table (nnx state paths joined with ``"."``) plus a small
 provenance ``metadata`` blob; it does *not* carry enough information to rebuild
 the model architecture (an explicit non-goal).
+
+RNG state (the ``RngKey`` / ``RngCount`` leaves of dropout and drop-path
+streams) is never written or read: it only matters during training, and typed
+PRNG keys have no portable array form.
 """
 
 from __future__ import annotations
@@ -41,10 +45,15 @@ def _join_key(path: tuple) -> str:
     return _SEP.join(parts)
 
 
+def _state(model, wrt):
+    """Model state selected by ``wrt``, always without RNG state."""
+    no_rng = nnx.Not(nnx.RngState)
+    return nnx.state(model, no_rng if wrt is None else nnx.All(wrt, no_rng))
+
+
 def _flat_arrays(model, wrt) -> dict[tuple, Any]:
     """Flatten model state to ``{tuple_path: array}`` (ints preserved)."""
-    state = nnx.state(model) if wrt is None else nnx.state(model, wrt)
-    return tu.flatten_dict(nnx.to_pure_dict(state))
+    return tu.flatten_dict(nnx.to_pure_dict(_state(model, wrt)))
 
 
 def save_safetensors(
@@ -67,7 +76,8 @@ def save_safetensors(
         ``format``/``version``/``framework``/``model_class``.
     wrt : nnx filter, optional
         Restrict the saved variable collections (e.g. ``nnx.Param``). Default
-        saves the full state.
+        saves every variable except RNG state (``Param``, ``BatchStat``,
+        buffers, ...). RNG state is excluded whatever the filter.
     """
     flat = _flat_arrays(model, wrt)
     tensors = {_join_key(k): np.asarray(v) for k, v in flat.items()}
@@ -78,7 +88,7 @@ def save_safetensors(
     save_file(tensors, str(path), metadata=meta)
 
 
-def load_safetensors(model, path, *, strict: bool = True):
+def load_safetensors(model, path, *, strict: bool = True, wrt=None):
     """Load weights from a ``.safetensors`` file into ``model`` in place.
 
     The caller must have reconstructed ``model`` from its ``Params`` first;
@@ -96,6 +106,11 @@ def load_safetensors(model, path, *, strict: bool = True):
         False, only the intersection is loaded; model leaves absent from
         the file keep their current values and file keys absent from the
         model are ignored.
+    wrt : nnx filter, optional
+        Restrict the variable collections that are loaded and, with
+        ``strict=True``, compared against the file. Pass the filter the file
+        was saved with (e.g. ``nnx.Param``). Default is every variable except
+        RNG state, which is never loaded: the model keeps its own.
 
     Returns
     -------
@@ -122,7 +137,7 @@ def load_safetensors(model, path, *, strict: bool = True):
         nnx.restore_int_paths(tu.unflatten_dict(loaded, sep=_SEP))
     )
 
-    state = nnx.state(model)
+    state = _state(model, wrt)
     ref = tu.flatten_dict(nnx.to_pure_dict(state))  # {tuple: array}
 
     missing = set(ref) - set(file_flat)

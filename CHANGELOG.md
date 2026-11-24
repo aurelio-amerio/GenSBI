@@ -10,7 +10,41 @@ The changelog starts at 0.5.0. Breaking changes from earlier releases that
 still bite code written against the first tutorials are collected in
 [Migration notes](#migration-notes).
 
-## [Unreleased]
+## [0.5.4] - 2026-11-24
+
+### Added
+
+- Pipelines can be built without data loaders (`train_dataset=None`,
+  `val_dataset=None`) for inference only: build the pipeline, call
+  `import_safetensors` (or `restore_model`), then `sample`. `train()` raises
+  a `ValueError` on such a pipeline.
+- `load_safetensors` takes `wrt`, the filter the file was saved with, so a
+  file saved with e.g. `wrt=nnx.Param` loads with `strict=True`.
+  `export_safetensors` and `import_safetensors` take `wrt` too.
+
+### Changed
+
+- `save_safetensors` and `load_safetensors` never write or read RNG state
+  (`RngKey` / `RngCount`), whatever `wrt` is. Files written by earlier
+  versions are unaffected: a model with RNG state could not be saved.
+
+### Fixed
+
+- `save_safetensors` / `export_safetensors` raised `TypeError: JAX array with
+  PRNGKey dtype cannot be converted to a NumPy array` for any model holding
+  RNG state, i.e. any model with dropout or drop-path built with `rngs=`.
+- `import_safetensors` left the pipeline unable to sample unless it had been
+  trained or restored before: the models were not wrapped
+  (`AttributeError: 'NoneType' object has no attribute 'get_vector_field'`)
+  and stayed in training mode, so dropout was active and sampling raised
+  `TraceContextError`. It now ends like `restore_model`: both models in eval
+  mode, re-placed on the mesh, and wrapped.
+
+### Docs
+
+- `docs/basics/inference.md`: "Sampling from a Weights File" section.
+
+## [0.5.3] - 2026-11-24
 
 ### Added
 

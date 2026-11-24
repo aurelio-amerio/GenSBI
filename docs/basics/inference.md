@@ -108,6 +108,48 @@ posterior_samples = pipeline.sample_batched(
 # e.g. (1000, B, dim_obs, 1)
 ```
 
+## Sampling from a Weights File
+
+Trained weights can be exported to a single `.safetensors` file and loaded
+into a pipeline built from scratch, without the training data or the
+checkpoint folder. This is the path to use when you share a model.
+
+```python
+# After training (or restore_model): one file per set of weights
+pipeline.export_safetensors("ema.safetensors")                # EMA weights
+pipeline.export_safetensors("final.safetensors", ema=False)   # primary weights
+```
+
+On the receiving side, rebuild the same architecture and pass `None` for the
+two data loaders. `import_safetensors` puts the models in eval mode and
+wraps them, so the pipeline can sample right away:
+
+```python
+pipeline = ConditionalPipeline(
+    model,            # same architecture and params as the exported model
+    None, None,       # no data loaders: inference only
+    dim_obs, dim_cond,
+    method=FlowMatchingMethod(),
+)
+pipeline.import_safetensors("ema.safetensors")
+samples = pipeline.sample(key, x_observed, nsamples=10_000)
+```
+
+Things to know:
+
+- The file holds the weights only. It does not describe the architecture, so
+  ship the model configuration with it, together with any pre-processing
+  statistics your data needs.
+- Each call loads one model. `use_ema=False` samples from the primary model,
+  which keeps its initial weights unless you also import a file with
+  `ema=False`.
+- All variables are saved (parameters, batch statistics, buffers) except RNG
+  state such as dropout keys, which only matters in training. Pass
+  `wrt=nnx.Param` to both `export_safetensors` and `import_safetensors` to
+  store the trainable parameters only.
+- A pipeline built without loaders cannot be trained: `train()` raises a
+  `ValueError`.
+
 ## Exact-Likelihood Inference with Normalizing Flows (experimental)
 
 GenSBI also ships discrete normalizing flows (`MAFlow`, `TarFlow`) whose
