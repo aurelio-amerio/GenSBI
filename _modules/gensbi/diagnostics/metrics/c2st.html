@@ -764,6 +764,7 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># MODIFICATION NOTICE:</span>
 <span class="c1"># This file was modified by Aurelio Amerio on 01-2026.</span>
 <span class="c1"># Description: Ported implementation to use JAX instead of PyTorch.</span>
+<span class="c1"># 11-2026: synced the classifier handling with upstream.</span>
 <span class="c1"># --------------------------------------------------------------------------</span>
 
 
@@ -774,6 +775,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">jax</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">clone</span><span class="p">,</span> <span class="n">is_classifier</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestClassifier</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <span class="n">KFold</span><span class="p">,</span> <span class="n">cross_val_score</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neural_network</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLPClassifier</span>
@@ -787,7 +789,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">n_folds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
     <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"accuracy"</span><span class="p">,</span>
-    <span class="n">classifier</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"rf"</span><span class="p">,</span>
+    <span class="n">classifier</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"rf"</span><span class="p">,</span>
     <span class="n">classifier_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">z_score</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">noise_scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -821,10 +823,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Number of folds to use for cross-validation. Default is 5.</span>
 <span class="sd">    metric : str, optional</span>
 <span class="sd">        Scikit-learn metric to use for scoring. Default is 'accuracy'.</span>
-<span class="sd">    classifier : str or Callable, optional</span>
-<span class="sd">        Classification architecture to use. 'rf' for RandomForestClassifier, 'mlp' for MLPClassifier, or a scikit-learn compatible classifier. Default is 'rf'.</span>
+<span class="sd">    classifier : str, BaseEstimator or Callable, optional</span>
+<span class="sd">        Classification architecture to use. 'rf' for RandomForestClassifier, 'mlp' for MLPClassifier,</span>
+<span class="sd">        a scikit-learn classifier instance, its class, or a function that returns a scikit-learn</span>
+<span class="sd">        classifier. Default is 'rf'.</span>
 <span class="sd">    classifier_kwargs : dict, optional</span>
-<span class="sd">        Additional keyword arguments for the classifier.</span>
+<span class="sd">        Additional keyword arguments for the classifier. If they leave ``random_state``</span>
+<span class="sd">        unset, it is set to ``seed``.</span>
 <span class="sd">    z_score : bool, optional</span>
 <span class="sd">        Whether to z-score X and Y using the mean and std of X. Default is True.</span>
 <span class="sd">    noise_scale : float, optional</span>
@@ -870,6 +875,23 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"early_stopping"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
             <span class="s2">"n_iter_no_change"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
         <span class="p">}</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">classifier</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">):</span>
+        <span class="n">clf_class</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">classifier</span><span class="p">)</span><span class="o">.</span><span class="n">set_params</span>  <span class="c1"># returns the configured copy</span>
+        <span class="n">clf_kwargs</span> <span class="o">=</span> <span class="n">classifier_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">elif</span> <span class="nb">callable</span><span class="p">(</span><span class="n">classifier</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">classifier</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">clf_class</span> <span class="o">=</span> <span class="n">classifier</span>
+        <span class="n">clf_kwargs</span> <span class="o">=</span> <span class="n">classifier_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Invalid classifier </span><span class="si">{</span><span class="n">classifier</span><span class="si">!r}</span><span class="s2">. Expected 'rf', 'mlp', a sklearn "</span>
+            <span class="s2">"classifier or its class, or a function that returns a sklearn classifier."</span>
+        <span class="p">)</span>
+
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">clf_class</span><span class="p">(</span><span class="o">**</span><span class="n">clf_kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">)</span> <span class="ow">and</span> <span class="n">is_classifier</span><span class="p">(</span><span class="n">clf</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"classifier must build a sklearn classifier, got </span><span class="si">{</span><span class="n">clf</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">clf</span><span class="o">.</span><span class="n">get_params</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"random_state"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">clf</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">z_score</span><span class="p">:</span>
         <span class="n">X_mean</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -885,8 +907,6 @@ window.runMermaid = runMermaid;</script>
         <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="n">X</span> <span class="o">+=</span> <span class="n">noise_scale</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key1</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="n">Y</span> <span class="o">+=</span> <span class="n">noise_scale</span> <span class="o">*</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key2</span><span class="p">,</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-    <span class="n">clf</span> <span class="o">=</span> <span class="n">clf_class</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="o">**</span><span class="n">clf_kwargs</span><span class="p">)</span>
 
     <span class="c1"># prepare data, convert to numpy</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Y</span><span class="p">)))</span>

@@ -96,10 +96,11 @@ Package Contents
 
    To evaluate the test, steps 1 and 2 are performed over multiple trials under the
    null hypothesis (H0). If the null distribution is not known, it is estimated
-   using the permutation method, i.e. by training the classifier on the permuted
-   data. The statistics obtained under (H0) is then compared to the one obtained
-   on observed data to compute the p-value, used to decide whether to reject (H0)
-   or not.
+   using the permutation method, i.e. by training the classifier on data whose
+   P and Q labels are swapped at random within each pair that shares an
+   observation. The statistics obtained under (H0) is then compared to the one
+   obtained on observed data to compute the p-value, used to decide whether to
+   reject (H0) or not.
 
    :param thetas: Samples from the prior, of shape (sample_size, dim).
    :type thetas: Array
@@ -119,7 +120,8 @@ Package Contents
                       - "random_forest" or "mlp", defaults to "mlp" or
                       - A classifier class (e.g., RandomForestClassifier, MLPClassifier).
    :type classifier: str or Type[BaseEstimator], optional
-   :param z_score: Whether to z-score to normalize the data. Default is False.
+   :param z_score: Whether to z-score to normalize the data, using the mean and standard
+                   deviation of ``posterior_samples`` and ``xs``. Default is False.
    :type z_score: bool, optional
    :param classifier_kwargs: Custom kwargs for the sklearn classifier. Default is None.
    :type classifier_kwargs: Dict[str, Any], optional
@@ -149,6 +151,54 @@ Package Contents
 
    ..
        !! processed by numpydoc !!
+
+   .. py:method:: _normalize_theta(theta)
+
+      
+      Z-score parameters if ``z_score`` is set. The only place they are normalized.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+   .. py:method:: _normalize_x(x)
+
+      
+      Z-score observations if ``z_score`` is set. The only place they are normalized.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
 
    .. py:method:: _train(theta_p, theta_q, x_p, x_q, verbosity = 0)
 
@@ -308,10 +358,11 @@ Package Contents
       
       Computes the p-value for L-C2ST.
 
-      The p-value is the proportion of times the L-C2ST statistic under the null
-      hypothesis is greater than the L-C2ST statistic at the observation `x_o`.
-      It is computed by taking the empirical mean over statistics computed on
-      several trials under the null hypothesis: $1/H \sum_{h=1}^{H} I(T_h < T_o)$.
+      The p-value is the proportion of L-C2ST statistics that are at least as
+      large as the one at the observation `x_o`, among the statistics of the
+      trials under the null hypothesis and the observed one itself:
+      $(1 + \sum_{h=1}^{H} I(T_h \geq T_o)) / (1 + H)$. Counting the observed
+      statistic keeps the test valid and the p-value above zero.
 
       :param theta_o: Samples from the posterior conditioned on the observation `x_o`,
                       of dhape (sample_size, dim).
@@ -545,15 +596,28 @@ Package Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: check_tarp(result)
+.. py:function:: check_tarp(result, seed = 1)
 
    
    Quantitative check of the TARP coverage curve.
 
-   :returns: * **atc** (*float*) -- Area To Curve for :math:`\alpha > 0.5`. Positive means conservative
-               (ECP above diagonal), negative means overconfident.
-             * **ks_prob** (*float*) -- Two-sample KS test p-value. Low values indicate the ECP differs
-               significantly from the ideal diagonal.
+   :param result: Results from run_tarp.
+   :type result: TARPResult
+   :param seed: Random seed of the jitter used by the KS test. Default is 1.
+   :type seed: int, optional
+
+   :returns: * **atc** (*float*) -- Area To Curve: the area between the ECP curve and the diagonal for
+               :math:`\alpha > 0.5`. Positive means conservative (ECP above diagonal),
+               negative means overconfident. It does not depend on the number of bins.
+             * **ks_prob** (*float*) -- p-value of a Kolmogorov-Smirnov test of the per-pair coverage values
+               against Uniform(0, 1), their distribution for a calibrated posterior.
+               Low values indicate miscalibration. The values are counts of posterior
+               samples, so each count is jittered with Uniform(0, 1) noise to make it
+               continuous and exactly uniform under calibration.
+
+               If ``result`` carries no coverage values (a ``TARPResult`` built by
+               hand), this falls back to a two-sample KS test between the points of
+               the ECP curve and the alpha grid, which has very little power.
 
 
 
@@ -574,7 +638,7 @@ Package Contents
 
 .. py:function:: plot_lc2st(lc2st, post_samples_star, x_o, fig = None, ax = None, conf_alpha=0.05)
 
-.. py:function:: plot_tarp(result, title = None, figsize = None, mode = 'both')
+.. py:function:: plot_tarp(result, title = None, figsize = None, mode = 'both', seed = 1)
 
    
    Plot the expected coverage probability (ECP).
@@ -585,10 +649,19 @@ Package Contents
    :type title: str, optional
    :param figsize: Figure size.
    :type figsize: tuple, optional
-   :param mode: "credibility", "confidence", or "both". Default is "credibility".
+   :param mode: "credibility", "confidence", or "both". Default is "both".
                 "credibility" plots ECP vs alpha.
-                "confidence" plots z(ECP) vs z(alpha).
+                "confidence" plots the empirical coverage against the nominal one as
+                z-scores (1 sigma = 68.27%, ...). It is computed from the coverage
+                value of every pair, not from the binned ECP curve, so it resolves
+                levels the alpha grid does not. The curve is dashed above the level
+                that the posterior samples can resolve (a tail mass of
+                ``1 / (num_posterior_samples + 1)``, z = 3.3 for 1000 samples), where
+                it is an extrapolation. The band is the 95% Jeffreys interval.
    :type mode: str, optional
+   :param seed: Random seed of the jitter that removes the discreteness of the coverage
+                values in the confidence view. Default is 1.
+   :type seed: int, optional
 
 
 

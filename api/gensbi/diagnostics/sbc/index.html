@@ -640,8 +640,14 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._create_sbc_figure" title="gensbi.diagnostics.sbc._create_sbc_figure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_create_sbc_figure</span></code></a>(num_parameters, num_cols, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._cdf_x" title="gensbi.diagnostics.sbc._cdf_x"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_cdf_x</span></code></a>(num_bins, num_posterior_samples, num_repeats)</p></td>
+<td><p>x positions of the CDF steps in rank units, num_repeats per bin.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._create_sbc_figure" title="gensbi.diagnostics.sbc._create_sbc_figure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_create_sbc_figure</span></code></a>(num_parameters, num_cols, ...)</p></td>
 <td><p>Create or validate the figure/axes layout for the SBC rank plot.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._ecdf" title="gensbi.diagnostics.sbc._ecdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_ecdf</span></code></a>(ranks, num_bins, num_posterior_samples)</p></td>
+<td><p>Empirical CDF of the ranks at the right edge of each bin over [0, N].</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity" title="gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_plot_cdf_region_expected_under_uniformity</span></code></a>(...[, ...])</p></td>
 <td><p>Plot region of empirical cdfs expected under uniformity on the current axis.</p></td>
@@ -649,7 +655,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._plot_hist_region_expected_under_uniformity" title="gensbi.diagnostics.sbc._plot_hist_region_expected_under_uniformity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_plot_hist_region_expected_under_uniformity</span></code></a>(...[, ...])</p></td>
 <td><p>Plot region of empirical cdfs expected under uniformity.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._plot_ranks_as_cdf" title="gensbi.diagnostics.sbc._plot_ranks_as_cdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_plot_ranks_as_cdf</span></code></a>(ranks, num_bins, num_repeats[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._plot_ranks_as_cdf" title="gensbi.diagnostics.sbc._plot_ranks_as_cdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_plot_ranks_as_cdf</span></code></a>(ranks, num_bins, ...[, ...])</p></td>
 <td><p>Plot ranks as empirical CDFs on the current axis.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._plot_ranks_as_hist" title="gensbi.diagnostics.sbc._plot_ranks_as_hist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_plot_ranks_as_hist</span></code></a>(ranks, num_bins, num_posterior_samples)</p></td>
@@ -663,6 +669,12 @@
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._sbc_rank_plot" title="gensbi.diagnostics.sbc._sbc_rank_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_sbc_rank_plot</span></code></a>(ranks, num_posterior_samples[, ...])</p></td>
 <td><p>Plot simulation-based calibration ranks as empirical CDFs or histograms.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._uniform_cdf_band" title="gensbi.diagnostics.sbc._uniform_cdf_band"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_uniform_cdf_band</span></code></a>(num_sbc_runs, num_bins, ...)</p></td>
+<td><p>99% band of the empirical CDF at each bin under uniformity.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._uniform_rank_bin_probs" title="gensbi.diagnostics.sbc._uniform_rank_bin_probs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_uniform_rank_bin_probs</span></code></a>(num_bins, num_posterior_samples)</p></td>
+<td><p>Probability of each rank bin under uniformity.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.sbc._validate_and_prepare_ranks" title="gensbi.diagnostics.sbc._validate_and_prepare_ranks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_validate_and_prepare_ranks</span></code></a>(ranks, plot_type)</p></td>
 <td><p>Validate and normalize ranks into a list of numpy arrays.</p></td>
@@ -695,6 +707,24 @@
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.sbc._cdf_x">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_cdf_x</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_repeats</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_cdf_x"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._cdf_x" title="Link to this definition">#</a></dt>
+<dd><p>x positions of the CDF steps in rank units, num_repeats per bin.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_bins</strong> (<em>int</em>)</p></li>
+<li><p><strong>num_posterior_samples</strong> (<em>int</em>)</p></li>
+<li><p><strong>num_repeats</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.sbc._create_sbc_figure">
 <span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_create_sbc_figure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_in_subplots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sharey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_create_sbc_figure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._create_sbc_figure" title="Link to this definition">#</a></dt>
 <dd><p>Create or validate the figure/axes layout for the SBC rank plot.</p>
@@ -722,14 +752,33 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.sbc._ecdf">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_ecdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_ecdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._ecdf" title="Link to this definition">#</a></dt>
+<dd><p>Empirical CDF of the ranks at the right edge of each bin over [0, N].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ranks</strong> (<em>numpy.ndarray</em>)</p></li>
+<li><p><strong>num_bins</strong> (<em>int</em>)</p></li>
+<li><p><strong>num_posterior_samples</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_plot_cdf_region_expected_under_uniformity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_sbc_runs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_repeats</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gray'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_plot_cdf_region_expected_under_uniformity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_plot_cdf_region_expected_under_uniformity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_sbc_runs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_repeats</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gray'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_plot_cdf_region_expected_under_uniformity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity" title="Link to this definition">#</a></dt>
 <dd><p>Plot region of empirical cdfs expected under uniformity on the current axis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>num_sbc_runs</strong> (<em>int</em>) – Number of SBC runs.</p></li>
 <li><p><strong>num_bins</strong> (<em>int</em>) – Number of bins.</p></li>
+<li><p><strong>num_posterior_samples</strong> (<em>int</em>) – Number of posterior samples used for ranking.</p></li>
 <li><p><strong>num_repeats</strong> (<em>int</em>) – Number of repeats.</p></li>
 <li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – Alpha for the region. Default is 0.2.</p></li>
 <li><p><strong>color</strong> (<em>str</em><em>, </em><em>optional</em>) – Color for the region. Default is “gray”.</p></li>
@@ -763,13 +812,14 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.sbc._plot_ranks_as_cdf">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_plot_ranks_as_cdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_repeats</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ranks_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_plot_ranks_as_cdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._plot_ranks_as_cdf" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_plot_ranks_as_cdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_repeats</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ranks_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_ticks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_plot_ranks_as_cdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._plot_ranks_as_cdf" title="Link to this definition">#</a></dt>
 <dd><p>Plot ranks as empirical CDFs on the current axis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ranks</strong> (<em>np.ndarray</em>) – SBC ranks in shape (num_sbc_runs, ).</p></li>
 <li><p><strong>num_bins</strong> (<em>int</em>) – Number of bins for the histogram, recommendation is num_sbc_runs / 20.</p></li>
+<li><p><strong>num_posterior_samples</strong> (<em>int</em>) – Number of posterior samples used for ranking.</p></li>
 <li><p><strong>num_repeats</strong> (<em>int</em>) – Number of repeats of each CDF step, i.e., resolution of the eCDF.</p></li>
 <li><p><strong>ranks_label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label for the ranks, e.g., when comparing ranks of different methods.</p></li>
 <li><p><strong>xlabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Label for the current parameter.</p></li>
@@ -898,6 +948,43 @@ obtained from different methods.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.sbc._uniform_cdf_band">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_uniform_cdf_band</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_sbc_runs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_uniform_cdf_band"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._uniform_cdf_band" title="Link to this definition">#</a></dt>
+<dd><p>99% band of the empirical CDF at each bin under uniformity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_sbc_runs</strong> (<em>int</em>)</p></li>
+<li><p><strong>num_bins</strong> (<em>int</em>)</p></li>
+<li><p><strong>num_posterior_samples</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple[numpy.ndarray, numpy.ndarray]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.sbc._uniform_rank_bin_probs">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_uniform_rank_bin_probs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_uniform_rank_bin_probs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._uniform_rank_bin_probs" title="Link to this definition">#</a></dt>
+<dd><p>Probability of each rank bin under uniformity.</p>
+<p>The ranks are integers in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">num_posterior_samples]</span></code>, so the bins over
+that range do not all hold the same number of rank values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_bins</strong> (<em>int</em>)</p></li>
+<li><p><strong>num_posterior_samples</strong> (<em>int</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.sbc._validate_and_prepare_ranks">
 <span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">_validate_and_prepare_ranks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#_validate_and_prepare_ranks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc._validate_and_prepare_ranks" title="Link to this definition">#</a></dt>
 <dd><p>Validate and normalize ranks into a list of numpy arrays.</p>
@@ -1000,7 +1087,8 @@ one for each dim_parameters.</p></li>
 <dt class="sig sig-object py" id="gensbi.diagnostics.sbc.check_uniformity_c2st">
 <span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">check_uniformity_c2st</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_repetitions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#check_uniformity_c2st"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc.check_uniformity_c2st" title="Link to this definition">#</a></dt>
 <dd><p>Return C2ST scores for uniformity of the ranks.</p>
-<p>Run a C2ST between ranks and uniform samples.</p>
+<p>Run a C2ST between the ranks and integers drawn uniformly from
+<code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">num_posterior_samples]</span></code>, the distribution of the ranks under calibration.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1023,14 +1111,19 @@ one for each dim_parameters.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.sbc.check_uniformity_frequentist">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">check_uniformity_frequentist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#check_uniformity_frequentist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc.check_uniformity_frequentist" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.sbc.</span></span><span class="sig-name descname"><span class="pre">check_uniformity_frequentist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/sbc.html#check_uniformity_frequentist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.sbc.check_uniformity_frequentist" title="Link to this definition">#</a></dt>
 <dd><p>Return p-values for uniformity of the ranks using Kolmogorov-Smirnov test.</p>
+<p>The ranks are integers in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">num_posterior_samples]</span></code>, while the KS test
+assumes a continuous distribution. Each rank is therefore jittered with
+Uniform(0, 1) noise, which makes it exactly Uniform(0, num_posterior_samples + 1)
+for a calibrated posterior.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ranks</strong> (<em>Array</em>) – Ranks for each SBC run and for each model parameter,
 shape (N, dim_parameters).</p></li>
 <li><p><strong>num_posterior_samples</strong> (<em>int</em>) – Number of posterior samples used for SBC ranking.</p></li>
+<li><p><strong>seed</strong> (<em>int</em><em>, </em><em>optional</em>) – Random seed of the jitter. Default is 1.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1170,7 +1263,9 @@ obtained from different methods.</p></li>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._cdf_x"><code class="docutils literal notranslate"><span class="pre">_cdf_x()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._create_sbc_figure"><code class="docutils literal notranslate"><span class="pre">_create_sbc_figure()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._ecdf"><code class="docutils literal notranslate"><span class="pre">_ecdf()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity"><code class="docutils literal notranslate"><span class="pre">_plot_cdf_region_expected_under_uniformity()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._plot_hist_region_expected_under_uniformity"><code class="docutils literal notranslate"><span class="pre">_plot_hist_region_expected_under_uniformity()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._plot_ranks_as_cdf"><code class="docutils literal notranslate"><span class="pre">_plot_ranks_as_cdf()</span></code></a></li>
@@ -1178,6 +1273,8 @@ obtained from different methods.</p></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._prepare_reduce_functions"><code class="docutils literal notranslate"><span class="pre">_prepare_reduce_functions()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._run_sbc"><code class="docutils literal notranslate"><span class="pre">_run_sbc()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._sbc_rank_plot"><code class="docutils literal notranslate"><span class="pre">_sbc_rank_plot()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._uniform_cdf_band"><code class="docutils literal notranslate"><span class="pre">_uniform_cdf_band()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._uniform_rank_bin_probs"><code class="docutils literal notranslate"><span class="pre">_uniform_rank_bin_probs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._validate_and_prepare_ranks"><code class="docutils literal notranslate"><span class="pre">_validate_and_prepare_ranks()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc._validate_sbc_inputs"><code class="docutils literal notranslate"><span class="pre">_validate_sbc_inputs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.sbc.check_prior_vs_dap"><code class="docutils literal notranslate"><span class="pre">check_prior_vs_dap()</span></code></a></li>

@@ -17,8 +17,11 @@ Functions
 .. autoapisummary::
 
    gensbi.diagnostics.utils.alpha_from_z
+   gensbi.diagnostics.utils.estimate_hat_z
    gensbi.diagnostics.utils.jefferys_interval
+   gensbi.diagnostics.utils.plot_coverage_curve
    gensbi.diagnostics.utils.probit
+   gensbi.diagnostics.utils.resolution_limit_z
    gensbi.diagnostics.utils.z_from_alpha
 
 
@@ -35,6 +38,49 @@ Module Contents
 
    :returns: **alpha** -- Corresponding significance levels.
    :rtype: array_like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: estimate_hat_z(alpha_values, nbins=50, zmax=4, z_band=1)
+
+   
+   Compute empirical coverage (hat{z}) vs nominal coverage (z) for one dimension.
+
+   Given a set of HPD credibility values (alpha), this function builds the
+   empirical CDF of those values and converts it to z-score space. For a
+   well-calibrated posterior, hat{z} should equal z along the diagonal.
+
+   :param alpha_values: 1D array of credibility values for a single dimension. NaN values
+                        are excluded, with a warning.
+   :type alpha_values: array_like
+   :param nbins: Number of bins for z (default is 50).
+   :type nbins: int, optional
+   :param zmax: Maximum z value to evaluate (default is 4).
+   :type zmax: float, optional
+   :param z_band: Z-score for the Jeffrey's uncertainty band (default is 1, ~68% CI).
+   :type z_band: float, optional
+
+   :returns: **stats** -- Dictionary containing:
+             - 'z': Nominal coverage z-values.
+             - 'mean': Empirical coverage hat{z}.
+             - 'upper': Upper bound of uncertainty band.
+             - 'lower': Lower bound of uncertainty band.
+   :rtype: dict
 
 
 
@@ -87,6 +133,39 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
+.. py:function:: plot_coverage_curve(ax, z, z_hat, z_resolved=None, **kwargs)
+
+   
+   Plot an empirical coverage curve, dashed where it is extrapolated.
+
+   :param ax: Axis to plot on.
+   :type ax: matplotlib.axes.Axes
+   :param z: Nominal confidence levels as z-scores, increasing.
+   :type z: array_like
+   :param z_hat: Empirical coverage as z-scores.
+   :type z_hat: array_like
+   :param z_resolved: Resolution limit from :func:`resolution_limit_z`. The curve is solid up
+                      to it and dashed beyond. If None, the whole curve is solid.
+   :type z_resolved: float, optional
+   :param \*\*kwargs: Passed to ``ax.plot`` (colour, label, ...).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:function:: probit(x)
 
    
@@ -97,6 +176,39 @@ Module Contents
 
    :returns: **y** -- The probit values.
    :rtype: array_like
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: resolution_limit_z(num_posterior_samples)
+
+   
+   Largest confidence level, as a z-score, that the posterior samples resolve.
+
+   A credibility computed from N posterior samples is a randomised rank with
+   cells of width 1 / (N + 1). Coverage levels whose tail mass is below
+   1 / (N + 1) fall inside the last cell: the empirical coverage there is an
+   extrapolation that assumes the true values are spread evenly within it.
+
+   :param num_posterior_samples: Number of posterior samples per observation.
+   :type num_posterior_samples: int
+
+   :returns: **z** -- The two-sided z-score of a tail mass of ``1 / (num_posterior_samples + 1)``.
+   :rtype: float
 
 
 

@@ -9,7 +9,9 @@ Functions
 
 .. autoapisummary::
 
+   gensbi.diagnostics.sbc._cdf_x
    gensbi.diagnostics.sbc._create_sbc_figure
+   gensbi.diagnostics.sbc._ecdf
    gensbi.diagnostics.sbc._plot_cdf_region_expected_under_uniformity
    gensbi.diagnostics.sbc._plot_hist_region_expected_under_uniformity
    gensbi.diagnostics.sbc._plot_ranks_as_cdf
@@ -17,6 +19,8 @@ Functions
    gensbi.diagnostics.sbc._prepare_reduce_functions
    gensbi.diagnostics.sbc._run_sbc
    gensbi.diagnostics.sbc._sbc_rank_plot
+   gensbi.diagnostics.sbc._uniform_cdf_band
+   gensbi.diagnostics.sbc._uniform_rank_bin_probs
    gensbi.diagnostics.sbc._validate_and_prepare_ranks
    gensbi.diagnostics.sbc._validate_sbc_inputs
    gensbi.diagnostics.sbc.check_prior_vs_dap
@@ -29,6 +33,29 @@ Functions
 
 Module Contents
 ---------------
+
+.. py:function:: _cdf_x(num_bins, num_posterior_samples, num_repeats)
+
+   
+   x positions of the CDF steps in rank units, num_repeats per bin.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
 
 .. py:function:: _create_sbc_figure(num_parameters, num_cols, params_in_subplots, figsize, sharey, fig, ax)
 
@@ -71,7 +98,30 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: _plot_cdf_region_expected_under_uniformity(num_sbc_runs, num_bins, num_repeats, alpha = 0.2, color = 'gray')
+.. py:function:: _ecdf(ranks, num_bins, num_posterior_samples)
+
+   
+   Empirical CDF of the ranks at the right edge of each bin over [0, N].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _plot_cdf_region_expected_under_uniformity(num_sbc_runs, num_bins, num_posterior_samples, num_repeats, alpha = 0.2, color = 'gray')
 
    
    Plot region of empirical cdfs expected under uniformity on the current axis.
@@ -80,6 +130,8 @@ Module Contents
    :type num_sbc_runs: int
    :param num_bins: Number of bins.
    :type num_bins: int
+   :param num_posterior_samples: Number of posterior samples used for ranking.
+   :type num_posterior_samples: int
    :param num_repeats: Number of repeats.
    :type num_repeats: int
    :param alpha: Alpha for the region. Default is 0.2.
@@ -137,7 +189,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: _plot_ranks_as_cdf(ranks, num_bins, num_repeats, ranks_label = None, xlabel = None, color = None, alpha = 0.8, show_ylabel = True, num_ticks = 3)
+.. py:function:: _plot_ranks_as_cdf(ranks, num_bins, num_posterior_samples, num_repeats, ranks_label = None, xlabel = None, color = None, alpha = 0.8, show_ylabel = True, num_ticks = 3)
 
    
    Plot ranks as empirical CDFs on the current axis.
@@ -146,6 +198,8 @@ Module Contents
    :type ranks: np.ndarray
    :param num_bins: Number of bins for the histogram, recommendation is num_sbc_runs / 20.
    :type num_bins: int
+   :param num_posterior_samples: Number of posterior samples used for ranking.
+   :type num_posterior_samples: int
    :param num_repeats: Number of repeats of each CDF step, i.e., resolution of the eCDF.
    :type num_repeats: int
    :param ranks_label: Label for the ranks, e.g., when comparing ranks of different methods.
@@ -355,6 +409,54 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
+.. py:function:: _uniform_cdf_band(num_sbc_runs, num_bins, num_posterior_samples)
+
+   
+   99% band of the empirical CDF at each bin under uniformity.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _uniform_rank_bin_probs(num_bins, num_posterior_samples)
+
+   
+   Probability of each rank bin under uniformity.
+
+   The ranks are integers in ``[0, num_posterior_samples]``, so the bins over
+   that range do not all hold the same number of rank values.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
 .. py:function:: _validate_and_prepare_ranks(ranks, plot_type)
 
    
@@ -501,7 +603,8 @@ Module Contents
    
    Return C2ST scores for uniformity of the ranks.
 
-   Run a C2ST between ranks and uniform samples.
+   Run a C2ST between the ranks and integers drawn uniformly from
+   ``[0, num_posterior_samples]``, the distribution of the ranks under calibration.
 
    :param ranks: Ranks for each SBC run and for each model parameter,
                  shape (N, dim_parameters).
@@ -534,16 +637,23 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: check_uniformity_frequentist(ranks, num_posterior_samples)
+.. py:function:: check_uniformity_frequentist(ranks, num_posterior_samples, seed = 1)
 
    
    Return p-values for uniformity of the ranks using Kolmogorov-Smirnov test.
+
+   The ranks are integers in ``[0, num_posterior_samples]``, while the KS test
+   assumes a continuous distribution. Each rank is therefore jittered with
+   Uniform(0, 1) noise, which makes it exactly Uniform(0, num_posterior_samples + 1)
+   for a calibrated posterior.
 
    :param ranks: Ranks for each SBC run and for each model parameter,
                  shape (N, dim_parameters).
    :type ranks: Array
    :param num_posterior_samples: Number of posterior samples used for SBC ranking.
    :type num_posterior_samples: int
+   :param seed: Random seed of the jitter. Default is 1.
+   :type seed: int, optional
 
    :returns: ks_pvals: p-values of the Kolmogorov-Smirnov test of uniformity,
              one for each dim_parameters.

@@ -644,13 +644,22 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.alpha_from_z" title="gensbi.diagnostics.utils.alpha_from_z"><code class="xref py py-obj docutils literal notranslate"><span class="pre">alpha_from_z</span></code></a>(z)</p></td>
 <td><p>Convert z-score to significance level alpha.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.jefferys_interval" title="gensbi.diagnostics.utils.jefferys_interval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jefferys_interval</span></code></a>(k, n[, z])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.estimate_hat_z" title="gensbi.diagnostics.utils.estimate_hat_z"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_hat_z</span></code></a>(alpha_values[, nbins, zmax, z_band])</p></td>
+<td><p>Compute empirical coverage (hat{z}) vs nominal coverage (z) for one dimension.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.jefferys_interval" title="gensbi.diagnostics.utils.jefferys_interval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jefferys_interval</span></code></a>(k, n[, z])</p></td>
 <td><p>Compute Jeffrey's interval for a binomial proportion.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.plot_coverage_curve" title="gensbi.diagnostics.utils.plot_coverage_curve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_coverage_curve</span></code></a>(ax, z, z_hat[, z_resolved])</p></td>
+<td><p>Plot an empirical coverage curve, dashed where it is extrapolated.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.probit" title="gensbi.diagnostics.utils.probit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">probit</span></code></a>(x)</p></td>
 <td><p>Inverse CDF of the standard normal distribution.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.z_from_alpha" title="gensbi.diagnostics.utils.z_from_alpha"><code class="xref py py-obj docutils literal notranslate"><span class="pre">z_from_alpha</span></code></a>(alpha)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.resolution_limit_z" title="gensbi.diagnostics.utils.resolution_limit_z"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolution_limit_z</span></code></a>(num_posterior_samples)</p></td>
+<td><p>Largest confidence level, as a z-score, that the posterior samples resolve.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.utils.z_from_alpha" title="gensbi.diagnostics.utils.z_from_alpha"><code class="xref py py-obj docutils literal notranslate"><span class="pre">z_from_alpha</span></code></a>(alpha)</p></td>
 <td><p>Convert significance level alpha to z-score.</p></td>
 </tr>
 </tbody>
@@ -672,6 +681,36 @@
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.utils.estimate_hat_z">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.utils.</span></span><span class="sig-name descname"><span class="pre">estimate_hat_z</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/utils.html#estimate_hat_z"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.utils.estimate_hat_z" title="Link to this definition">#</a></dt>
+<dd><p>Compute empirical coverage (hat{z}) vs nominal coverage (z) for one dimension.</p>
+<p>Given a set of HPD credibility values (alpha), this function builds the
+empirical CDF of those values and converts it to z-score space. For a
+well-calibrated posterior, hat{z} should equal z along the diagonal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha_values</strong> (<em>array_like</em>) – 1D array of credibility values for a single dimension. NaN values
+are excluded, with a warning.</p></li>
+<li><p><strong>nbins</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of bins for z (default is 50).</p></li>
+<li><p><strong>zmax</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum z value to evaluate (default is 4).</p></li>
+<li><p><strong>z_band</strong> (<em>float</em><em>, </em><em>optional</em>) – Z-score for the Jeffrey’s uncertainty band (default is 1, ~68% CI).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>stats</strong> – Dictionary containing:
+- ‘z’: Nominal coverage z-values.
+- ‘mean’: Empirical coverage hat{z}.
+- ‘upper’: Upper bound of uncertainty band.
+- ‘lower’: Lower bound of uncertainty band.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -700,6 +739,24 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.utils.plot_coverage_curve">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.utils.</span></span><span class="sig-name descname"><span class="pre">plot_coverage_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_resolved</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/utils.html#plot_coverage_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.utils.plot_coverage_curve" title="Link to this definition">#</a></dt>
+<dd><p>Plot an empirical coverage curve, dashed where it is extrapolated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – Axis to plot on.</p></li>
+<li><p><strong>z</strong> (<em>array_like</em>) – Nominal confidence levels as z-scores, increasing.</p></li>
+<li><p><strong>z_hat</strong> (<em>array_like</em>) – Empirical coverage as z-scores.</p></li>
+<li><p><strong>z_resolved</strong> (<em>float</em><em>, </em><em>optional</em>) – Resolution limit from <a class="reference internal" href="#gensbi.diagnostics.utils.resolution_limit_z" title="gensbi.diagnostics.utils.resolution_limit_z"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolution_limit_z()</span></code></a>. The curve is solid up
+to it and dashed beyond. If None, the whole curve is solid.</p></li>
+<li><p><strong>**kwargs</strong> – Passed to <code class="docutils literal notranslate"><span class="pre">ax.plot</span></code> (colour, label, …).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.utils.probit">
 <span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.utils.</span></span><span class="sig-name descname"><span class="pre">probit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/utils.html#probit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.utils.probit" title="Link to this definition">#</a></dt>
 <dd><p>Inverse CDF of the standard normal distribution.</p>
@@ -712,6 +769,27 @@
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.utils.resolution_limit_z">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.utils.</span></span><span class="sig-name descname"><span class="pre">resolution_limit_z</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/utils.html#resolution_limit_z"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.utils.resolution_limit_z" title="Link to this definition">#</a></dt>
+<dd><p>Largest confidence level, as a z-score, that the posterior samples resolve.</p>
+<p>A credibility computed from N posterior samples is a randomised rank with
+cells of width 1 / (N + 1). Coverage levels whose tail mass is below
+1 / (N + 1) fall inside the last cell: the empirical coverage there is an
+extrapolation that assumes the true values are spread evenly within it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_posterior_samples</strong> (<em>int</em>) – Number of posterior samples per observation.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>z</strong> – The two-sided z-score of a tail mass of <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">(num_posterior_samples</span> <span class="pre">+</span> <span class="pre">1)</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
@@ -786,8 +864,11 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.utils.alpha_from_z"><code class="docutils literal notranslate"><span class="pre">alpha_from_z()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.utils.estimate_hat_z"><code class="docutils literal notranslate"><span class="pre">estimate_hat_z()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.utils.jefferys_interval"><code class="docutils literal notranslate"><span class="pre">jefferys_interval()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.utils.plot_coverage_curve"><code class="docutils literal notranslate"><span class="pre">plot_coverage_curve()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.utils.probit"><code class="docutils literal notranslate"><span class="pre">probit()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.utils.resolution_limit_z"><code class="docutils literal notranslate"><span class="pre">resolution_limit_z()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.utils.z_from_alpha"><code class="docutils literal notranslate"><span class="pre">z_from_alpha()</span></code></a></li>
 </ul>
 </li>

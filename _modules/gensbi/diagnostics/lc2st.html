@@ -764,9 +764,12 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># MODIFICATION NOTICE:</span>
 <span class="c1"># This file was modified by Aurelio Amerio on 01-2026.</span>
 <span class="c1"># Description: Ported implementation to use JAX instead of PyTorch.</span>
+<span class="c1"># 11-2026: synced with upstream fixes (data normalised exactly once, labels</span>
+<span class="c1"># permuted within pairs, permutation p-value that counts the observed statistic).</span>
 <span class="c1"># --------------------------------------------------------------------------</span>
 
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -875,10 +878,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    To evaluate the test, steps 1 and 2 are performed over multiple trials under the</span>
 <span class="sd">    null hypothesis (H0). If the null distribution is not known, it is estimated</span>
-<span class="sd">    using the permutation method, i.e. by training the classifier on the permuted</span>
-<span class="sd">    data. The statistics obtained under (H0) is then compared to the one obtained</span>
-<span class="sd">    on observed data to compute the p-value, used to decide whether to reject (H0)</span>
-<span class="sd">    or not.</span>
+<span class="sd">    using the permutation method, i.e. by training the classifier on data whose</span>
+<span class="sd">    P and Q labels are swapped at random within each pair that shares an</span>
+<span class="sd">    observation. The statistics obtained under (H0) is then compared to the one</span>
+<span class="sd">    obtained on observed data to compute the p-value, used to decide whether to</span>
+<span class="sd">    reject (H0) or not.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -901,7 +905,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        - "random_forest" or "mlp", defaults to "mlp" or</span>
 <span class="sd">        - A classifier class (e.g., RandomForestClassifier, MLPClassifier).</span>
 <span class="sd">    z_score : bool, optional</span>
-<span class="sd">        Whether to z-score to normalize the data. Default is False.</span>
+<span class="sd">        Whether to z-score to normalize the data, using the mean and standard</span>
+<span class="sd">        deviation of ``posterior_samples`` and ``xs``. Default is False.</span>
 <span class="sd">    classifier_kwargs : Dict[str, Any], optional</span>
 <span class="sd">        Custom kwargs for the sklearn classifier. Default is None.</span>
 <span class="sd">    num_trials_null : int, optional</span>
@@ -962,17 +967,19 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.theta_p_mean">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
 
+        <span class="n">theta_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <div class="viewcode-block" id="LC2ST.theta_p_std">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.theta_p_std">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">theta_std</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">theta_std</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="LC2ST.x_p_mean">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.x_p_mean">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
 
+        <span class="n">x_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <div class="viewcode-block" id="LC2ST.x_p_std">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST.x_p_std">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x_std</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">x_std</span><span class="p">)</span></div>
 
 
         <span class="c1"># set parameters for classifier training</span>
@@ -1023,6 +1030,24 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
+<div class="viewcode-block" id="LC2ST._normalize_theta">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST._normalize_theta">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_normalize_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Z-score parameters if ``z_score`` is set. The only place they are normalized."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">theta</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
+        <span class="k">return</span> <span class="n">theta</span></div>
+
+
+<div class="viewcode-block" id="LC2ST._normalize_x">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST._normalize_x">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_normalize_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Z-score observations if ``z_score`` is set. The only place they are normalized."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+
+
 <div class="viewcode-block" id="LC2ST._train">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.LC2ST._train">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_train</span><span class="p">(</span>
@@ -1054,13 +1079,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            List of trained classifiers for each cv fold.</span>
 <span class="sd">        """</span>
 
-        <span class="c1"># prepare data</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
-            <span class="n">theta_p</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_p</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
-            <span class="n">theta_q</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_q</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
-            <span class="n">x_p</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_p</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
-            <span class="n">x_q</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_q</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+        <span class="c1"># Normalize data. Callers pass raw data: this is the only normalization.</span>
+        <span class="n">theta_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_theta</span><span class="p">(</span><span class="n">theta_p</span><span class="p">)</span>
+        <span class="n">theta_q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_theta</span><span class="p">(</span><span class="n">theta_q</span><span class="p">)</span>
+        <span class="n">x_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_x</span><span class="p">(</span><span class="n">x_p</span><span class="p">)</span>
+        <span class="n">x_q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_x</span><span class="p">(</span><span class="n">x_q</span><span class="p">)</span>
 
         <span class="c1"># initialize classifier</span>
         <span class="n">clf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clf_class</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span> <span class="ow">or</span> <span class="p">{})</span>
@@ -1130,10 +1153,9 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">x_o</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
             <span class="n">x_o</span> <span class="o">=</span> <span class="n">x_o</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
 
-        <span class="c1"># prepare data</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
-            <span class="n">theta_o</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_o</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
-            <span class="n">x_o</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_o</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
+        <span class="c1"># Normalize data. Callers pass raw data: this is the only normalization.</span>
+        <span class="n">theta_o</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_theta</span><span class="p">(</span><span class="n">theta_o</span><span class="p">)</span>
+        <span class="n">x_o</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_x</span><span class="p">(</span><span class="n">x_o</span><span class="p">)</span>
 
         <span class="n">probs</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
 
@@ -1169,7 +1191,12 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># set random state</span>
         <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="s2">"random_state"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">"WARNING: changing the random state of the classifier."</span><span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">"Overwriting 'random_state' in classifier_kwargs because "</span>
+                    <span class="s2">"a 'seed' was provided to train_on_observed_data()."</span><span class="p">,</span>
+                    <span class="ne">UserWarning</span><span class="p">,</span>
+                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">clf_kwargs</span><span class="p">[</span><span class="s2">"random_state"</span><span class="p">]</span> <span class="o">=</span> <span class="n">seed</span>
 
         <span class="c1"># train the classifier</span>
@@ -1224,10 +1251,11 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">"""Computes the p-value for L-C2ST.</span>
 
-<span class="sd">        The p-value is the proportion of times the L-C2ST statistic under the null</span>
-<span class="sd">        hypothesis is greater than the L-C2ST statistic at the observation `x_o`.</span>
-<span class="sd">        It is computed by taking the empirical mean over statistics computed on</span>
-<span class="sd">        several trials under the null hypothesis: $1/H \sum_{h=1}^{H} I(T_h &lt; T_o)$.</span>
+<span class="sd">        The p-value is the proportion of L-C2ST statistics that are at least as</span>
+<span class="sd">        large as the one at the observation `x_o`, among the statistics of the</span>
+<span class="sd">        trials under the null hypothesis and the observed one itself:</span>
+<span class="sd">        $(1 + \sum_{h=1}^{H} I(T_h \geq T_o)) / (1 + H)$. Counting the observed</span>
+<span class="sd">        statistic keeps the test valid and the p-value above zero.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1246,7 +1274,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">_</span><span class="p">,</span> <span class="n">stats_null</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_statistics_under_null_hypothesis</span><span class="p">(</span>
             <span class="n">theta_o</span><span class="o">=</span><span class="n">theta_o</span><span class="p">,</span> <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">,</span> <span class="n">return_probs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">0</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="n">stat_data</span> <span class="o">&lt;</span> <span class="n">stats_null</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span></div>
+        <span class="n">num_extreme</span> <span class="o">=</span> <span class="p">(</span><span class="n">stat_data</span> <span class="o">&lt;=</span> <span class="n">stats_null</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">num_extreme</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">stats_null</span><span class="p">)))</span></div>
 
 
 <div class="viewcode-block" id="LC2ST.reject_test">
@@ -1300,23 +1329,20 @@ window.runMermaid = runMermaid;</script>
         <span class="p">):</span>
             <span class="c1"># prepare data</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="p">:</span>
-                <span class="n">joint_p</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-                <span class="n">joint_q</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_q</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-                <span class="c1"># permute data (same as permuting the labels)</span>
-                <span class="n">joint_p_perm</span><span class="p">,</span> <span class="n">joint_q_perm</span> <span class="o">=</span> <span class="n">permute_data</span><span class="p">(</span><span class="n">joint_p</span><span class="p">,</span> <span class="n">joint_q</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
-                <span class="c1"># extract the permuted P and Q and x</span>
-                <span class="n">theta_p_t</span><span class="p">,</span> <span class="n">x_p_t</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">joint_p_perm</span><span class="p">[:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-                    <span class="n">joint_p_perm</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">:],</span>
+                <span class="c1"># Rows i of P and Q share the observation x_i, so swapping their</span>
+                <span class="c1"># labels leaves the observations in place.</span>
+                <span class="n">theta_p_t</span><span class="p">,</span> <span class="n">theta_q_t</span> <span class="o">=</span> <span class="n">permute_data</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span><span class="p">,</span>
+                    <span class="n">seed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seed</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_trials_null</span> <span class="o">+</span> <span class="n">t</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="n">theta_q_t</span><span class="p">,</span> <span class="n">x_q_t</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">joint_q_perm</span><span class="p">[:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-                    <span class="n">joint_q_perm</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">:],</span>
-                <span class="p">)</span>
+                <span class="n">x_p_t</span><span class="p">,</span> <span class="n">x_q_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_q</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">assert</span> <span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                <span class="p">),</span> <span class="s2">"You need to provide a null distribution"</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">"A null distribution must be provided when permutation=False. "</span>
+                        <span class="s2">"Set null_distribution or use permutation=True."</span>
+                    <span class="p">)</span>
                 <span class="n">theta_p_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
                 <span class="p">)</span>
@@ -1325,13 +1351,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="p">)</span>
                 <span class="n">x_p_t</span><span class="p">,</span> <span class="n">x_q_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_q</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
-                <span class="n">theta_p_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_p_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
-                <span class="n">theta_q_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_q_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
-                <span class="n">x_p_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_p_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
-                <span class="n">x_q_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_q_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
-
-            <span class="c1"># train</span>
+            <span class="c1"># train (normalization is handled in _train)</span>
             <span class="n">clf_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_train</span><span class="p">(</span><span class="n">theta_p_t</span><span class="p">,</span> <span class="n">theta_q_t</span><span class="p">,</span> <span class="n">x_p_t</span><span class="p">,</span> <span class="n">x_q_t</span><span class="p">,</span> <span class="n">verbosity</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">trained_clfs_null</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">clf_t</span>
 
@@ -1388,19 +1408,16 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="p">:</span>
                 <span class="n">theta_o_t</span> <span class="o">=</span> <span class="n">theta_o</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">assert</span> <span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                <span class="p">),</span> <span class="s2">"You need to provide a null distribution"</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">"A null distribution must be provided when permutation=False."</span>
+                    <span class="p">)</span>
 
                 <span class="n">theta_o_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_distribution</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">rngs</span><span class="o">.</span><span class="n">sample</span><span class="p">(),</span> <span class="p">(</span><span class="n">theta_o</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
                 <span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_score</span><span class="p">:</span>
-                <span class="n">theta_o_t</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_o_t</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_p_std</span>
-                <span class="n">x_o</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_o</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_mean</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_p_std</span>
-
-            <span class="c1"># evaluate</span>
+            <span class="c1"># evaluate (normalization is handled in get_scores)</span>
             <span class="n">clf_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs_null</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
             <span class="n">probs</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_scores</span><span class="p">(</span>
                 <span class="n">theta_o</span><span class="o">=</span><span class="n">theta_o_t</span><span class="p">,</span> <span class="n">x_o</span><span class="o">=</span><span class="n">x_o</span><span class="p">,</span> <span class="n">trained_clfs</span><span class="o">=</span><span class="n">clf_t</span><span class="p">,</span> <span class="n">return_probs</span><span class="o">=</span><span class="kc">True</span>
@@ -1511,30 +1528,32 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="permute_data">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/lc2st/index.html#gensbi.diagnostics.permute_data">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">permute_data</span><span class="p">(</span><span class="n">theta_p</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">theta_q</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Permutes the concatenated data [P,Q] to create null samples.</span>
+<span class="w">    </span><span class="sd">"""Swaps the P and Q labels within each pair to create null samples.</span>
+
+<span class="sd">    Row `i` of P and row `i` of Q must share the observation `x_i`. Each pair is</span>
+<span class="sd">    swapped with probability 1/2, which is the symmetry of the data under the</span>
+<span class="sd">    null hypothesis.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    theta_p : Array</span>
 <span class="sd">        Samples from P, of shape (sample_size, dim).</span>
 <span class="sd">    theta_q : Array</span>
-<span class="sd">        Samples from Q, of shape (sample_size, dim).</span>
+<span class="sd">        Samples from Q, of shape (sample_size, dim), row-aligned with `theta_p`.</span>
 <span class="sd">    seed : int, optional</span>
 <span class="sd">        Random seed. Default is 1.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    Tuple[Array, Array]</span>
-<span class="sd">        Permuted data [theta_p, theta_q].</span>
+<span class="sd">        Permuted data [theta_p, theta_q], each of shape (sample_size, dim).</span>
 <span class="sd">    """</span>
     <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
     <span class="c1"># check inputs</span>
-    <span class="k">assert</span> <span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">theta_q</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">theta_q</span><span class="o">.</span><span class="n">shape</span>
 
-    <span class="n">sample_size</span> <span class="o">=</span> <span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">X</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">theta_p</span><span class="p">,</span> <span class="n">theta_q</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">x_perm</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">sample_size</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)]</span>
-    <span class="k">return</span> <span class="n">x_perm</span><span class="p">[:</span><span class="n">sample_size</span><span class="p">],</span> <span class="n">x_perm</span><span class="p">[</span><span class="n">sample_size</span><span class="p">:]</span></div>
+    <span class="n">swap</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">theta_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">0.5</span>
+    <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">swap</span><span class="p">,</span> <span class="n">theta_q</span><span class="p">,</span> <span class="n">theta_p</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">swap</span><span class="p">,</span> <span class="n">theta_p</span><span class="p">,</span> <span class="n">theta_q</span><span class="p">)</span></div>
 
 
 
@@ -1568,12 +1587,14 @@ window.runMermaid = runMermaid;</script>
             <span class="n">disable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="n">clf</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clf</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
-                <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="o">+=</span> <span class="n">n</span>  <span class="c1"># type: ignore</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># type: ignore</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="s2">"random_state"</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="o">+=</span> <span class="n">n</span>  <span class="c1"># type: ignore</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">clf</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># type: ignore</span>
             <span class="n">clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trained_clfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
 
 
 <div class="viewcode-block" id="EnsembleClassifier.predict_proba">

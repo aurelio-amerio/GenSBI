@@ -663,7 +663,7 @@
 <td><p>Evaluates the classifier returned by <cite>train_lc2st</cite> for one observation</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.lc2st.permute_data" title="gensbi.diagnostics.lc2st.permute_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">permute_data</span></code></a>(theta_p, theta_q[, seed])</p></td>
-<td><p>Permutes the concatenated data [P,Q] to create null samples.</p></td>
+<td><p>Swaps the P and Q labels within each pair to create null samples.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.lc2st.plot_lc2st" title="gensbi.diagnostics.lc2st.plot_lc2st"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_lc2st</span></code></a>(lc2st, post_samples_star, x_o[, fig, ax, ...])</p></td>
 <td><p></p></td>
@@ -775,10 +775,11 @@ the chance level of the classifier, unable to distinguish between p and q.</p></
 </ul>
 <p>To evaluate the test, steps 1 and 2 are performed over multiple trials under the
 null hypothesis (H0). If the null distribution is not known, it is estimated
-using the permutation method, i.e. by training the classifier on the permuted
-data. The statistics obtained under (H0) is then compared to the one obtained
-on observed data to compute the p-value, used to decide whether to reject (H0)
-or not.</p>
+using the permutation method, i.e. by training the classifier on data whose
+P and Q labels are swapped at random within each pair that shares an
+observation. The statistics obtained under (H0) is then compared to the one
+obtained on observed data to compute the p-value, used to decide whether to
+reject (H0) or not.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -793,7 +794,8 @@ This is useful to reduce variance coming from the classifier.</p></li>
 <li><p><strong>classifier</strong> (<em>str</em><em> or </em><em>Type</em><em>[</em><em>BaseEstimator</em><em>]</em><em>, </em><em>optional</em>) – Classification architecture to use, can be one of the following:
 - “random_forest” or “mlp”, defaults to “mlp” or
 - A classifier class (e.g., RandomForestClassifier, MLPClassifier).</p></li>
-<li><p><strong>z_score</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to z-score to normalize the data. Default is False.</p></li>
+<li><p><strong>z_score</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to z-score to normalize the data, using the mean and standard
+deviation of <code class="docutils literal notranslate"><span class="pre">posterior_samples</span></code> and <code class="docutils literal notranslate"><span class="pre">xs</span></code>. Default is False.</p></li>
 <li><p><strong>classifier_kwargs</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Custom kwargs for the sklearn classifier. Default is None.</p></li>
 <li><p><strong>num_trials_null</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of trials to estimate the null distribution. Default is 100.</p></li>
 <li><p><strong>permutation</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to use the permutation method for the null hypothesis. Default is True.</p></li>
@@ -803,6 +805,34 @@ This is useful to reduce variance coming from the classifier.</p></li>
 <p class="rubric">References</p>
 <p>[1] : <a class="reference external" href="https://arxiv.org/abs/2306.03580">https://arxiv.org/abs/2306.03580</a>, <a class="github reference external" href="https://github.com/JuliaLinhart/lc2st">JuliaLinhart/lc2st</a>
 [2] : <a class="github reference external" href="https://github.com/sbi-dev/sbi/blob/main/sbi/utils/metrics.py">sbi-dev/sbi</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diagnostics.lc2st.LC2ST._normalize_theta">
+<span class="sig-name descname"><span class="pre">_normalize_theta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/lc2st.html#LC2ST._normalize_theta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.lc2st.LC2ST._normalize_theta" title="Link to this definition">#</a></dt>
+<dd><p>Z-score parameters if <code class="docutils literal notranslate"><span class="pre">z_score</span></code> is set. The only place they are normalized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>theta</strong> (<em>jax.Array</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jax.Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gensbi.diagnostics.lc2st.LC2ST._normalize_x">
+<span class="sig-name descname"><span class="pre">_normalize_x</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/lc2st.html#LC2ST._normalize_x"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.lc2st.LC2ST._normalize_x" title="Link to this definition">#</a></dt>
+<dd><p>Z-score observations if <code class="docutils literal notranslate"><span class="pre">z_score</span></code> is set. The only place they are normalized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>jax.Array</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jax.Array</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="gensbi.diagnostics.lc2st.LC2ST._train">
 <span class="sig-name descname"><span class="pre">_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta_p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/lc2st.html#LC2ST._train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.lc2st.LC2ST._train" title="Link to this definition">#</a></dt>
@@ -909,10 +939,11 @@ of shape (sample_size, dim).</p></li>
 <dt class="sig sig-object py" id="gensbi.diagnostics.lc2st.LC2ST.p_value">
 <span class="sig-name descname"><span class="pre">p_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_o</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/lc2st.html#LC2ST.p_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.lc2st.LC2ST.p_value" title="Link to this definition">#</a></dt>
 <dd><p>Computes the p-value for L-C2ST.</p>
-<p>The p-value is the proportion of times the L-C2ST statistic under the null
-hypothesis is greater than the L-C2ST statistic at the observation <cite>x_o</cite>.
-It is computed by taking the empirical mean over statistics computed on
-several trials under the null hypothesis: $1/H sum_{h=1}^{H} I(T_h &lt; T_o)$.</p>
+<p>The p-value is the proportion of L-C2ST statistics that are at least as
+large as the one at the observation <cite>x_o</cite>, among the statistics of the
+trials under the null hypothesis and the observed one itself:
+$(1 + sum_{h=1}^{H} I(T_h geq T_o)) / (1 + H)$. Counting the observed
+statistic keeps the test valid and the p-value above zero.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1130,17 +1161,20 @@ probability for class 0 on <cite>theta_p</cite>.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.lc2st.permute_data">
 <span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.lc2st.</span></span><span class="sig-name descname"><span class="pre">permute_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta_p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/lc2st.html#permute_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.lc2st.permute_data" title="Link to this definition">#</a></dt>
-<dd><p>Permutes the concatenated data [P,Q] to create null samples.</p>
+<dd><p>Swaps the P and Q labels within each pair to create null samples.</p>
+<p>Row <cite>i</cite> of P and row <cite>i</cite> of Q must share the observation <cite>x_i</cite>. Each pair is
+swapped with probability 1/2, which is the symmetry of the data under the
+null hypothesis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>theta_p</strong> (<em>Array</em>) – Samples from P, of shape (sample_size, dim).</p></li>
-<li><p><strong>theta_q</strong> (<em>Array</em>) – Samples from Q, of shape (sample_size, dim).</p></li>
+<li><p><strong>theta_q</strong> (<em>Array</em>) – Samples from Q, of shape (sample_size, dim), row-aligned with <cite>theta_p</cite>.</p></li>
 <li><p><strong>seed</strong> (<em>int</em><em>, </em><em>optional</em>) – Random seed. Default is 1.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Permuted data [theta_p, theta_q].</p>
+<dd class="field-even"><p>Permuted data [theta_p, theta_q], each of shape (sample_size, dim).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tuple[Array, Array]</p>
@@ -1253,6 +1287,8 @@ probability for class 0 on <cite>theta_p</cite>.</p>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.lc2st.LC2ST"><code class="docutils literal notranslate"><span class="pre">LC2ST</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.lc2st.LC2ST._normalize_theta"><code class="docutils literal notranslate"><span class="pre">LC2ST._normalize_theta()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.lc2st.LC2ST._normalize_x"><code class="docutils literal notranslate"><span class="pre">LC2ST._normalize_x()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.lc2st.LC2ST._train"><code class="docutils literal notranslate"><span class="pre">LC2ST._train()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.lc2st.LC2ST.get_scores"><code class="docutils literal notranslate"><span class="pre">LC2ST.get_scores()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.lc2st.LC2ST.get_statistic_on_observed_data"><code class="docutils literal notranslate"><span class="pre">LC2ST.get_statistic_on_observed_data()</span></code></a></li>

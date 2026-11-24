@@ -9,31 +9,64 @@ Functions
 
 .. autoapisummary::
 
+   gensbi.diagnostics.marginal_coverage._compute_marginal_coverage
    gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE
    gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram
+   gensbi.diagnostics.marginal_coverage._histogram_scores
+   gensbi.diagnostics.marginal_coverage._kde_scores
+   gensbi.diagnostics.marginal_coverage._prepare_inputs
+   gensbi.diagnostics.marginal_coverage._randomised_rank
    gensbi.diagnostics.marginal_coverage.compute_marginal_coverage
-   gensbi.diagnostics.marginal_coverage.estimate_hat_z
    gensbi.diagnostics.marginal_coverage.plot_marginal_coverage
 
 
 Module Contents
 ---------------
 
-.. py:function:: _compute_marginal_coverage_KDE(theta, posterior_samples, grid_points=2048, bw='ISJ')
+.. py:function:: _compute_marginal_coverage(theta, posterior_samples, score_fn, seed, show_progress_bar)
+
+   
+   Shared loop of the marginal coverage estimators.
+
+   ``score_fn`` maps the pooled points (the posterior samples followed by the
+   true value) to one density score per point.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _compute_marginal_coverage_KDE(theta, posterior_samples, grid_points=2048, bw='ISJ', seed=0, show_progress_bar=True)
 
    
    Computes the marginal coverage (credibility) for each observation and dimension
    using Kernel Density Estimation.
 
-   For each observation b and dimension d, estimates the 1D marginal posterior
-   density p(x) via KDE, then computes the HPD (Highest Posterior Density)
-   credibility:
+   For each observation b and dimension d this estimates the HPD (Highest
+   Posterior Density) credibility of the true value,
 
    .. math::
-       lpha = \int_{p(x) > p( heta^*)} p(x) dx
+       \alpha = \int_{p(x) > p(\theta^*)} p(x) dx ,
 
-   This gives the probability mass in regions denser than the true value.
-   If the posterior is well calibrated, alpha should be Uniform(0, 1).
+   the posterior mass in regions denser than the true value. If the posterior
+   is well calibrated, alpha is Uniform(0, 1).
+
+   The true value is pooled with the posterior samples, a 1D KDE is fitted to
+   the pooled points, and alpha is the fraction of samples whose density is
+   higher than that of the true value, with ties split at random. See
+   :func:`compute_marginal_coverage` for why the true value is pooled.
 
    :param theta: The ground truth parameters.
    :type theta: array_like of shape (N_batch, D_dim)
@@ -42,11 +75,16 @@ Module Contents
    :param grid_points: Number of grid points for KDE evaluation. Default is 2048.
    :type grid_points: int, optional
    :param bw: Bandwidth method or value for KDE. Default is "ISJ"
-              (Improved Sheather-Jones, a plug-in bandwidth selector).
+              (Improved Sheather-Jones, a plug-in bandwidth selector). If the
+              selector fails on the pooled points, Silverman's rule is used instead.
    :type bw: str or float, optional
+   :param seed: Seed of the random tie-breaking. Default is 0.
+   :type seed: int or numpy.random.Generator, optional
+   :param show_progress_bar: Whether to display a progress bar. Default is True.
+   :type show_progress_bar: bool, optional
 
-   :returns: **alpha** -- The credibility values (0 to 1).
-             If the posterior is well calibrated, these should be uniformly distributed.
+   :returns: **alpha** -- The credibility values, strictly between 0 and 1. NaN where the
+             samples or the true value are not finite.
    :rtype: np.ndarray of shape (D_dim, N_batch)
 
 
@@ -66,27 +104,35 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: _compute_marginal_coverage_histogram(theta, posterior_samples, bins='stone')
+.. py:function:: _compute_marginal_coverage_histogram(theta, posterior_samples, bins='stone', seed=0, show_progress_bar=True)
 
    
    Computes marginal coverage using empirical histograms.
 
-   This is a discrete approximation of the HPD credibility: for each
-   (observation, dimension) pair, it bins the posterior samples and
-   sums the mass of all bins at least as dense as the one containing
-   the true parameter. Faster than KDE and works well for multimodal
-   distributions, but accuracy depends on bin count.
+   This is a discrete approximation of the HPD credibility. For each
+   (observation, dimension) pair the true value is pooled with the posterior
+   samples and the pooled points are binned. Every point is scored by the
+   count of its own bin, and alpha is the fraction of samples that score
+   higher than the true value, with ties split at random. See
+   :func:`compute_marginal_coverage` for why the true value is pooled.
+
+   Faster than KDE and works well for multimodal distributions.
 
    :param theta: The ground truth parameters.
    :type theta: array_like of shape (N_batch, D_dim)
    :param posterior_samples: Samples from the posterior.
    :type posterior_samples: array_like of shape (N_samples, N_batch, D_dim)
-   :param bins: Number of bins or binning strategy. See ``numpy.histogram_bin_edges``
-                for valid string values ('stone', 'scott', 'fd', 'sturges', etc).
-                Default is 'stone'.
-   :type bins: int or str, optional
+   :param bins: Number of bins, binning strategy or bin edges. See
+                ``numpy.histogram_bin_edges`` for valid string values
+                ('stone', 'scott', 'fd', 'sturges', etc). Default is 'stone'.
+   :type bins: int, str or sequence of scalars, optional
+   :param seed: Seed of the random tie-breaking. Default is 0.
+   :type seed: int or numpy.random.Generator, optional
+   :param show_progress_bar: Whether to display a progress bar. Default is True.
+   :type show_progress_bar: bool, optional
 
-   :returns: **alpha_values** -- The credibility values (0 to 1).
+   :returns: **alpha_values** -- The credibility values, strictly between 0 and 1. NaN where the
+             samples or the true value are not finite.
    :rtype: np.ndarray of shape (D_dim, N_batch)
 
 
@@ -106,10 +152,131 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: compute_marginal_coverage(theta, posterior_samples, method='histogram', **kwargs)
+.. py:function:: _histogram_scores(pooled, bins)
+
+   
+   Score every pooled point by the count of the histogram bin it falls in.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _kde_scores(pooled, grid_points, bw)
+
+   
+   Score every pooled point by the kernel density estimate of the pooled set.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _prepare_inputs(theta, posterior_samples)
+
+   
+   Convert the inputs to numpy and check that their shapes agree.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _randomised_rank(sample_scores, truth_score, u)
+
+   
+   Fraction of the pooled points that score higher than the truth, ties split at random.
+
+   With ``u ~ Uniform(0, 1)`` this is exactly Uniform(0, 1) whenever the truth
+   and the samples are exchangeable and the scores are a symmetric function
+   of the pooled set.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: compute_marginal_coverage(theta, posterior_samples, method='histogram', seed=0, show_progress_bar=True, **kwargs)
 
    
    Compute marginal coverage for each observation and dimension.
+
+   For every observation and parameter dimension this returns the HPD
+   (Highest Posterior Density) credibility of the true value: the posterior
+   mass :math:`\alpha` in regions denser than the true value. For a
+   calibrated posterior :math:`\alpha` is Uniform(0, 1), so the fraction of
+   observations with :math:`\alpha \leq c` should equal :math:`c`
+   (see :func:`plot_marginal_coverage`).
+
+   .. rubric:: Notes
+
+   The density is estimated from the true value *pooled with* the posterior
+   samples, and :math:`\alpha` is the randomised rank of the true value's
+   density among the samples' densities. If the posterior is calibrated, the
+   true value and the samples are exchangeable draws from the same
+   distribution, so this rank is exactly uniform for any posterior shape,
+   any number of samples and any binning or bandwidth.
+
+   Ranking the true value against a density built from the samples alone is
+   biased towards overconfidence: every sample raises the density estimate at
+   its own location and the true value does not. That bias only decays as
+   :math:`1/\sqrt{N_\mathrm{samples}}`.
+
+   Tied densities are split at random, which makes the result depend on
+   ``seed``. A flat marginal has no density ordering at all, so its
+   credibility is pure noise: HPD coverage cannot test such a marginal, use
+   SBC ranks (:func:`gensbi.diagnostics.run_sbc`) instead.
 
    :param theta: The ground truth parameters.
    :type theta: array_like of shape (N_batch, D_dim)
@@ -119,10 +286,16 @@ Module Contents
                   - "histogram": Use empirical histograms (default).
                   - "KDE": Use Kernel Density Estimation.
    :type method: str, optional
-   :param \*\*kwargs: Additional keyword arguments to pass to the chosen method.
+   :param seed: Seed of the random tie-breaking. Default is 0.
+   :type seed: int or numpy.random.Generator, optional
+   :param show_progress_bar: Whether to display a progress bar. Default is True.
+   :type show_progress_bar: bool, optional
+   :param \*\*kwargs: Additional keyword arguments to pass to the chosen method
+                      (``bins`` for "histogram"; ``grid_points`` and ``bw`` for "KDE").
    :type \*\*kwargs: dict, optional
 
-   :returns: **alpha_values** -- The credibility values (0 to 1).
+   :returns: **alpha_values** -- The credibility values, strictly between 0 and 1. NaN where the
+             samples or the true value are not finite; a warning reports how many.
    :rtype: np.ndarray of shape (D_dim, N_batch)
 
 
@@ -142,49 +315,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: estimate_hat_z(alpha_values, nbins=50, zmax=4, z_band=1)
-
-   
-   Compute empirical coverage (hat{z}) vs nominal coverage (z) for one dimension.
-
-   Given a set of HPD credibility values (alpha), this function builds the
-   empirical CDF of those values and converts it to z-score space. For a
-   well-calibrated posterior, hat{z} should equal z along the diagonal.
-
-   :param alpha_values: 1D array of credibility values for a single dimension.
-   :type alpha_values: array_like
-   :param nbins: Number of bins for z (default is 50).
-   :type nbins: int, optional
-   :param zmax: Maximum z value to evaluate (default is 4).
-   :type zmax: float, optional
-   :param z_band: Z-score for the Jeffrey's uncertainty band (default is 1, ~68% CI).
-   :type z_band: float, optional
-
-   :returns: **stats** -- Dictionary containing:
-             - 'z': Nominal coverage z-values.
-             - 'mean': Empirical coverage hat{z}.
-             - 'upper': Upper bound of uncertainty band.
-             - 'lower': Lower bound of uncertainty band.
-   :rtype: dict
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   ..
-       !! processed by numpydoc !!
-
-.. py:function:: plot_marginal_coverage(alpha_values, zmax=3.5, n_cols=3, figsize=None)
+.. py:function:: plot_marginal_coverage(alpha_values, zmax=3.5, n_cols=3, figsize=None, parameter_labels=None, num_posterior_samples=None)
 
    
    Plots the marginal coverage for all dimensions.
@@ -197,6 +328,14 @@ Module Contents
    :type n_cols: int, optional
    :param figsize: Figure size (width, height). If None, calculated automatically.
    :type figsize: tuple, optional
+   :param parameter_labels: Title of each panel, one per parameter dimension. If None, the panels
+                            are titled "Dim 1", "Dim 2", ...
+   :type parameter_labels: list of str, optional
+   :param num_posterior_samples: Number of posterior samples the credibilities were computed from. If
+                                 given, the curve is dashed above the confidence level that this many
+                                 samples can resolve (a tail mass of ``1 / (num_posterior_samples + 1)``,
+                                 z = 3.3 for 1000 samples). The dashed part is an extrapolation.
+   :type num_posterior_samples: int, optional
 
    :returns: **fig** -- The figure object.
    :rtype: matplotlib.figure.Figure

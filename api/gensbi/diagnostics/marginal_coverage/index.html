@@ -642,17 +642,29 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE" title="gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_compute_marginal_coverage_KDE</span></code></a>(theta, posterior_samples)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage" title="gensbi.diagnostics.marginal_coverage._compute_marginal_coverage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_compute_marginal_coverage</span></code></a>(theta, posterior_samples, ...)</p></td>
+<td><p>Shared loop of the marginal coverage estimators.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE" title="gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_compute_marginal_coverage_KDE</span></code></a>(theta, posterior_samples)</p></td>
 <td><p>Computes the marginal coverage (credibility) for each observation and dimension</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram" title="gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_compute_marginal_coverage_histogram</span></code></a>(theta, ...[, bins])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram" title="gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_compute_marginal_coverage_histogram</span></code></a>(theta, ...[, ...])</p></td>
 <td><p>Computes marginal coverage using empirical histograms.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage.compute_marginal_coverage" title="gensbi.diagnostics.marginal_coverage.compute_marginal_coverage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_marginal_coverage</span></code></a>(theta, posterior_samples[, ...])</p></td>
-<td><p>Compute marginal coverage for each observation and dimension.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._histogram_scores" title="gensbi.diagnostics.marginal_coverage._histogram_scores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_histogram_scores</span></code></a>(pooled, bins)</p></td>
+<td><p>Score every pooled point by the count of the histogram bin it falls in.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage.estimate_hat_z" title="gensbi.diagnostics.marginal_coverage.estimate_hat_z"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_hat_z</span></code></a>(alpha_values[, nbins, zmax, z_band])</p></td>
-<td><p>Compute empirical coverage (hat{z}) vs nominal coverage (z) for one dimension.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._kde_scores" title="gensbi.diagnostics.marginal_coverage._kde_scores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_kde_scores</span></code></a>(pooled, grid_points, bw)</p></td>
+<td><p>Score every pooled point by the kernel density estimate of the pooled set.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._prepare_inputs" title="gensbi.diagnostics.marginal_coverage._prepare_inputs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_prepare_inputs</span></code></a>(theta, posterior_samples)</p></td>
+<td><p>Convert the inputs to numpy and check that their shapes agree.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage._randomised_rank" title="gensbi.diagnostics.marginal_coverage._randomised_rank"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_randomised_rank</span></code></a>(sample_scores, truth_score, u)</p></td>
+<td><p>Fraction of the pooled points that score higher than the truth, ties split at random.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage.compute_marginal_coverage" title="gensbi.diagnostics.marginal_coverage.compute_marginal_coverage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_marginal_coverage</span></code></a>(theta, posterior_samples[, ...])</p></td>
+<td><p>Compute marginal coverage for each observation and dimension.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gensbi.diagnostics.marginal_coverage.plot_marginal_coverage" title="gensbi.diagnostics.marginal_coverage.plot_marginal_coverage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_marginal_coverage</span></code></a>(alpha_values[, zmax, n_cols, ...])</p></td>
 <td><p>Plots the marginal coverage for all dimensions.</p></td>
@@ -664,17 +676,28 @@
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage._compute_marginal_coverage">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_compute_marginal_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bar</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_compute_marginal_coverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage" title="Link to this definition">#</a></dt>
+<dd><p>Shared loop of the marginal coverage estimators.</p>
+<p><code class="docutils literal notranslate"><span class="pre">score_fn</span></code> maps the pooled points (the posterior samples followed by the
+true value) to one density score per point.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_compute_marginal_coverage_KDE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2048</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ISJ'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_compute_marginal_coverage_KDE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_compute_marginal_coverage_KDE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2048</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ISJ'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_compute_marginal_coverage_KDE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE" title="Link to this definition">#</a></dt>
 <dd><p>Computes the marginal coverage (credibility) for each observation and dimension
 using Kernel Density Estimation.</p>
-<p>For each observation b and dimension d, estimates the 1D marginal posterior
-density p(x) via KDE, then computes the HPD (Highest Posterior Density)
-credibility:</p>
+<p>For each observation b and dimension d this estimates the HPD (Highest
+Posterior Density) credibility of the true value,</p>
 <div class="math notranslate nohighlight">
-\[lpha = \int_{p(x) &gt; p( heta^*)} p(x) dx\]</div>
-<p>This gives the probability mass in regions denser than the true value.
-If the posterior is well calibrated, alpha should be Uniform(0, 1).</p>
+\[\alpha = \int_{p(x) &gt; p(\theta^*)} p(x) dx ,\]</div>
+<p>the posterior mass in regions denser than the true value. If the posterior
+is well calibrated, alpha is Uniform(0, 1).</p>
+<p>The true value is pooled with the posterior samples, a 1D KDE is fitted to
+the pooled points, and alpha is the fraction of samples whose density is
+higher than that of the true value, with ties split at random. See
+<a class="reference internal" href="#gensbi.diagnostics.marginal_coverage.compute_marginal_coverage" title="gensbi.diagnostics.marginal_coverage.compute_marginal_coverage"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_marginal_coverage()</span></code></a> for why the true value is pooled.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -682,12 +705,15 @@ If the posterior is well calibrated, alpha should be Uniform(0, 1).</p>
 <li><p><strong>posterior_samples</strong> (<em>array_like</em><em> of </em><em>shape</em><em> (</em><em>N_samples</em><em>, </em><em>N_batch</em><em>, </em><em>D_dim</em><em>)</em>) – Samples from the posterior.</p></li>
 <li><p><strong>grid_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of grid points for KDE evaluation. Default is 2048.</p></li>
 <li><p><strong>bw</strong> (<em>str</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – Bandwidth method or value for KDE. Default is “ISJ”
-(Improved Sheather-Jones, a plug-in bandwidth selector).</p></li>
+(Improved Sheather-Jones, a plug-in bandwidth selector). If the
+selector fails on the pooled points, Silverman’s rule is used instead.</p></li>
+<li><p><strong>seed</strong> (<em>int</em><em> or </em><em>numpy.random.Generator</em><em>, </em><em>optional</em>) – Seed of the random tie-breaking. Default is 0.</p></li>
+<li><p><strong>show_progress_bar</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to display a progress bar. Default is True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>alpha</strong> – The credibility values (0 to 1).
-If the posterior is well calibrated, these should be uniformly distributed.</p>
+<dd class="field-even"><p><strong>alpha</strong> – The credibility values, strictly between 0 and 1. NaN where the
+samples or the true value are not finite.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>np.ndarray of shape (D_dim, N_batch)</p>
@@ -697,25 +723,30 @@ If the posterior is well calibrated, these should be uniformly distributed.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_compute_marginal_coverage_histogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stone'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_compute_marginal_coverage_histogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_compute_marginal_coverage_histogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stone'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_compute_marginal_coverage_histogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram" title="Link to this definition">#</a></dt>
 <dd><p>Computes marginal coverage using empirical histograms.</p>
-<p>This is a discrete approximation of the HPD credibility: for each
-(observation, dimension) pair, it bins the posterior samples and
-sums the mass of all bins at least as dense as the one containing
-the true parameter. Faster than KDE and works well for multimodal
-distributions, but accuracy depends on bin count.</p>
+<p>This is a discrete approximation of the HPD credibility. For each
+(observation, dimension) pair the true value is pooled with the posterior
+samples and the pooled points are binned. Every point is scored by the
+count of its own bin, and alpha is the fraction of samples that score
+higher than the true value, with ties split at random. See
+<a class="reference internal" href="#gensbi.diagnostics.marginal_coverage.compute_marginal_coverage" title="gensbi.diagnostics.marginal_coverage.compute_marginal_coverage"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_marginal_coverage()</span></code></a> for why the true value is pooled.</p>
+<p>Faster than KDE and works well for multimodal distributions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>theta</strong> (<em>array_like</em><em> of </em><em>shape</em><em> (</em><em>N_batch</em><em>, </em><em>D_dim</em><em>)</em>) – The ground truth parameters.</p></li>
 <li><p><strong>posterior_samples</strong> (<em>array_like</em><em> of </em><em>shape</em><em> (</em><em>N_samples</em><em>, </em><em>N_batch</em><em>, </em><em>D_dim</em><em>)</em>) – Samples from the posterior.</p></li>
-<li><p><strong>bins</strong> (<em>int</em><em> or </em><em>str</em><em>, </em><em>optional</em>) – Number of bins or binning strategy. See <code class="docutils literal notranslate"><span class="pre">numpy.histogram_bin_edges</span></code>
-for valid string values (‘stone’, ‘scott’, ‘fd’, ‘sturges’, etc).
-Default is ‘stone’.</p></li>
+<li><p><strong>bins</strong> (<em>int</em><em>, </em><em>str</em><em> or </em><em>sequence</em><em> of </em><em>scalars</em><em>, </em><em>optional</em>) – Number of bins, binning strategy or bin edges. See
+<code class="docutils literal notranslate"><span class="pre">numpy.histogram_bin_edges</span></code> for valid string values
+(‘stone’, ‘scott’, ‘fd’, ‘sturges’, etc). Default is ‘stone’.</p></li>
+<li><p><strong>seed</strong> (<em>int</em><em> or </em><em>numpy.random.Generator</em><em>, </em><em>optional</em>) – Seed of the random tie-breaking. Default is 0.</p></li>
+<li><p><strong>show_progress_bar</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to display a progress bar. Default is True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>alpha_values</strong> – The credibility values (0 to 1).</p>
+<dd class="field-even"><p><strong>alpha_values</strong> – The credibility values, strictly between 0 and 1. NaN where the
+samples or the true value are not finite.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>np.ndarray of shape (D_dim, N_batch)</p>
@@ -724,9 +755,57 @@ Default is ‘stone’.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage._histogram_scores">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_histogram_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pooled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_histogram_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._histogram_scores" title="Link to this definition">#</a></dt>
+<dd><p>Score every pooled point by the count of the histogram bin it falls in.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage._kde_scores">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_kde_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pooled</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_kde_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._kde_scores" title="Link to this definition">#</a></dt>
+<dd><p>Score every pooled point by the kernel density estimate of the pooled set.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage._prepare_inputs">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_prepare_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_prepare_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._prepare_inputs" title="Link to this definition">#</a></dt>
+<dd><p>Convert the inputs to numpy and check that their shapes agree.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage._randomised_rank">
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">_randomised_rank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truth_score</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#_randomised_rank"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage._randomised_rank" title="Link to this definition">#</a></dt>
+<dd><p>Fraction of the pooled points that score higher than the truth, ties split at random.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">u</span> <span class="pre">~</span> <span class="pre">Uniform(0,</span> <span class="pre">1)</span></code> this is exactly Uniform(0, 1) whenever the truth
+and the samples are exchangeable and the scores are a symmetric function
+of the pooled set.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage.compute_marginal_coverage">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">compute_marginal_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'histogram'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#compute_marginal_coverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage.compute_marginal_coverage" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">compute_marginal_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">posterior_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'histogram'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progress_bar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#compute_marginal_coverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage.compute_marginal_coverage" title="Link to this definition">#</a></dt>
 <dd><p>Compute marginal coverage for each observation and dimension.</p>
+<p>For every observation and parameter dimension this returns the HPD
+(Highest Posterior Density) credibility of the true value: the posterior
+mass <span class="math notranslate nohighlight">\(\alpha\)</span> in regions denser than the true value. For a
+calibrated posterior <span class="math notranslate nohighlight">\(\alpha\)</span> is Uniform(0, 1), so the fraction of
+observations with <span class="math notranslate nohighlight">\(\alpha \leq c\)</span> should equal <span class="math notranslate nohighlight">\(c\)</span>
+(see <a class="reference internal" href="#gensbi.diagnostics.marginal_coverage.plot_marginal_coverage" title="gensbi.diagnostics.marginal_coverage.plot_marginal_coverage"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_marginal_coverage()</span></code></a>).</p>
+<p class="rubric">Notes</p>
+<p>The density is estimated from the true value <em>pooled with</em> the posterior
+samples, and <span class="math notranslate nohighlight">\(\alpha\)</span> is the randomised rank of the true value’s
+density among the samples’ densities. If the posterior is calibrated, the
+true value and the samples are exchangeable draws from the same
+distribution, so this rank is exactly uniform for any posterior shape,
+any number of samples and any binning or bandwidth.</p>
+<p>Ranking the true value against a density built from the samples alone is
+biased towards overconfidence: every sample raises the density estimate at
+its own location and the true value does not. That bias only decays as
+<span class="math notranslate nohighlight">\(1/\sqrt{N_\mathrm{samples}}\)</span>.</p>
+<p>Tied densities are split at random, which makes the result depend on
+<code class="docutils literal notranslate"><span class="pre">seed</span></code>. A flat marginal has no density ordering at all, so its
+credibility is pure noise: HPD coverage cannot test such a marginal, use
+SBC ranks (<a class="reference internal" href="../index.html#gensbi.diagnostics.run_sbc" title="gensbi.diagnostics.run_sbc"><code class="xref py py-func docutils literal notranslate"><span class="pre">gensbi.diagnostics.run_sbc()</span></code></a>) instead.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -735,11 +814,15 @@ Default is ‘stone’.</p></li>
 <li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – Method to use for computing marginal coverage. Options are:
 - “histogram”: Use empirical histograms (default).
 - “KDE”: Use Kernel Density Estimation.</p></li>
-<li><p><strong>**kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Additional keyword arguments to pass to the chosen method.</p></li>
+<li><p><strong>seed</strong> (<em>int</em><em> or </em><em>numpy.random.Generator</em><em>, </em><em>optional</em>) – Seed of the random tie-breaking. Default is 0.</p></li>
+<li><p><strong>show_progress_bar</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to display a progress bar. Default is True.</p></li>
+<li><p><strong>**kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Additional keyword arguments to pass to the chosen method
+(<code class="docutils literal notranslate"><span class="pre">bins</span></code> for “histogram”; <code class="docutils literal notranslate"><span class="pre">grid_points</span></code> and <code class="docutils literal notranslate"><span class="pre">bw</span></code> for “KDE”).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>alpha_values</strong> – The credibility values (0 to 1).</p>
+<dd class="field-even"><p><strong>alpha_values</strong> – The credibility values, strictly between 0 and 1. NaN where the
+samples or the true value are not finite; a warning reports how many.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>np.ndarray of shape (D_dim, N_batch)</p>
@@ -748,37 +831,8 @@ Default is ‘stone’.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage.estimate_hat_z">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">estimate_hat_z</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_band</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#estimate_hat_z"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage.estimate_hat_z" title="Link to this definition">#</a></dt>
-<dd><p>Compute empirical coverage (hat{z}) vs nominal coverage (z) for one dimension.</p>
-<p>Given a set of HPD credibility values (alpha), this function builds the
-empirical CDF of those values and converts it to z-score space. For a
-well-calibrated posterior, hat{z} should equal z along the diagonal.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>alpha_values</strong> (<em>array_like</em>) – 1D array of credibility values for a single dimension.</p></li>
-<li><p><strong>nbins</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of bins for z (default is 50).</p></li>
-<li><p><strong>zmax</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum z value to evaluate (default is 4).</p></li>
-<li><p><strong>z_band</strong> (<em>float</em><em>, </em><em>optional</em>) – Z-score for the Jeffrey’s uncertainty band (default is 1, ~68% CI).</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>stats</strong> – Dictionary containing:
-- ‘z’: Nominal coverage z-values.
-- ‘mean’: Empirical coverage hat{z}.
-- ‘upper’: Upper bound of uncertainty band.
-- ‘lower’: Lower bound of uncertainty band.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="gensbi.diagnostics.marginal_coverage.plot_marginal_coverage">
-<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">plot_marginal_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#plot_marginal_coverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage.plot_marginal_coverage" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gensbi.diagnostics.marginal_coverage.</span></span><span class="sig-name descname"><span class="pre">plot_marginal_coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_posterior_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/gensbi/diagnostics/marginal_coverage.html#plot_marginal_coverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gensbi.diagnostics.marginal_coverage.plot_marginal_coverage" title="Link to this definition">#</a></dt>
 <dd><p>Plots the marginal coverage for all dimensions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -787,6 +841,12 @@ well-calibrated posterior, hat{z} should equal z along the diagonal.</p>
 <li><p><strong>zmax</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum z-score for plotting limits (default is 3.5).</p></li>
 <li><p><strong>n_cols</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of columns in the subplot grid (default is 3).</p></li>
 <li><p><strong>figsize</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Figure size (width, height). If None, calculated automatically.</p></li>
+<li><p><strong>parameter_labels</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Title of each panel, one per parameter dimension. If None, the panels
+are titled “Dim 1”, “Dim 2”, …</p></li>
+<li><p><strong>num_posterior_samples</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of posterior samples the credibilities were computed from. If
+given, the curve is dashed above the confidence level that this many
+samples can resolve (a tail mass of <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">(num_posterior_samples</span> <span class="pre">+</span> <span class="pre">1)</span></code>,
+z = 3.3 for 1000 samples). The dashed part is an extrapolation.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -850,10 +910,14 @@ well-calibrated posterior, hat{z} should equal z along the diagonal.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage"><code class="docutils literal notranslate"><span class="pre">_compute_marginal_coverage()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_KDE"><code class="docutils literal notranslate"><span class="pre">_compute_marginal_coverage_KDE()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage._compute_marginal_coverage_histogram"><code class="docutils literal notranslate"><span class="pre">_compute_marginal_coverage_histogram()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage._histogram_scores"><code class="docutils literal notranslate"><span class="pre">_histogram_scores()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage._kde_scores"><code class="docutils literal notranslate"><span class="pre">_kde_scores()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage._prepare_inputs"><code class="docutils literal notranslate"><span class="pre">_prepare_inputs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage._randomised_rank"><code class="docutils literal notranslate"><span class="pre">_randomised_rank()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage.compute_marginal_coverage"><code class="docutils literal notranslate"><span class="pre">compute_marginal_coverage()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage.estimate_hat_z"><code class="docutils literal notranslate"><span class="pre">estimate_hat_z()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensbi.diagnostics.marginal_coverage.plot_marginal_coverage"><code class="docutils literal notranslate"><span class="pre">plot_marginal_coverage()</span></code></a></li>
 </ul>
 </li>

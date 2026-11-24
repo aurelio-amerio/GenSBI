@@ -759,6 +759,8 @@ window.runMermaid = runMermaid;</script>
   <h1>Source code for gensbi.diagnostics.utils</h1><div class="highlight"><pre>
 <span></span><span class="sd">"""Shared statistical utilities for diagnostic functions."""</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">scipy.stats</span>
 
@@ -855,6 +857,130 @@ window.runMermaid = runMermaid;</script>
     <span class="n">upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">k</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">,</span> <span class="n">upper</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span></div>
+
+
+
+<div class="viewcode-block" id="estimate_hat_z">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/utils/index.html#gensbi.diagnostics.utils.estimate_hat_z">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_hat_z</span><span class="p">(</span><span class="n">alpha_values</span><span class="p">,</span> <span class="n">nbins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">zmax</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">z_band</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute empirical coverage (hat{z}) vs nominal coverage (z) for one dimension.</span>
+
+<span class="sd">    Given a set of HPD credibility values (alpha), this function builds the</span>
+<span class="sd">    empirical CDF of those values and converts it to z-score space. For a</span>
+<span class="sd">    well-calibrated posterior, hat{z} should equal z along the diagonal.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    alpha_values : array_like</span>
+<span class="sd">        1D array of credibility values for a single dimension. NaN values</span>
+<span class="sd">        are excluded, with a warning.</span>
+<span class="sd">    nbins : int, optional</span>
+<span class="sd">        Number of bins for z (default is 50).</span>
+<span class="sd">    zmax : float, optional</span>
+<span class="sd">        Maximum z value to evaluate (default is 4).</span>
+<span class="sd">    z_band : float, optional</span>
+<span class="sd">        Z-score for the Jeffrey's uncertainty band (default is 1, ~68% CI).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    stats : dict</span>
+<span class="sd">        Dictionary containing:</span>
+<span class="sd">        - 'z': Nominal coverage z-values.</span>
+<span class="sd">        - 'mean': Empirical coverage hat{z}.</span>
+<span class="sd">        - 'upper': Upper bound of uncertainty band.</span>
+<span class="sd">        - 'lower': Lower bound of uncertainty band.</span>
+<span class="sd">    """</span>
+    <span class="n">alpha_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alpha_values</span><span class="p">)</span>
+    <span class="n">is_nan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">alpha_values</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_nan</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">is_nan</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">alpha_values</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> credibility values are NaN "</span>
+            <span class="s2">"and are excluded from the coverage estimate."</span><span class="p">,</span>
+            <span class="ne">UserWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">alpha_values</span> <span class="o">=</span> <span class="n">alpha_values</span><span class="p">[</span><span class="o">~</span><span class="n">is_nan</span><span class="p">]</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">alpha_values</span><span class="p">)</span>
+    <span class="n">zlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">zmax</span><span class="p">,</span> <span class="n">nbins</span><span class="p">)</span>
+
+    <span class="c1"># Map z-scores to coverage thresholds: z → alpha → coverage = 1 - alpha.</span>
+    <span class="c1"># At each threshold t, count how many observations have alpha &lt; t</span>
+    <span class="c1"># (i.e., truth lies within the t-credibility region).</span>
+    <span class="n">tlist</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">alpha_from_z</span><span class="p">(</span><span class="n">zlist</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">alpha_values</span> <span class="o">&lt;</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tlist</span><span class="p">])</span>
+
+    <span class="c1"># Empirical coverage fraction and its Jeffrey's uncertainty band</span>
+    <span class="n">r_mean</span> <span class="o">=</span> <span class="n">k</span> <span class="o">/</span> <span class="n">n</span>
+    <span class="n">r_lower</span><span class="p">,</span> <span class="n">r_upper</span> <span class="o">=</span> <span class="n">jefferys_interval</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">z_band</span><span class="p">)</span>
+
+    <span class="c1"># Convert coverage fractions back to z-scores for plotting</span>
+    <span class="n">z_mean</span> <span class="o">=</span> <span class="n">z_from_alpha</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r_mean</span><span class="p">)</span>
+    <span class="n">z_band_lower</span> <span class="o">=</span> <span class="n">z_from_alpha</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r_lower</span><span class="p">)</span>
+    <span class="n">z_band_upper</span> <span class="o">=</span> <span class="n">z_from_alpha</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r_upper</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">zlist</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="n">z_mean</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="n">z_band_upper</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="n">z_band_lower</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="resolution_limit_z">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/utils/index.html#gensbi.diagnostics.utils.resolution_limit_z">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolution_limit_z</span><span class="p">(</span><span class="n">num_posterior_samples</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Largest confidence level, as a z-score, that the posterior samples resolve.</span>
+
+<span class="sd">    A credibility computed from N posterior samples is a randomised rank with</span>
+<span class="sd">    cells of width 1 / (N + 1). Coverage levels whose tail mass is below</span>
+<span class="sd">    1 / (N + 1) fall inside the last cell: the empirical coverage there is an</span>
+<span class="sd">    extrapolation that assumes the true values are spread evenly within it.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    num_posterior_samples : int</span>
+<span class="sd">        Number of posterior samples per observation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    z : float</span>
+<span class="sd">        The two-sided z-score of a tail mass of ``1 / (num_posterior_samples + 1)``.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">z_from_alpha</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">num_posterior_samples</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)))</span></div>
+
+
+
+<div class="viewcode-block" id="plot_coverage_curve">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/utils/index.html#gensbi.diagnostics.utils.plot_coverage_curve">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_coverage_curve</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z_hat</span><span class="p">,</span> <span class="n">z_resolved</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Plot an empirical coverage curve, dashed where it is extrapolated.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axis to plot on.</span>
+<span class="sd">    z : array_like</span>
+<span class="sd">        Nominal confidence levels as z-scores, increasing.</span>
+<span class="sd">    z_hat : array_like</span>
+<span class="sd">        Empirical coverage as z-scores.</span>
+<span class="sd">    z_resolved : float, optional</span>
+<span class="sd">        Resolution limit from :func:`resolution_limit_z`. The curve is solid up</span>
+<span class="sd">        to it and dashed beyond. If None, the whole curve is solid.</span>
+<span class="sd">    **kwargs</span>
+<span class="sd">        Passed to ``ax.plot`` (colour, label, ...).</span>
+<span class="sd">    """</span>
+    <span class="n">z</span><span class="p">,</span> <span class="n">z_hat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">z</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">z_hat</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">z_resolved</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">z_hat</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"-"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">num_solid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">z</span> <span class="o">&lt;=</span> <span class="n">z_resolved</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">z</span><span class="p">[:</span><span class="n">num_solid</span><span class="p">],</span> <span class="n">z_hat</span><span class="p">[:</span><span class="n">num_solid</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"-"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">num_solid</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">):</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"label"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># start at the last solid point so that the two parts join</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">num_solid</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">start</span><span class="p">:],</span> <span class="n">z_hat</span><span class="p">[</span><span class="n">start</span><span class="p">:],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 </pre></div>
 

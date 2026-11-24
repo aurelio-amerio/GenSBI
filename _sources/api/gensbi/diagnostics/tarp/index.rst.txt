@@ -31,6 +31,7 @@ Functions
    gensbi.diagnostics.tarp._compute_tarp
    gensbi.diagnostics.tarp._plot_tarp_confidence
    gensbi.diagnostics.tarp._plot_tarp_credibility
+   gensbi.diagnostics.tarp._randomised_coverage_values
    gensbi.diagnostics.tarp._run_tarp_bootstrap
    gensbi.diagnostics.tarp._run_tarp_single
    gensbi.diagnostics.tarp.check_tarp
@@ -60,6 +61,14 @@ Module Contents
    :type ecp_lower: Optional[Array]
    :param ecp_upper: Upper bound of ECP (97.5th percentile or Jeffrey's upper). shape: (num_bins + 1,)
    :type ecp_upper: Optional[Array]
+   :param coverage_values: For each (theta, posterior) pair, the fraction of posterior samples that
+                           are closer to the reference point than the true parameter (f in
+                           Algorithm 2 of the paper). Uniform for a calibrated posterior; ``ecp``
+                           is their binned empirical CDF. shape: (num_tarp_samples,)
+   :type coverage_values: Optional[Array]
+   :param num_posterior_samples: Number of posterior samples per pair, i.e. ``coverage_values`` are
+                                 multiples of ``1 / num_posterior_samples``.
+   :type num_posterior_samples: Optional[int]
 
 
 
@@ -109,6 +118,12 @@ Module Contents
       :type:  jax.Array
 
 
+   .. py:attribute:: coverage_values
+      :type:  Optional[jax.Array]
+      :value: None
+
+
+
    .. py:attribute:: ecp
       :type:  jax.Array
 
@@ -125,6 +140,12 @@ Module Contents
 
    .. py:attribute:: ecp_upper
       :type:  Optional[jax.Array]
+      :value: None
+
+
+
+   .. py:attribute:: num_posterior_samples
+      :type:  Optional[int]
       :value: None
 
 
@@ -238,6 +259,8 @@ Module Contents
    
    Core TARP computation (JIT-compiled).
 
+   Returns the ECP curve, its alpha grid, and the coverage value of each pair.
+
    For each simulation i, computes f_i = fraction of posterior samples that
    are closer to the reference point than the true parameter theta_i
    (Algorithm 2, Eq. 4 in Lemos et al.). Under perfect calibration,
@@ -261,7 +284,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: _plot_tarp_confidence(result, ax, title = None)
+.. py:function:: _plot_tarp_confidence(result, ax, title = None, seed = 1)
 
    
    Internal function to plot confidence mode (Z-scores).
@@ -289,6 +312,33 @@ Module Contents
    
    Internal function to plot credibility mode.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+
+.. py:function:: _randomised_coverage_values(result, seed)
+
+   
+   Coverage values with their discreteness removed, or None if not stored.
+
+   A coverage value is a count of posterior samples divided by their number
+   N, so it lies on a grid. Adding Uniform(0, 1) noise to the count and
+   dividing by N + 1 spreads each value over its cell, which makes it exactly
+   Uniform(0, 1) for a calibrated posterior.
 
 
 
@@ -357,15 +407,28 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: check_tarp(result)
+.. py:function:: check_tarp(result, seed = 1)
 
    
    Quantitative check of the TARP coverage curve.
 
-   :returns: * **atc** (*float*) -- Area To Curve for :math:`\alpha > 0.5`. Positive means conservative
-               (ECP above diagonal), negative means overconfident.
-             * **ks_prob** (*float*) -- Two-sample KS test p-value. Low values indicate the ECP differs
-               significantly from the ideal diagonal.
+   :param result: Results from run_tarp.
+   :type result: TARPResult
+   :param seed: Random seed of the jitter used by the KS test. Default is 1.
+   :type seed: int, optional
+
+   :returns: * **atc** (*float*) -- Area To Curve: the area between the ECP curve and the diagonal for
+               :math:`\alpha > 0.5`. Positive means conservative (ECP above diagonal),
+               negative means overconfident. It does not depend on the number of bins.
+             * **ks_prob** (*float*) -- p-value of a Kolmogorov-Smirnov test of the per-pair coverage values
+               against Uniform(0, 1), their distribution for a calibrated posterior.
+               Low values indicate miscalibration. The values are counts of posterior
+               samples, so each count is jittered with Uniform(0, 1) noise to make it
+               continuous and exactly uniform under calibration.
+
+               If ``result`` carries no coverage values (a ``TARPResult`` built by
+               hand), this falls back to a two-sample KS test between the points of
+               the ECP curve and the alpha grid, which has very little power.
 
 
 
@@ -407,7 +470,7 @@ Module Contents
    ..
        !! processed by numpydoc !!
 
-.. py:function:: plot_tarp(result, title = None, figsize = None, mode = 'both')
+.. py:function:: plot_tarp(result, title = None, figsize = None, mode = 'both', seed = 1)
 
    
    Plot the expected coverage probability (ECP).
@@ -418,10 +481,19 @@ Module Contents
    :type title: str, optional
    :param figsize: Figure size.
    :type figsize: tuple, optional
-   :param mode: "credibility", "confidence", or "both". Default is "credibility".
+   :param mode: "credibility", "confidence", or "both". Default is "both".
                 "credibility" plots ECP vs alpha.
-                "confidence" plots z(ECP) vs z(alpha).
+                "confidence" plots the empirical coverage against the nominal one as
+                z-scores (1 sigma = 68.27%, ...). It is computed from the coverage
+                value of every pair, not from the binned ECP curve, so it resolves
+                levels the alpha grid does not. The curve is dashed above the level
+                that the posterior samples can resolve (a tail mass of
+                ``1 / (num_posterior_samples + 1)``, z = 3.3 for 1000 samples), where
+                it is an extrapolation. The band is the 95% Jeffreys interval.
    :type mode: str, optional
+   :param seed: Random seed of the jitter that removes the discreteness of the coverage
+                values in the confidence view. Default is 1.
+   :type seed: int, optional
 
 
 

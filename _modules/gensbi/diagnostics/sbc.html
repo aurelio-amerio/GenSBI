@@ -764,6 +764,8 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># MODIFICATION NOTICE:</span>
 <span class="c1"># This file was modified by Aurelio Amerio on 01-2026.</span>
 <span class="c1"># Description: Ported implementation to use JAX instead of PyTorch.</span>
+<span class="c1"># 11-2026: synced with upstream fixes (input validation, uniformity checks for</span>
+<span class="c1"># discrete ranks, rank plots over the full rank range).</span>
 <span class="c1"># --------------------------------------------------------------------------</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
@@ -857,7 +859,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="n">num_posterior_samples</span> <span class="o">=</span> <span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="c1"># _validate_sbc_inputs(thetas, xs, num_sbc_samples, num_posterior_samples)</span>
+    <span class="n">_validate_sbc_inputs</span><span class="p">(</span><span class="n">thetas</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">num_sbc_samples</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">)</span>
 
     <span class="n">expected_shape</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">num_posterior_samples</span><span class="p">,</span>
@@ -1121,8 +1123,15 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="check_uniformity_frequentist">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics.check_uniformity_frequentist">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">check_uniformity_frequentist</span><span class="p">(</span><span class="n">ranks</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_uniformity_frequentist</span><span class="p">(</span>
+    <span class="n">ranks</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Return p-values for uniformity of the ranks using Kolmogorov-Smirnov test.</span>
+
+<span class="sd">    The ranks are integers in ``[0, num_posterior_samples]``, while the KS test</span>
+<span class="sd">    assumes a continuous distribution. Each rank is therefore jittered with</span>
+<span class="sd">    Uniform(0, 1) noise, which makes it exactly Uniform(0, num_posterior_samples + 1)</span>
+<span class="sd">    for a calibrated posterior.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1131,6 +1140,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        shape (N, dim_parameters).</span>
 <span class="sd">    num_posterior_samples : int</span>
 <span class="sd">        Number of posterior samples used for SBC ranking.</span>
+<span class="sd">    seed : int, optional</span>
+<span class="sd">        Random seed of the jitter. Default is 1.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1138,10 +1149,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ks_pvals: p-values of the Kolmogorov-Smirnov test of uniformity,</span>
 <span class="sd">        one for each dim_parameters.</span>
 <span class="sd">    """</span>
+    <span class="n">ranks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">jitter</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">ranks</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
     <span class="n">kstest_pvals</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
         <span class="p">[</span>
-            <span class="n">kstest</span><span class="p">(</span><span class="n">rks</span><span class="p">,</span> <span class="n">uniform</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">num_posterior_samples</span><span class="p">)</span><span class="o">.</span><span class="n">cdf</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">rks</span> <span class="ow">in</span> <span class="n">ranks</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">kstest</span><span class="p">(</span><span class="n">rks</span><span class="p">,</span> <span class="n">uniform</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">num_posterior_samples</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cdf</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">rks</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ranks</span> <span class="o">+</span> <span class="n">jitter</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
         <span class="p">],</span>
         <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
     <span class="p">)</span>
@@ -1157,7 +1171,8 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Return C2ST scores for uniformity of the ranks.</span>
 
-<span class="sd">    Run a C2ST between ranks and uniform samples.</span>
+<span class="sd">    Run a C2ST between the ranks and integers drawn uniformly from</span>
+<span class="sd">    ``[0, num_posterior_samples]``, the distribution of the ranks under calibration.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1186,15 +1201,15 @@ window.runMermaid = runMermaid;</script>
     <span class="k">for</span> <span class="n">rep</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_repetitions</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">dim_idx</span><span class="p">,</span> <span class="n">rks</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranks</span><span class="o">.</span><span class="n">T</span><span class="p">):</span>
             <span class="n">key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="n">uniform_samples</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
+            <span class="n">uniform_ranks</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span>
                 <span class="n">subkey</span><span class="p">,</span>
                 <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">rks</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span>
                 <span class="n">minval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                <span class="n">maxval</span><span class="o">=</span><span class="n">num_posterior_samples</span><span class="p">,</span>
+                <span class="n">maxval</span><span class="o">=</span><span class="n">num_posterior_samples</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">c2st_scores</span><span class="p">[</span><span class="n">rep</span><span class="p">,</span> <span class="n">dim_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">c2st</span><span class="p">(</span>
-                <span class="n">rks</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span>
-                <span class="n">uniform_samples</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span>
+                <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">rks</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">],</span>
+                <span class="n">uniform_ranks</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">],</span>
             <span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 
     <span class="c1"># Use variance over repetitions to estimate robustness of C2ST</span>
@@ -1307,13 +1322,12 @@ window.runMermaid = runMermaid;</script>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">List</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"ranks must be an Array, np.ndarray, or a List of them."</span><span class="p">)</span>
-        <span class="n">ranks_list</span> <span class="o">=</span> <span class="n">ranks</span>
+        <span class="n">ranks_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ranks</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">rank</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranks_list</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="p">(</span><span class="n">Array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"All ranks in the list must be Arrays or np.ndarrays."</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">Array</span><span class="p">):</span>
-            <span class="n">ranks_list</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">rank</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
+        <span class="n">ranks_list</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 
     <span class="n">plot_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"hist"</span><span class="p">,</span> <span class="s2">"cdf"</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">plot_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plot_types</span><span class="p">:</span>
@@ -1518,6 +1532,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">_plot_ranks_as_cdf</span><span class="p">(</span>
                         <span class="n">ranki</span><span class="p">[:,</span> <span class="n">jj</span><span class="p">],</span>  <span class="c1"># type: ignore</span>
                         <span class="n">num_bins</span><span class="p">,</span>
+                        <span class="n">num_posterior_samples</span><span class="p">,</span>
                         <span class="n">num_repeats</span><span class="p">,</span>
                         <span class="n">ranks_label</span><span class="o">=</span><span class="n">ranks_labels</span><span class="p">[</span><span class="n">ii</span><span class="p">],</span>
                         <span class="n">color</span><span class="o">=</span><span class="sa">f</span><span class="s2">"C</span><span class="si">{</span><span class="n">ii</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">colors</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">colors</span><span class="p">[</span><span class="n">ii</span><span class="p">],</span>
@@ -1530,6 +1545,7 @@ window.runMermaid = runMermaid;</script>
                         <span class="n">_plot_cdf_region_expected_under_uniformity</span><span class="p">(</span>
                             <span class="n">num_sbc_runs</span><span class="p">,</span>
                             <span class="n">num_bins</span><span class="p">,</span>
+                            <span class="n">num_posterior_samples</span><span class="p">,</span>
                             <span class="n">num_repeats</span><span class="p">,</span>
                             <span class="n">alpha</span><span class="o">=</span><span class="n">uniform_region_alpha</span><span class="p">,</span>
                         <span class="p">)</span>
@@ -1575,6 +1591,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">_plot_ranks_as_cdf</span><span class="p">(</span>
                 <span class="n">ranki</span><span class="p">[:,</span> <span class="n">jj</span><span class="p">],</span>  <span class="c1"># type: ignore</span>
                 <span class="n">num_bins</span><span class="p">,</span>
+                <span class="n">num_posterior_samples</span><span class="p">,</span>
                 <span class="n">num_repeats</span><span class="p">,</span>
                 <span class="n">ranks_label</span><span class="o">=</span><span class="n">parameter_labels</span><span class="p">[</span><span class="n">jj</span><span class="p">],</span>
                 <span class="n">color</span><span class="o">=</span><span class="sa">f</span><span class="s2">"C</span><span class="si">{</span><span class="n">jj</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">colors</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">colors</span><span class="p">[</span><span class="n">jj</span><span class="p">],</span>
@@ -1587,6 +1604,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">_plot_cdf_region_expected_under_uniformity</span><span class="p">(</span>
                 <span class="n">num_sbc_runs</span><span class="p">,</span>
                 <span class="n">num_bins</span><span class="p">,</span>
+                <span class="n">num_posterior_samples</span><span class="p">,</span>
                 <span class="n">num_repeats</span><span class="p">,</span>
                 <span class="n">alpha</span><span class="o">=</span><span class="n">uniform_region_alpha</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1640,6 +1658,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span>
         <span class="n">ranks</span><span class="p">,</span>
         <span class="n">bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">,</span>
+        <span class="nb">range</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">),</span>
         <span class="n">label</span><span class="o">=</span><span class="n">ranks_label</span><span class="p">,</span>
         <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
         <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
@@ -1656,11 +1675,62 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="_uniform_rank_bin_probs">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics._uniform_rank_bin_probs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_uniform_rank_bin_probs</span><span class="p">(</span><span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Probability of each rank bin under uniformity.</span>
+
+<span class="sd">    The ranks are integers in ``[0, num_posterior_samples]``, so the bins over</span>
+<span class="sd">    that range do not all hold the same number of rank values.</span>
+<span class="sd">    """</span>
+    <span class="n">counts</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num_posterior_samples</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="n">bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">,</span>
+        <span class="nb">range</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">counts</span> <span class="o">/</span> <span class="p">(</span><span class="n">num_posterior_samples</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="_ecdf">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics._ecdf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_ecdf</span><span class="p">(</span><span class="n">ranks</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Empirical CDF of the ranks at the right edge of each bin over [0, N]."""</span>
+    <span class="n">hist</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">))</span>
+    <span class="n">histcs</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">histcs</span> <span class="o">/</span> <span class="n">histcs</span><span class="o">.</span><span class="n">max</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="_cdf_x">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics._cdf_x">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_cdf_x</span><span class="p">(</span><span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_repeats</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""x positions of the CDF steps in rank units, num_repeats per bin."""</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">,</span> <span class="n">num_repeats</span> <span class="o">*</span> <span class="n">num_bins</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="_uniform_cdf_band">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics._uniform_cdf_band">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_uniform_cdf_band</span><span class="p">(</span>
+    <span class="n">num_sbc_runs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""99% band of the empirical CDF at each bin under uniformity."""</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">_uniform_rank_bin_probs</span><span class="p">(</span><span class="n">num_bins</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+    <span class="c1"># Decrease the last entry by epsilon to find valid confidence intervals.</span>
+    <span class="n">p</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">1e-9</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.005</span><span class="p">)</span>
+    <span class="n">upper</span> <span class="o">=</span> <span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.995</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lower</span> <span class="o">/</span> <span class="n">lower</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">upper</span> <span class="o">/</span> <span class="n">upper</span><span class="o">.</span><span class="n">max</span><span class="p">()</span></div>
+
+
+
 <div class="viewcode-block" id="_plot_ranks_as_cdf">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/sbc/index.html#gensbi.diagnostics._plot_ranks_as_cdf">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">_plot_ranks_as_cdf</span><span class="p">(</span>
     <span class="n">ranks</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">num_repeats</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">ranks_label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">xlabel</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1677,6 +1747,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        SBC ranks in shape (num_sbc_runs, ).</span>
 <span class="sd">    num_bins : int</span>
 <span class="sd">        Number of bins for the histogram, recommendation is num_sbc_runs / 20.</span>
+<span class="sd">    num_posterior_samples : int</span>
+<span class="sd">        Number of posterior samples used for ranking.</span>
 <span class="sd">    num_repeats : int</span>
 <span class="sd">        Number of repeats of each CDF step, i.e., resolution of the eCDF.</span>
 <span class="sd">    ranks_label : str, optional</span>
@@ -1692,14 +1764,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    num_ticks : int, optional</span>
 <span class="sd">        Number of ticks on the x-axis. Default is 3.</span>
 <span class="sd">    """</span>
-    <span class="c1"># Generate histogram of ranks.</span>
-    <span class="n">hist</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="c1"># Construct empirical CDF.</span>
-    <span class="n">histcs</span> <span class="o">=</span> <span class="n">hist</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
     <span class="c1"># Plot cdf and repeat each stair step</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">,</span> <span class="n">num_repeats</span> <span class="o">*</span> <span class="n">num_bins</span><span class="p">),</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">histcs</span> <span class="o">/</span> <span class="n">histcs</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">num_repeats</span><span class="p">),</span>
+        <span class="n">_cdf_x</span><span class="p">(</span><span class="n">num_bins</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">,</span> <span class="n">num_repeats</span><span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">_ecdf</span><span class="p">(</span><span class="n">ranks</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">),</span> <span class="n">num_repeats</span><span class="p">),</span>
         <span class="n">label</span><span class="o">=</span><span class="n">ranks_label</span><span class="p">,</span>
         <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
         <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
@@ -1713,8 +1781,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">[])</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">,</span> <span class="n">num_ticks</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">,</span> <span class="n">num_ticks</span><span class="p">))</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"posterior rank"</span> <span class="k">if</span> <span class="n">xlabel</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">xlabel</span><span class="p">)</span></div>
 
 
@@ -1724,6 +1792,7 @@ window.runMermaid = runMermaid;</script>
 <span class="k">def</span><span class="w"> </span><span class="nf">_plot_cdf_region_expected_under_uniformity</span><span class="p">(</span>
     <span class="n">num_sbc_runs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">num_repeats</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
     <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"gray"</span><span class="p">,</span>
@@ -1736,6 +1805,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Number of SBC runs.</span>
 <span class="sd">    num_bins : int</span>
 <span class="sd">        Number of bins.</span>
+<span class="sd">    num_posterior_samples : int</span>
+<span class="sd">        Number of posterior samples used for ranking.</span>
 <span class="sd">    num_repeats : int</span>
 <span class="sd">        Number of repeats.</span>
 <span class="sd">    alpha : float, optional</span>
@@ -1744,23 +1815,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Color for the region. Default is "gray".</span>
 <span class="sd">    """</span>
 
-    <span class="c1"># Construct uniform histogram.</span>
-    <span class="n">uni_bins</span> <span class="o">=</span> <span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">num_bins</span><span class="p">)</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">num_bins</span><span class="p">)</span>
-    <span class="n">uni_bins_cdf</span> <span class="o">=</span> <span class="n">uni_bins</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span> <span class="o">/</span> <span class="n">uni_bins</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-    <span class="c1"># Decrease value one in last entry by epsilon to find valid</span>
-    <span class="c1"># confidence intervals.</span>
-    <span class="n">uni_bins_cdf</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">1e-9</span>
-
-    <span class="n">lower</span> <span class="o">=</span> <span class="p">[</span><span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.005</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">uni_bins_cdf</span><span class="p">]</span>
-    <span class="n">upper</span> <span class="o">=</span> <span class="p">[</span><span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.995</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">uni_bins_cdf</span><span class="p">]</span>
+    <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="n">_uniform_cdf_band</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">)</span>
 
     <span class="c1"># Plot grey area with expected ECDF.</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
-        <span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">,</span> <span class="n">num_repeats</span> <span class="o">*</span> <span class="n">num_bins</span><span class="p">),</span>
-        <span class="n">y1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">lower</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">lower</span><span class="p">),</span> <span class="n">num_repeats</span><span class="p">),</span>
-        <span class="n">y2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
-            <span class="n">upper</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">upper</span><span class="p">),</span> <span class="n">num_repeats</span>
-        <span class="p">),</span>  <span class="c1"># pyright: ignore[reportArgumentType]</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">_cdf_x</span><span class="p">(</span><span class="n">num_bins</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">,</span> <span class="n">num_repeats</span><span class="p">),</span>
+        <span class="n">y1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">num_repeats</span><span class="p">),</span>
+        <span class="n">y2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">upper</span><span class="p">,</span> <span class="n">num_repeats</span><span class="p">),</span>
         <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
         <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
         <span class="n">label</span><span class="o">=</span><span class="s2">"expected under uniformity"</span><span class="p">,</span>
@@ -1793,8 +1854,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Color for the region. Default is "gray".</span>
 <span class="sd">    """</span>
 
-    <span class="n">lower</span> <span class="o">=</span> <span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">num_bins</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.005</span><span class="p">)</span>
-    <span class="n">upper</span> <span class="o">=</span> <span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">num_bins</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.995</span><span class="p">)</span>
+    <span class="c1"># Binomial quantiles grow with p, so this band holds every bin's interval.</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">_uniform_rank_bin_probs</span><span class="p">(</span><span class="n">num_bins</span><span class="p">,</span> <span class="n">num_posterior_samples</span><span class="p">)</span>
+    <span class="n">lower</span> <span class="o">=</span> <span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">min</span><span class="p">())</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.005</span><span class="p">)</span>
+    <span class="n">upper</span> <span class="o">=</span> <span class="n">binom</span><span class="p">(</span><span class="n">num_sbc_runs</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">max</span><span class="p">())</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="mf">0.995</span><span class="p">)</span>
 
     <span class="c1"># Plot grey area with expected ECDF.</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>

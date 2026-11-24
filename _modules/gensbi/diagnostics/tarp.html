@@ -766,6 +766,10 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># Description: Ported implementation to use JAX instead of PyTorch.</span>
 <span class="c1"># Fixed normalization bug where references were not scaled.</span>
 <span class="c1"># Fixed histogram range bug.</span>
+<span class="c1"># 11-2026: synced with upstream fixes (num_bins=None, area-to-curve scaling).</span>
+<span class="c1"># The coverage value of every pair is kept, and check_tarp tests those values</span>
+<span class="c1"># for uniformity instead of comparing the points of the binned curve. The</span>
+<span class="c1"># confidence panel is drawn from those values as well.</span>
 <span class="c1"># Reverted to single-pass implementation (no bootstrap).</span>
 <span class="c1"># --------------------------------------------------------------------------</span>
 
@@ -791,7 +795,14 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.figure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Figure</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">alpha_from_z</span><span class="p">,</span> <span class="n">jefferys_interval</span><span class="p">,</span> <span class="n">probit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">alpha_from_z</span><span class="p">,</span>
+    <span class="n">estimate_hat_z</span><span class="p">,</span>
+    <span class="n">jefferys_interval</span><span class="p">,</span>
+    <span class="n">plot_coverage_curve</span><span class="p">,</span>
+    <span class="n">probit</span><span class="p">,</span>
+    <span class="n">resolution_limit_z</span><span class="p">,</span>
+<span class="p">)</span>
 
 
 <span class="nd">@dataclass</span>
@@ -816,6 +827,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        Lower bound of ECP (2.5th percentile or Jeffrey's lower). shape: (num_bins + 1,)</span>
 <span class="sd">    ecp_upper : Optional[Array]</span>
 <span class="sd">        Upper bound of ECP (97.5th percentile or Jeffrey's upper). shape: (num_bins + 1,)</span>
+<span class="sd">    coverage_values : Optional[Array]</span>
+<span class="sd">        For each (theta, posterior) pair, the fraction of posterior samples that</span>
+<span class="sd">        are closer to the reference point than the true parameter (f in</span>
+<span class="sd">        Algorithm 2 of the paper). Uniform for a calibrated posterior; ``ecp``</span>
+<span class="sd">        is their binned empirical CDF. shape: (num_tarp_samples,)</span>
+<span class="sd">    num_posterior_samples : Optional[int]</span>
+<span class="sd">        Number of posterior samples per pair, i.e. ``coverage_values`` are</span>
+<span class="sd">        multiples of ``1 / num_posterior_samples``.</span>
 <span class="sd">    """</span>
 
 <div class="viewcode-block" id="TARPResult.ecp">
@@ -837,6 +856,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="TARPResult.ecp_upper">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.TARPResult.ecp_upper">[docs]</a>
     <span class="n">ecp_upper</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="TARPResult.coverage_values">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.TARPResult.coverage_values">[docs]</a>
+    <span class="n">coverage_values</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="TARPResult.num_posterior_samples">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.TARPResult.num_posterior_samples">[docs]</a>
+    <span class="n">num_posterior_samples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
     <span class="nd">@property</span>
@@ -935,10 +962,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ecp : Array</span>
-<span class="sd">        Expected coverage probability, see equation 4 of the paper.</span>
-<span class="sd">    alpha : Array</span>
-<span class="sd">        Credibility values, see equation 2 of the paper.</span>
+<span class="sd">    TARPResult</span>
+<span class="sd">        The expected coverage probability ``ecp`` (equation 4 of the paper) on the</span>
+<span class="sd">        grid of credibility levels ``alpha`` (equation 2), with its mean and</span>
+<span class="sd">        uncertainty band. Pass it to :func:`plot_tarp` or :func:`check_tarp`.</span>
 <span class="sd">    """</span>
     <span class="n">key</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
     <span class="n">thetas</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">thetas</span><span class="p">)</span>
@@ -959,6 +986,9 @@ window.runMermaid = runMermaid;</script>
             <span class="sa">f</span><span class="s2">"Wrong posterior samples shape for TARP: </span><span class="si">{</span><span class="n">posterior_samples</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="n">expected_shape</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">num_bins</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">num_bins</span> <span class="o">=</span> <span class="n">num_tarp_samples</span> <span class="o">//</span> <span class="mi">10</span>
+
     <span class="c1"># Generate references once for non-bootstrap; bootstrap regenerates per iteration</span>
     <span class="k">if</span> <span class="n">references</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">bootstrap</span><span class="p">:</span>
         <span class="n">references</span> <span class="o">=</span> <span class="n">get_tarp_references</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">thetas</span><span class="p">)</span>
@@ -966,17 +996,20 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">references</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">references</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">references</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">bootstrap</span><span class="p">:</span>
-        <span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">_run_tarp_single</span><span class="p">(</span>
-            <span class="n">key</span><span class="p">,</span>
-            <span class="n">posterior_samples</span><span class="p">,</span>
-            <span class="n">thetas</span><span class="p">,</span>
-            <span class="n">references</span><span class="p">,</span>
-            <span class="n">distance</span><span class="p">,</span>
-            <span class="n">num_bins</span><span class="p">,</span>
-            <span class="n">z_score_theta</span><span class="p">,</span>
-        <span class="p">)</span>
+    <span class="c1"># One pass over the pairs as they are. Without bootstrap this is the result;</span>
+    <span class="c1"># with bootstrap it provides the per-pair coverage values, which a resampled</span>
+    <span class="c1"># set of pairs cannot.</span>
+    <span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">coverage_values</span> <span class="o">=</span> <span class="n">_run_tarp_single</span><span class="p">(</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">posterior_samples</span><span class="p">,</span>
+        <span class="n">thetas</span><span class="p">,</span>
+        <span class="n">references</span><span class="p">,</span>
+        <span class="n">distance</span><span class="p">,</span>
+        <span class="n">num_bins</span><span class="p">,</span>
+        <span class="n">z_score_theta</span><span class="p">,</span>
+    <span class="p">)</span>
 
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">bootstrap</span><span class="p">:</span>
         <span class="c1"># Without bootstrap, approximate 95% CI using Jeffrey's interval</span>
         <span class="c1"># (Beta prior-based interval for binomial proportions). This is</span>
         <span class="c1"># cheaper than bootstrap and gives smooth, well-calibrated bands.</span>
@@ -990,6 +1023,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">ecp_mean</span><span class="o">=</span><span class="n">ecp</span><span class="p">,</span>
             <span class="n">ecp_lower</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">lower</span><span class="p">),</span>
             <span class="n">ecp_upper</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">upper</span><span class="p">),</span>
+            <span class="n">coverage_values</span><span class="o">=</span><span class="n">coverage_values</span><span class="p">,</span>
+            <span class="n">num_posterior_samples</span><span class="o">=</span><span class="n">num_posterior_samples</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="c1"># With bootstrap, uncertainty is estimated from the percentiles</span>
@@ -1015,6 +1050,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ecp_mean</span><span class="o">=</span><span class="n">ecp_mean</span><span class="p">,</span>
         <span class="n">ecp_lower</span><span class="o">=</span><span class="n">ecp_lower</span><span class="p">,</span>
         <span class="n">ecp_upper</span><span class="o">=</span><span class="n">ecp_upper</span><span class="p">,</span>
+        <span class="n">coverage_values</span><span class="o">=</span><span class="n">coverage_values</span><span class="p">,</span>
+        <span class="n">num_posterior_samples</span><span class="o">=</span><span class="n">num_posterior_samples</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -1029,7 +1066,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">distance</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
     <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">z_score_theta</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Runs a single iteration of TARP."""</span>
     <span class="k">if</span> <span class="n">references</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">references</span> <span class="o">=</span> <span class="n">get_tarp_references</span><span class="p">(</span><span class="n">rng_key</span><span class="p">,</span> <span class="n">thetas</span><span class="p">)</span>
@@ -1074,7 +1111,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">curr_references</span> <span class="o">=</span> <span class="n">references</span>
 
-        <span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">_compute_tarp</span><span class="p">(</span>
+        <span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_compute_tarp</span><span class="p">(</span>
             <span class="n">boot_samples</span><span class="p">,</span>
             <span class="n">boot_thetas</span><span class="p">,</span>
             <span class="n">curr_references</span><span class="p">,</span>
@@ -1102,9 +1139,11 @@ window.runMermaid = runMermaid;</script>
     <span class="n">distance</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">l2</span><span class="p">,</span>
     <span class="n">num_bins</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
     <span class="n">z_score_theta</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Core TARP computation (JIT-compiled).</span>
+
+<span class="sd">    Returns the ECP curve, its alpha grid, and the coverage value of each pair.</span>
 
 <span class="sd">    For each simulation i, computes f_i = fraction of posterior samples that</span>
 <span class="sd">    are closer to the reference point than the true parameter theta_i</span>
@@ -1147,7 +1186,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">ecp</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">hist</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">hist</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
     <span class="n">ecp</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,)),</span> <span class="n">ecp</span><span class="p">])</span>
 
-    <span class="k">return</span> <span class="n">ecp</span><span class="p">,</span> <span class="n">alpha_grid</span></div>
+    <span class="k">return</span> <span class="n">ecp</span><span class="p">,</span> <span class="n">alpha_grid</span><span class="p">,</span> <span class="n">coverage_values</span></div>
 
 
 
@@ -1161,31 +1200,71 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="_randomised_coverage_values">
+<a class="viewcode-back" href="../../../api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics._randomised_coverage_values">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">_randomised_coverage_values</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">TARPResult</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Coverage values with their discreteness removed, or None if not stored.</span>
+
+<span class="sd">    A coverage value is a count of posterior samples divided by their number</span>
+<span class="sd">    N, so it lies on a grid. Adding Uniform(0, 1) noise to the count and</span>
+<span class="sd">    dividing by N + 1 spreads each value over its cell, which makes it exactly</span>
+<span class="sd">    Uniform(0, 1) for a calibrated posterior.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">coverage_values</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">num_posterior_samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">num_post</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">num_posterior_samples</span>
+    <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">coverage_values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_post</span><span class="p">)</span>
+    <span class="n">jitter</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">counts</span> <span class="o">+</span> <span class="n">jitter</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">num_post</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="check_tarp">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics.check_tarp">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_tarp</span><span class="p">(</span>
     <span class="n">result</span><span class="p">:</span> <span class="n">TARPResult</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">    Quantitative check of the TARP coverage curve.</span>
 
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    result : TARPResult</span>
+<span class="sd">        Results from run_tarp.</span>
+<span class="sd">    seed : int, optional</span>
+<span class="sd">        Random seed of the jitter used by the KS test. Default is 1.</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    atc : float</span>
-<span class="sd">        Area To Curve for :math:`\alpha &gt; 0.5`. Positive means conservative</span>
-<span class="sd">        (ECP above diagonal), negative means overconfident.</span>
+<span class="sd">        Area To Curve: the area between the ECP curve and the diagonal for</span>
+<span class="sd">        :math:`\alpha &gt; 0.5`. Positive means conservative (ECP above diagonal),</span>
+<span class="sd">        negative means overconfident. It does not depend on the number of bins.</span>
 <span class="sd">    ks_prob : float</span>
-<span class="sd">        Two-sample KS test p-value. Low values indicate the ECP differs</span>
-<span class="sd">        significantly from the ideal diagonal.</span>
+<span class="sd">        p-value of a Kolmogorov-Smirnov test of the per-pair coverage values</span>
+<span class="sd">        against Uniform(0, 1), their distribution for a calibrated posterior.</span>
+<span class="sd">        Low values indicate miscalibration. The values are counts of posterior</span>
+<span class="sd">        samples, so each count is jittered with Uniform(0, 1) noise to make it</span>
+<span class="sd">        continuous and exactly uniform under calibration.</span>
+
+<span class="sd">        If ``result`` carries no coverage values (a ``TARPResult`` built by</span>
+<span class="sd">        hand), this falls back to a two-sample KS test between the points of</span>
+<span class="sd">        the ECP curve and the alpha grid, which has very little power.</span>
 <span class="sd">    """</span>
 
     <span class="n">ecp</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">ecp_mean</span>
     <span class="n">alpha</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">alpha</span>
 
     <span class="n">midindex</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
-    <span class="n">atc</span> <span class="o">=</span> <span class="p">(</span><span class="n">ecp</span><span class="p">[</span><span class="n">midindex</span><span class="p">:]</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">[</span><span class="n">midindex</span><span class="p">:])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="n">dalpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">atc</span> <span class="o">=</span> <span class="p">((</span><span class="n">ecp</span><span class="p">[</span><span class="n">midindex</span><span class="p">:]</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">[</span><span class="n">midindex</span><span class="p">:])</span> <span class="o">*</span> <span class="n">dalpha</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 
-    <span class="n">kstest_pvals</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kstest</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ecp</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">alpha</span><span class="p">))[</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># type: ignore</span>
+    <span class="n">coverage</span> <span class="o">=</span> <span class="n">_randomised_coverage_values</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">coverage</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">kstest_pvals</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kstest</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ecp</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">alpha</span><span class="p">))[</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># type: ignore</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">kstest_pvals</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kstest</span><span class="p">(</span><span class="n">coverage</span><span class="p">,</span> <span class="s2">"uniform"</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
 
     <span class="k">return</span> <span class="n">atc</span><span class="p">,</span> <span class="n">kstest_pvals</span></div>
 
@@ -1198,6 +1277,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">title</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">figsize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"both"</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">Axes</span><span class="p">,</span> <span class="n">Array</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Plot the expected coverage probability (ECP).</span>
@@ -1211,9 +1291,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    figsize : tuple, optional</span>
 <span class="sd">        Figure size.</span>
 <span class="sd">    mode : str, optional</span>
-<span class="sd">        "credibility", "confidence", or "both". Default is "credibility".</span>
+<span class="sd">        "credibility", "confidence", or "both". Default is "both".</span>
 <span class="sd">        "credibility" plots ECP vs alpha.</span>
-<span class="sd">        "confidence" plots z(ECP) vs z(alpha).</span>
+<span class="sd">        "confidence" plots the empirical coverage against the nominal one as</span>
+<span class="sd">        z-scores (1 sigma = 68.27%, ...). It is computed from the coverage</span>
+<span class="sd">        value of every pair, not from the binned ECP curve, so it resolves</span>
+<span class="sd">        levels the alpha grid does not. The curve is dashed above the level</span>
+<span class="sd">        that the posterior samples can resolve (a tail mass of</span>
+<span class="sd">        ``1 / (num_posterior_samples + 1)``, z = 3.3 for 1000 samples), where</span>
+<span class="sd">        it is an extrapolation. The band is the 95% Jeffreys interval.</span>
+<span class="sd">    seed : int, optional</span>
+<span class="sd">        Random seed of the jitter that removes the discreteness of the coverage</span>
+<span class="sd">        values in the confidence view. Default is 1.</span>
 <span class="sd">    """</span>
 
     <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"credibility"</span><span class="p">,</span> <span class="s2">"confidence"</span><span class="p">,</span> <span class="s2">"both"</span><span class="p">]:</span>
@@ -1232,10 +1321,10 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"both"</span><span class="p">:</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
         <span class="n">_plot_tarp_credibility</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">title</span><span class="p">)</span>
-        <span class="n">_plot_tarp_confidence</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">title</span><span class="p">)</span>
+        <span class="n">_plot_tarp_confidence</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">title</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"confidence"</span><span class="p">:</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
-        <span class="n">_plot_tarp_confidence</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span>
+        <span class="n">_plot_tarp_confidence</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
         <span class="n">_plot_tarp_credibility</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span>
@@ -1305,16 +1394,36 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="_plot_tarp_confidence">
 <a class="viewcode-back" href="../../../api/gensbi/diagnostics/tarp/index.html#gensbi.diagnostics._plot_tarp_confidence">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">_plot_tarp_confidence</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">TARPResult</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_tarp_confidence</span><span class="p">(</span>
+    <span class="n">result</span><span class="p">:</span> <span class="n">TARPResult</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Internal function to plot confidence mode (Z-scores)."""</span>
 
-    <span class="n">z_nominal</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">z_alpha</span>
-    <span class="n">z_empirical</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">z_mean</span>
+    <span class="n">zmax</span> <span class="o">=</span> <span class="mf">3.5</span>
+    <span class="n">coverage</span> <span class="o">=</span> <span class="n">_randomised_coverage_values</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
 
-    <span class="n">bg_z_lower</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">z_lower</span>
-    <span class="n">bg_z_upper</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">z_upper</span>
+    <span class="k">if</span> <span class="n">coverage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Evaluate the coverage directly on a grid of z-scores. The alpha grid</span>
+        <span class="c1"># of the ECP curve is uniform in credibility, so it has almost no</span>
+        <span class="c1"># points at high z.</span>
+        <span class="n">hat_z</span> <span class="o">=</span> <span class="n">estimate_hat_z</span><span class="p">(</span><span class="n">coverage</span><span class="p">,</span> <span class="n">nbins</span><span class="o">=</span><span class="mi">141</span><span class="p">,</span> <span class="n">zmax</span><span class="o">=</span><span class="n">zmax</span><span class="p">,</span> <span class="n">z_band</span><span class="o">=</span><span class="mf">1.96</span><span class="p">)</span>
+        <span class="n">z_nominal</span><span class="p">,</span> <span class="n">z_empirical</span> <span class="o">=</span> <span class="n">hat_z</span><span class="p">[</span><span class="s2">"z"</span><span class="p">],</span> <span class="n">hat_z</span><span class="p">[</span><span class="s2">"mean"</span><span class="p">]</span>
+        <span class="n">bg_z_lower</span> <span class="o">=</span> <span class="n">hat_z</span><span class="p">[</span><span class="s2">"lower"</span><span class="p">]</span>
+        <span class="c1"># an infinite upper bound (full coverage) is clamped for plotting</span>
+        <span class="n">bg_z_upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">hat_z</span><span class="p">[</span><span class="s2">"upper"</span><span class="p">]),</span> <span class="mf">100.0</span><span class="p">,</span> <span class="n">hat_z</span><span class="p">[</span><span class="s2">"upper"</span><span class="p">])</span>
+        <span class="n">z_resolved</span> <span class="o">=</span> <span class="n">resolution_limit_z</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">num_posterior_samples</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># A result built by hand, without per-pair values: fall back to the</span>
+        <span class="c1"># binned ECP curve, which is not reliable above the last alpha bin.</span>
+        <span class="n">z_nominal</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">z_alpha</span>
+        <span class="n">z_empirical</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">z_mean</span>
+        <span class="n">bg_z_lower</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">z_lower</span>
+        <span class="n">bg_z_upper</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">z_upper</span>
+        <span class="n">z_resolved</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">z_nominal</span><span class="p">,</span> <span class="n">z_empirical</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"#202A44"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"TARP"</span><span class="p">)</span>
+    <span class="n">plot_coverage_curve</span><span class="p">(</span>
+        <span class="n">ax</span><span class="p">,</span> <span class="n">z_nominal</span><span class="p">,</span> <span class="n">z_empirical</span><span class="p">,</span> <span class="n">z_resolved</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"#202A44"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"TARP"</span>
+    <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">bg_z_lower</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">bg_z_upper</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
@@ -1326,7 +1435,6 @@ window.runMermaid = runMermaid;</script>
             <span class="n">label</span><span class="o">=</span><span class="s2">"95% CI"</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="n">zmax</span> <span class="o">=</span> <span class="mf">3.5</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">zmax</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">zmax</span><span class="p">],</span> <span class="s2">"--"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"darkgreen"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Ideal"</span><span class="p">)</span>
 
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">zmax</span><span class="p">)</span>
@@ -1369,6 +1477,10 @@ window.runMermaid = runMermaid;</script>
         <span class="n">target_z</span> <span class="o">=</span> <span class="n">sigma</span>
         <span class="k">if</span> <span class="n">target_z</span> <span class="o">&lt;=</span> <span class="n">z_nominal</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="ow">and</span> <span class="n">target_z</span> <span class="o">&gt;=</span> <span class="n">z_nominal</span><span class="o">.</span><span class="n">min</span><span class="p">():</span>
             <span class="n">achieved_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">target_z</span><span class="p">,</span> <span class="n">z_nominal</span><span class="p">,</span> <span class="n">z_empirical</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">achieved_z</span><span class="p">):</span>
+                <span class="c1"># every pair is covered at this level: nothing to annotate</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">target_z</span><span class="p">,</span> <span class="n">target_z</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">zmax</span><span class="p">],</span> <span class="s2">":"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"r"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">continue</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">target_z</span><span class="p">,</span> <span class="n">target_z</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">achieved_z</span><span class="p">],</span> <span class="s2">":"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"r"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">target_z</span><span class="p">],</span> <span class="p">[</span><span class="n">achieved_z</span><span class="p">,</span> <span class="n">achieved_z</span><span class="p">],</span> <span class="s2">":"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"r"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 

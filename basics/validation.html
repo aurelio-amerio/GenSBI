@@ -641,10 +641,11 @@
 <p class="admonition-title">Note</p>
 <p>This is a JAX module. To use it with PyTorch (if desired), a compatibility layer must be employed.</p>
 </div>
-<p>This page focuses on three complementary diagnostics:</p>
+<p>This page focuses on four complementary diagnostics:</p>
 <ul class="simple">
 <li><p><strong>Simulation-Based Calibration (SBC)</strong>: a <em>global</em> calibration check averaged over the prior predictive distribution.</p></li>
 <li><p><strong>Targeted At Random Parameters (TARP)</strong>: a <em>global</em> calibration/accuracy test based on expected coverage probabilities.</p></li>
+<li><p><strong>Marginal coverage</strong>: a <em>global</em>, per-parameter check of the highest-density credible regions.</p></li>
 <li><p><strong>Local Classifier 2-Sample Test (L-C2ST)</strong>: a <em>local</em> hypothesis test to assess posterior correctness for a <em>specific</em> observation.</p></li>
 </ul>
 <div class="admonition note">
@@ -791,23 +792,59 @@
 <p class="admonition-title">Note</p>
 <p>TARP comes with strong theoretical guarantees in the original work, but its full diagnostic power depends on how reference points are chosen. In practice, it is typically interpreted similarly to SBC and combined with PPCs.</p>
 </div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create TARP plot using the same samples from SBC</span>
-<span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_tarp</span>
+
+<span class="c1"># Create TARP plot using the same samples from SBC</span>
+<span class="n">tarp_result</span> <span class="o">=</span> <span class="n">run_tarp</span><span class="p">(</span>
     <span class="n">thetas</span><span class="p">,</span>
     <span class="n">posterior_samples</span><span class="p">,</span>
     <span class="n">references</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="c1"># Automatically calculated if None</span>
 <span class="p">)</span>
 
 <span class="c1"># Plot coverage</span>
-<span class="n">plot_tarp</span><span class="p">(</span><span class="n">ecp</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+<span class="n">plot_tarp</span><span class="p">(</span><span class="n">tarp_result</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># atc: area between the coverage curve and the diagonal (0 if calibrated)</span>
+<span class="c1"># ks_pval: KS test of the per-pair coverage values against a uniform distribution</span>
+<span class="n">atc</span><span class="p">,</span> <span class="n">ks_pval</span> <span class="o">=</span> <span class="n">check_tarp</span><span class="p">(</span><span class="n">tarp_result</span><span class="p">)</span>
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">run_tarp</span></code> returns a <code class="docutils literal notranslate"><span class="pre">TARPResult</span></code> that holds the coverage curve (<code class="docutils literal notranslate"><span class="pre">ecp</span></code>), the credibility levels (<code class="docutils literal notranslate"><span class="pre">alpha</span></code>) and an uncertainty band.</p>
 <p>Ideally, the curve should follow the diagonal. If the curve is above the diagonal, the model is under-confident. If below, it is over-confident.</p>
+<p><code class="docutils literal notranslate"><span class="pre">plot_tarp</span></code> draws two panels by default: the coverage against the credibility level, and the same curve as <span class="math notranslate nohighlight">\(z\)</span>-scores (1σ = 68.27%, 2σ = 95.45%, …), which shows the high-coverage end that the first panel compresses. In the <span class="math notranslate nohighlight">\(z\)</span>-score panel the curve turns dashed above the level that the posterior samples can resolve: with <span class="math notranslate nohighlight">\(N\)</span> samples per observation, a tail mass below <span class="math notranslate nohighlight">\(1/(N+1)\)</span> (<span class="math notranslate nohighlight">\(z \approx 3.3\)</span> for 1000 samples) is an extrapolation. Independently of that, a level needs enough test pairs to be measured: with 200 pairs, fewer than one miss is expected above <span class="math notranslate nohighlight">\(z \approx 2.8\)</span>, which the uncertainty band reflects.</p>
 <p>For more details, see the <code class="docutils literal notranslate"><span class="pre">sbi</span></code> how-to:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://sbi.readthedocs.io/en/latest/how_to_guide/17_tarp.html">https://sbi.readthedocs.io/en/latest/how_to_guide/17_tarp.html</a></p></li>
 </ul>
+</section>
+<section id="marginal-coverage">
+<h2>Marginal coverage<a class="headerlink" href="#marginal-coverage" title="Link to this heading">#</a></h2>
+<p>Marginal coverage checks each parameter on its own. For every test pair and every parameter it computes the <strong>credibility</strong> <span class="math notranslate nohighlight">\(\alpha\)</span> of the true value: the mass of the marginal posterior that is denser than the true value. The true value lies inside the highest-density region of level <span class="math notranslate nohighlight">\(c\)</span> exactly when <span class="math notranslate nohighlight">\(\alpha \leq c\)</span>, so for a calibrated posterior <span class="math notranslate nohighlight">\(\alpha\)</span> is uniform on <span class="math notranslate nohighlight">\([0, 1]\)</span> and the fraction of test pairs with <span class="math notranslate nohighlight">\(\alpha \leq c\)</span> equals <span class="math notranslate nohighlight">\(c\)</span>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">gensbi.diagnostics.marginal_coverage</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">compute_marginal_coverage</span><span class="p">,</span>
+    <span class="n">plot_marginal_coverage</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># alpha has shape (dim_theta, num_test_pairs)</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="n">compute_marginal_coverage</span><span class="p">(</span><span class="n">thetas</span><span class="p">,</span> <span class="n">posterior_samples</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"histogram"</span><span class="p">)</span>
+
+<span class="c1"># Both keyword arguments are optional: one panel title per parameter, and the</span>
+<span class="c1"># number of posterior samples, which marks where the curve is extrapolated</span>
+<span class="n">plot_marginal_coverage</span><span class="p">(</span>
+    <span class="n">alpha</span><span class="p">,</span>
+    <span class="n">parameter_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">"theta_1"</span><span class="p">,</span> <span class="s2">"theta_2"</span><span class="p">,</span> <span class="s2">"theta_3"</span><span class="p">],</span>
+    <span class="n">num_posterior_samples</span><span class="o">=</span><span class="n">num_posterior_samples</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The plot shows the empirical coverage against the nominal one, both as <span class="math notranslate nohighlight">\(z\)</span>-scores (1σ = 68.27%, 2σ = 95.45%, …). A curve below the diagonal means the posterior is over-confident, a curve above it means it is under-confident. As in the TARP plot, the curve is dashed above the level that the posterior samples can resolve.</p>
+<p>The marginal density is estimated from the posterior samples with a histogram (<code class="docutils literal notranslate"><span class="pre">method=&quot;histogram&quot;</span></code>) or a kernel density estimate (<code class="docutils literal notranslate"><span class="pre">method=&quot;KDE&quot;</span></code>). In both cases the true value is pooled with the samples before the density is estimated, and <span class="math notranslate nohighlight">\(\alpha\)</span> is the rank of the true value’s density among the samples’ densities, with ties split at random. For a calibrated posterior the true value and the samples are interchangeable, so this rank is exactly uniform for any posterior shape and any number of samples. The tie-breaking is random: pass <code class="docutils literal notranslate"><span class="pre">seed</span></code> to change the draw.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Highest-density coverage cannot test a flat marginal, because all its points are equally dense. Use the SBC ranks for parameters whose posterior is as flat as their prior.</p>
+</div>
 </section>
 <section id="local-classifier-2-sample-test-l-c2st">
 <h2>Local Classifier 2-Sample Test (L-C2ST)<a class="headerlink" href="#local-classifier-2-sample-test-l-c2st" title="Link to this heading">#</a></h2>
@@ -940,6 +977,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#suggested-sample-sizes-rule-of-thumb">Suggested sample sizes (rule of thumb)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulation-based-calibration-sbc">Simulation-Based Calibration (SBC)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#targeted-at-random-parameters-tarp">Targeted At Random Parameters (TARP)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#marginal-coverage">Marginal coverage</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#local-classifier-2-sample-test-l-c2st">Local Classifier 2-Sample Test (L-C2ST)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references-and-further-reading">References and further reading</a></li>
 </ul>
